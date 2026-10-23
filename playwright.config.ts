@@ -8,6 +8,10 @@ export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
   fullyParallel: false,
+  // Semua test memakai satu database (Supabase free, sama dengan produksi): jalankan berurutan.
+  workers: 1,
+  // Compile pertama di `next dev` bisa lebih dari 5 detik.
+  expect: { timeout: 10_000 },
   retries: 0,
   reporter: [["list"]],
   use: {

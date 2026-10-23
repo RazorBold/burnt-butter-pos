@@ -121,6 +121,12 @@ Hal-hal yang masih menunggu keputusan di Multica BELL-37 (status bayar, pemotong
 3. Halaman memanggil `requirePageAccess(path)`; Server Action memanggil `requireRole([...])`. `getCurrentUser()` memverifikasi JWT dengan `getClaims()` lalu mencocokkan `profiles` (role, `is_active`). Database diakses lewat Drizzle dengan koneksi server, sehingga RLS Supabase **tidak** jadi lapisan pengaman utama. Aktifkan RLS tanpa policy pada semua tabel supaya kunci publishable tidak bisa membaca data.
 4. Matriks akses mengikuti tabel *Pengguna & peran* di [PRD.md](PRD.md).
 
+## File & Storage
+
+- Foto produk disimpan di bucket Supabase Storage **`menu-photos`** (publik, maks 4 MB, jpg/png/webp). Bucket dibuat/diperbarui dengan `pnpm storage:setup`.
+- Upload lewat Server Action setelah `requireRole(["admin"])`, memakai klien secret key (`src/lib/supabase/admin.ts`). Batas body Server Action 4,4 MB (`next.config.ts`), di bawah batas body Vercel ±4,5 MB.
+- `photo_path` berisi path Storage (`menu/<slug>-<timestamp>.webp`) atau path lokal bawaan (`/images/menu/...`). URL dibentuk oleh `photoSrc()` di `src/lib/photos.ts`. Foto lama di Storage dihapus saat diganti.
+
 ## Variabel lingkungan
 
 Semua env (kecuali `CRON_SECRET`) diisi otomatis oleh integrasi **Supabase di Vercel Marketplace** (resource `burnt-butter-db`, paket Free, region `sin1`). Kode membacanya lewat `src/db/url.ts`, yang juga membuang parameter `supa`/`pgbouncer` yang tidak dikenal postgres-js.

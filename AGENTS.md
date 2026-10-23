@@ -74,11 +74,12 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 
 ## Selesai berarti
 
-1. `pnpm typecheck`, `pnpm lint`, `pnpm test` lulus.
-2. Layar dicek di browser pada lebar 1536 px dan 1024 px, dan dibandingkan dengan gambar desain.
-3. Akses role dicek: role yang tidak berhak tidak bisa melihat atau menjalankan aksi.
-4. Status issue di Multica diperbarui (`--no-start`) dan diberi komentar.
-5. Commit hanya bila pengguna meminta. Pesan commit menyebut kode issue, contoh: `feat(pesanan): tabel daftar pesanan (BELL-17)`.
+1. `pnpm typecheck`, `pnpm lint`, `pnpm test`, dan **`pnpm build`** lulus. Build menangkap error prerender Cache Components (mis. `usePathname()`/`useSearchParams()` di luar `<Suspense>` pada route dinamis) yang tidak muncul di `pnpm dev`.
+2. `pnpm test:e2e` lulus. Test berjalan berurutan (`workers: 1`) karena memakai database produksi. Data uji wajib diberi awalan `QA …` dan dihapus oleh test itu sendiri.
+3. Layar dicek di browser (screenshot e2e) pada lebar 1536 px, 1280 px, dan ponsel, lalu dibandingkan dengan gambar desain.
+4. Akses role dicek: role yang tidak berhak tidak bisa melihat atau menjalankan aksi.
+5. Status issue di Multica diperbarui (`--no-start`) dan diberi komentar.
+6. Commit hanya bila pengguna meminta. Pesan commit menyebut kode issue, contoh: `feat(pesanan): tabel daftar pesanan (BELL-17)`.
 
 ## Glosarium
 

@@ -67,6 +67,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 ## Aturan UI
 
 - Cocokkan dengan gambar di `docs/design/` dan token di `docs/DESIGN.md`. Jangan memakai warna di luar token.
+- Komponen bersama ada di `src/components/app/` (navbar, `PageHeader`, `KpiCard`, dll.). Tambahkan contohnya di halaman pratinjau `/dev/komponen` (hanya ada di `pnpm dev`, khusus Admin) supaya bisa dicek visual dan lewat e2e.
 - Status selalu tampil sebagai ikon + teks, tidak hanya warna. Fokus keyboard harus terlihat. Kontras teks minimal 4.5:1.
 - Layar yang belum ada desainnya (form hasil Isi Otomatis, Pembayaran, Produksi, dll.): ikuti pola layar yang sudah ada, lalu catat keputusan desainnya di DESIGN.md.
 - Claude Code: untuk pekerjaan UI, pakai skill `frontend-design`, `impeccable` (jalankan critique/polish sebelum selesai), `ui-ux-pro-max` (checklist UX/aksesibilitas), dan `motion-dev-animations` sesuai instruksi global pengguna. Desain di repo ini adalah brief, jadi skill dipakai untuk eksekusi dan review, bukan untuk mengganti arah visual.

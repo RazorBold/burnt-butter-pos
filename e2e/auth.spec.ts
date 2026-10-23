@@ -41,7 +41,8 @@ test("login, kembali ke tujuan, lalu keluar", async ({ page }) => {
   await page.goto("/login")
   await expect(page).toHaveURL(/\/dashboard$/)
 
-  await page.getByRole("button", { name: "Keluar" }).click()
+  await page.getByRole("button", { name: /^Akun / }).click()
+  await page.getByRole("menuitem", { name: "Keluar" }).click()
   await expect(page).toHaveURL(/\/login/)
   await page.goto("/dashboard")
   await expect(page).toHaveURL(/\/login/)

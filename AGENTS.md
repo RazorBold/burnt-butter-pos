@@ -32,7 +32,7 @@ pnpm db:seed        # isi data contoh dari gambar desain
 pnpm db:studio      # Drizzle Studio
 ```
 
-Playwright (`pnpm test:e2e`) belum dipasang; tambahkan saat e2e pertama dibuat. Env lokal diambil dengan `vercel env pull .env.local`. Database lokal = database produksi (Supabase free, satu project), jadi hati-hati dengan data uji. Tanpa `.env.local`, `pnpm dev` tetap jalan (proxy melewatkan auth di mode dev), tapi halaman yang membaca DB akan error.
+E2E: `pnpm test:e2e` (Playwright, memakai Chrome terpasang, folder `e2e/`). Test yang butuh login membaca `E2E_EMAIL`/`E2E_PASSWORD` dari env dan dilewati bila kosong; akun QA `qa-admin@example.com` (role admin) disiapkan untuk ini. Akun staf dibuat dengan `pnpm user:create --email … --name … --role …` (lihat `scripts/create-user.ts`). Env lokal diambil dengan `vercel env pull .env.local`. Database lokal = database produksi (Supabase free, satu project), jadi hati-hati dengan data uji. Tanpa `.env.local`, `pnpm dev` tetap jalan (proxy melewatkan auth di mode dev), tapi halaman yang membaca DB akan error.
 
 ## Backlog di Multica
 
@@ -51,6 +51,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 - **Bahasa:** teks UI, URL, dan pesan error untuk pengguna dalam Bahasa Indonesia. Identifier kode, tabel, dan kolom dalam bahasa Inggris (lihat glosarium).
 - **Next 16 berbeda dari yang kamu tahu:** baca panduan terkait di `node_modules/next/dist/docs/` sebelum memakai API Next. Middleware sekarang bernama `src/proxy.ts`.
 - **Cache Components aktif** (`cacheComponents: true`). Data dinamis secara default. Komponen yang membaca `cookies()`, sesi, atau DB per request harus berada di dalam `<Suspense>`, dengan skeleton sebagai fallback. Kalau tidak, build error. Jangan `await` sesi di level atas layout. Panduan: `01-app/02-guides/authentication-with-cache-components.md`.
+- **Auth:** halaman memanggil `requirePageAccess("/path")`, Server Action memanggil `requireRole([...])` (keduanya di `src/lib/auth.ts`, aturan role di `src/lib/access.ts`). Klien Supabase server sudah memanggil `connection()`, karena auth-js memakai `Date.now()` yang kalau tidak akan ditandai "Blocking Route" oleh Cache Components. Cek overlay dev Next ("N · Issue") sebelum menganggap halaman selesai.
 - **Server dulu:** halaman adalah Server Component. `"use client"` hanya untuk komponen yang butuh state atau event.
 - **Database:** pakai `getDb()` dari `@/db` (koneksi dibuat saat pertama dipakai). Script Node di luar Next (seed, tool) membuat klien sendiri dan tidak boleh mengimpor `@/db`, karena modul itu memakai `server-only`.
 - **Mutasi** lewat Server Action di `src/features/<modul>/actions.ts`. Setiap action: `requireRole()` → validasi zod → transaksi Drizzle → `revalidatePath`.

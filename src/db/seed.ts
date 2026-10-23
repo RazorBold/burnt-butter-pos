@@ -81,7 +81,8 @@ function photoPathFor(menu: MenuSeed) {
 
 async function main() {
   const url = directDatabaseUrl()
-  if (!url) throw new Error("POSTGRES_URL_NON_POOLING belum ada di .env.local (jalankan vercel env pull)")
+  if (!url)
+    throw new Error("POSTGRES_URL_NON_POOLING belum ada di .env.local (jalankan vercel env pull)")
 
   const client = postgres(url, { prepare: false, max: 1 })
   const db = drizzle(client, { schema })

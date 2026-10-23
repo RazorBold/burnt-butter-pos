@@ -2,11 +2,15 @@ import "server-only"
 
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import { connection } from "next/server"
 
 import { supabaseEnv } from "./env"
 
 /** Klien Supabase untuk Server Component, Server Action, dan Route Handler. */
 export async function createSupabaseServerClient() {
+  // auth-js memanggil Date.now() saat memuat sesi. Dengan Cache Components, nilai waktu
+  // saat prerender ditandai "Blocking Route"; connection() menandai bagian ini per-request.
+  await connection()
   const { url, key } = supabaseEnv()
   const cookieStore = await cookies()
 

@@ -32,7 +32,7 @@ pnpm db:seed        # isi data contoh dari gambar desain
 pnpm db:studio      # Drizzle Studio
 ```
 
-Playwright (`pnpm test:e2e`) belum dipasang; tambahkan saat e2e pertama dibuat. Tanpa `.env.local`, `pnpm dev` tetap jalan (proxy melewatkan auth di mode dev), tapi halaman yang membaca DB akan error.
+Playwright (`pnpm test:e2e`) belum dipasang; tambahkan saat e2e pertama dibuat. Env lokal diambil dengan `vercel env pull .env.local`. Database lokal = database produksi (Supabase free, satu project), jadi hati-hati dengan data uji. Tanpa `.env.local`, `pnpm dev` tetap jalan (proxy melewatkan auth di mode dev), tapi halaman yang membaca DB akan error.
 
 ## Backlog di Multica
 

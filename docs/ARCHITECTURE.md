@@ -123,23 +123,25 @@ Hal-hal yang masih menunggu keputusan di Multica BELL-37 (status bayar, pemotong
 
 ## Variabel lingkungan
 
+Semua env (kecuali `CRON_SECRET`) diisi otomatis oleh integrasi **Supabase di Vercel Marketplace** (resource `burnt-butter-db`, paket Free, region `sin1`). Kode membacanya lewat `src/db/url.ts`, yang juga membuang parameter `supa`/`pgbouncer` yang tidak dikenal postgres-js.
+
 | Nama | Dipakai untuk |
 | --- | --- |
-| `DATABASE_URL` | Aplikasi: Supabase pooler mode transaction (port 6543), `prepare: false` |
-| `DIRECT_DATABASE_URL` | drizzle-kit migrate: koneksi session/direct (port 5432) |
+| `POSTGRES_URL` | Aplikasi: pooler mode transaction (port 6543), `prepare: false` |
+| `POSTGRES_URL_NON_POOLING` | drizzle-kit migrate & seed: koneksi session (port 5432) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Klien Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Klien Supabase (auth di browser) |
 | `SUPABASE_SECRET_KEY` | Server saja: membuat user, upload dengan hak admin |
-| `CRON_SECRET` | Melindungi `/api/cron/keep-alive` |
+| `CRON_SECRET` | Production saja, ditambahkan manual. Melindungi `/api/cron/keep-alive` |
+| `DATABASE_URL`, `DIRECT_DATABASE_URL` | Opsional: menimpa dua URL di atas untuk setup di luar Vercel |
 
-Simpan di `.env.local` (tidak di-commit) dan di Vercel Project Settings. `.env.example` berisi nama-nama di atas tanpa nilai.
+Lokal: `vercel env pull .env.local` (project sudah di-link lewat `.vercel/`). `.env.local` tidak di-commit.
 
 ## Deploy
 
-1. Buat project Supabase (region Singapore). Ambil connection string pooler + direct dan kedua key.
-2. Jalankan `pnpm db:migrate` lalu `pnpm db:seed` dari lokal ke database Supabase.
-3. Push repo ke GitHub, lalu Import di Vercel. Isi env vars dan set region fungsi `sin1`.
-4. Tambahkan `vercel.json` berisi cron harian untuk `/api/cron/keep-alive`.
-5. Tiap push ke `main` = deploy produksi; tiap PR = preview deploy.
+Project Vercel `razorbolds-projects/burnt-butter-pos` tersambung ke repo GitHub `RazorBold/burnt-butter-pos`.
 
-Migrasi tidak dijalankan otomatis saat build. Jalankan `pnpm db:migrate` secara manual sebelum merge perubahan skema.
+- Push ke `main` = deploy produksi; tiap PR = preview deploy.
+- Region fungsi `sin1` dan cron harian diatur di `vercel.json`.
+- Migrasi **tidak** dijalankan otomatis saat build. Jalankan `pnpm db:migrate` dari lokal sebelum merge perubahan skema, lalu `pnpm db:seed` bila ada data master baru.
+- Preview dan Production memakai database yang sama (satu project Supabase gratis). Hati-hati menguji aksi yang mengubah data di preview.

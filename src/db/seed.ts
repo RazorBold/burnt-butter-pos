@@ -8,8 +8,9 @@ import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 
 import * as schema from "./schema"
+import { directDatabaseUrl } from "./url"
 
-config({ path: ".env.local" })
+config({ path: ".env.local", quiet: true })
 
 type MenuSeed = {
   name: string
@@ -79,8 +80,8 @@ function photoPathFor(menu: MenuSeed) {
 }
 
 async function main() {
-  const url = process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL
-  if (!url) throw new Error("DIRECT_DATABASE_URL / DATABASE_URL belum diisi di .env.local")
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("POSTGRES_URL_NON_POOLING belum ada di .env.local (jalankan vercel env pull)")
 
   const client = postgres(url, { prepare: false, max: 1 })
   const db = drizzle(client, { schema })

@@ -4,10 +4,11 @@ import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 
 import * as schema from "./schema"
+import { pooledDatabaseUrl } from "./url"
 
 function createDb() {
-  const url = process.env.DATABASE_URL
-  if (!url) throw new Error("DATABASE_URL belum diisi. Lihat .env.example.")
+  const url = pooledDatabaseUrl()
+  if (!url) throw new Error("POSTGRES_URL / DATABASE_URL belum diisi. Lihat .env.example.")
   // Pooler Supabase mode transaction tidak mendukung prepared statement.
   return drizzle(postgres(url, { prepare: false, max: 5 }), { schema })
 }

@@ -1,0 +1,152 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Token dari docs/DESIGN.md (sampling gambar desain). Aplikasi hanya punya tema terang. */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta);
+  --font-heading: var(--font-jakarta);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Brand */
+  --color-page: var(--bg-page);
+  --color-nav: var(--bg-nav);
+  --color-nav-active: var(--bg-nav-active);
+  --color-icon-bg: var(--bg-icon);
+  --color-track: var(--bg-track);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-text-strong: var(--text-strong);
+  --color-text-body: var(--text-body);
+
+  /* Badge tipe & status */
+  --color-personal: #fbe8d4;
+  --color-personal-fg: #552613;
+  --color-hadiah: #fededd;
+  --color-hadiah-fg: #b12227;
+  --color-status-baru: #d3eaf5;
+  --color-status-baru-fg: #0b63a9;
+  --color-status-diproses: #fbeacb;
+  --color-status-diproses-fg: #884913;
+  --color-status-siap: #dbf1d6;
+  --color-status-siap-fg: #155a15;
+  --color-status-dikirim: #ebeded;
+  --color-status-dikirim-fg: #323c46;
+  --color-status-selesai: #dbf0d4;
+  --color-status-selesai-fg: #155c16;
+  --color-trend-up: #ddf2d9;
+  --color-trend-up-fg: #13711e;
+  --color-trend-down: #fde5e2;
+  --color-trend-down-fg: #9e1111;
+
+  /* Chart */
+  --color-chart-baru: #bf926f;
+  --color-chart-diproses: #f1af4c;
+  --color-chart-siap-kirim: #64a069;
+  --color-chart-dikirim: #9fd2ea;
+  --color-chart-selesai: #7c4627;
+  --color-chart-hadiah: #fb8481;
+  --color-chart-light: #f3d2b4;
+}
+
+:root {
+  --bg-page: #f6f0ea;
+  --bg-card: #fbf7f3;
+  --bg-nav: #fcf9f4;
+  --bg-nav-active: #f9ede1;
+  --bg-icon: #f9e6d3;
+  --bg-track: #efe4d9;
+  --border-subtle: #f1efec;
+  --brand: #754122;
+  --brand-ink: #4c1c04;
+  --text-strong: #282c32;
+  --text-body: #596068;
+  --text-muted: #5a6066;
+
+  --background: var(--bg-page);
+  --foreground: var(--text-strong);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-strong);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-strong);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-nav-active);
+  --secondary-foreground: var(--brand-ink);
+  --muted: var(--bg-nav-active);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-nav-active);
+  --accent-foreground: var(--brand-ink);
+  --destructive: #9e1111;
+  --border: #eae1d8;
+  --input: #e6dcd2;
+  --ring: #b98a6a;
+  --chart-1: #7c4627;
+  --chart-2: #bf926f;
+  --chart-3: #f1af4c;
+  --chart-4: #64a069;
+  --chart-5: #fb8481;
+  --radius: 0.625rem;
+  --sidebar: var(--bg-page);
+  --sidebar-foreground: var(--text-strong);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--bg-nav-active);
+  --sidebar-accent-foreground: var(--brand-ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}

@@ -16,6 +16,14 @@ describe("canAccessPath", () => {
     expect(canAccessPath("owner", "/laporan/ringkasan")).toBe(true)
   })
 
+  it("User / Staff hanya untuk Admin, Master Data lain untuk semua", () => {
+    expect(canAccessPath("admin", "/master-data/user-staff")).toBe(true)
+    for (const role of ["kasir", "produksi", "owner"] as const) {
+      expect(canAccessPath(role, "/master-data/user-staff")).toBe(false)
+      expect(canAccessPath(role, "/master-data/kurir")).toBe(true)
+    }
+  })
+
   it("mencocokkan per segmen, bukan awalan teks", () => {
     expect(canAccessPath("kasir", "/pesanan-lama")).toBe(false)
   })

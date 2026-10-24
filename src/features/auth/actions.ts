@@ -10,7 +10,7 @@ import { safeNextPath } from "@/lib/access"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 const signInSchema = z.object({
-  email: z.email("Format email belum benar.").trim().toLowerCase(),
+  email: z.string().trim().toLowerCase().pipe(z.email("Format email belum benar.")),
   password: z.string().min(1, "Kata sandi wajib diisi."),
   next: z.string().optional(),
 })
@@ -41,9 +41,11 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
     const message =
       error?.code === "invalid_credentials"
         ? "Email atau kata sandi salah."
-        : error?.status === 429
-          ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
-          : "Belum bisa masuk. Coba lagi sebentar lagi."
+        : error?.code === "user_banned"
+          ? "Akun ini sedang dinonaktifkan. Hubungi Admin."
+          : error?.status === 429
+            ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
+            : "Belum bisa masuk. Coba lagi sebentar lagi."
     return { error: message, email }
   }
 

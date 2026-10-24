@@ -1,7 +1,7 @@
 "use client"
 
 import { EllipsisVertical, Eye, EyeOff, Pencil } from "lucide-react"
-import { type ComponentProps, useTransition } from "react"
+import { type ComponentProps, type ReactNode, useTransition } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -30,15 +30,18 @@ export function EditIconButton({ name, ...props }: { name: string } & ComponentP
 /**
  * Menu ⋮ dengan Aktifkan/Nonaktifkan. `toggle` adalah Server Action yang sudah di-bind dengan
  * id dan status tujuan di halaman server, mis. `setCourierActive.bind(null, id, !isActive)`.
+ * Tanpa `toggle`, item itu tidak ditampilkan; `children` adalah item tambahan di atasnya.
  */
 export function ActiveToggleMenu({
   name,
   isActive,
   toggle,
+  children,
 }: {
   name: string
   isActive: boolean
-  toggle: () => Promise<{ ok: boolean; message: string }>
+  toggle?: () => Promise<{ ok: boolean; message: string }>
+  children?: ReactNode
 }) {
   const [pending, startTransition] = useTransition()
 
@@ -55,20 +58,23 @@ export function ActiveToggleMenu({
           <EllipsisVertical className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem
-          className="h-10"
-          onSelect={() =>
-            startTransition(async () => {
-              const result = await toggle()
-              if (result.ok) toast.success(result.message)
-              else toast.error(result.message)
-            })
-          }
-        >
-          {isActive ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
-          {isActive ? "Nonaktifkan" : "Aktifkan"}
-        </DropdownMenuItem>
+      <DropdownMenuContent align="end" className="w-52">
+        {children}
+        {toggle && (
+          <DropdownMenuItem
+            className="h-10"
+            onSelect={() =>
+              startTransition(async () => {
+                const result = await toggle()
+                if (result.ok) toast.success(result.message)
+                else toast.error(result.message)
+              })
+            }
+          >
+            {isActive ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+            {isActive ? "Nonaktifkan" : "Aktifkan"}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

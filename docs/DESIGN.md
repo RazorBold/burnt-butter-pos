@@ -113,6 +113,10 @@ Angka uang memakai `tabular-nums` dengan format `Rp 4.780.000`.
 
 Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar, Table, Tabs, DropdownMenu, Checkbox, Badge), lalu sesuaikan dengan token di atas.
 
+## Keputusan untuk layar tanpa desain
+
+- **User / Staff** (desain hanya menunjukkan tabel Nama, Role, Status): nama ditemani email di bawahnya, karena email dipakai untuk masuk. Ada kolom Terakhir masuk, dan akun sendiri diberi tanda "Kamu". Role dipilih dari kartu radio 2×2 (satu kolom di ponsel); tiap kartu menyebut menu yang bisa dibuka role itu. Kata sandi dibuat otomatis dan ditampilkan sekali dalam kartu kredensial dengan tombol salin, baik saat akun dibuat maupun saat diatur ulang. Halaman dan menu sidebar ini hanya untuk Admin.
+
 ## Gerak
 
 Hampir semua statis. Cukup satu momen: angka KPI dan chart muncul halus saat halaman dimuat. Selebihnya hanya transisi hover/fokus ±150 ms. Panel detail dan modal masuk dengan fade + slide pendek. Semua animasi dimatikan saat `prefers-reduced-motion: reduce`.

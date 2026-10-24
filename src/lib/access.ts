@@ -11,6 +11,14 @@ export const ROLE_LABEL: Record<Role, string> = {
   owner: "Owner",
 }
 
+/** Ringkasan hak akses per role, ditampilkan di form User / Staff. Selaras dengan SECTION_ACCESS. */
+export const ROLE_DESCRIPTION: Record<Role, string> = {
+  admin: "Semua menu, termasuk mengelola akun staf.",
+  kasir: "Dashboard, Pesanan, Pembayaran, Pengiriman, dan lihat Master Data.",
+  produksi: "Dashboard, Produksi, Stok Packaging, dan lihat Master Data.",
+  owner: "Dashboard, Laporan, dan lihat Master Data.",
+}
+
 const ALL: readonly Role[] = ROLES
 
 /** Halaman utama aplikasi dan role yang boleh membukanya. Urutan = urutan navbar. */
@@ -27,6 +35,9 @@ export const SECTION_ACCESS = {
 
 export type Section = keyof typeof SECTION_ACCESS
 
+/** Bagian di dalam halaman utama yang hanya boleh dibuka Admin (berisi email dan akses akun). */
+export const ADMIN_ONLY_PATHS = ["/master-data/user-staff"] as const
+
 /** Role yang boleh membuat pesanan lewat tombol "Input Pesanan". */
 export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir"]
 
@@ -38,6 +49,9 @@ function sectionOf(pathname: string): Section | undefined {
 
 /** Path yang tidak terdaftar di SECTION_ACCESS hanya boleh dibuka Admin. */
 export function canAccessPath(role: Role, pathname: string): boolean {
+  if (ADMIN_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+    return role === "admin"
+  }
   const section = sectionOf(pathname)
   if (!section) return role === "admin"
   return (SECTION_ACCESS[section] as readonly Role[]).includes(role)

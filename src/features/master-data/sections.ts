@@ -16,6 +16,8 @@ export type MasterDataSection = {
   icon: LucideIcon
   /** Keterangan untuk halaman yang belum dibangun. */
   planned: string
+  /** Hanya tampil di sidebar untuk Admin (halamannya juga dijaga ADMIN_ONLY_PATHS). */
+  adminOnly?: boolean
 }
 
 /** Urutan sidebar mengikuti docs/design/06-master-data.png. */
@@ -60,6 +62,7 @@ export const MASTER_DATA_SECTIONS: MasterDataSection[] = [
     slug: "user-staff",
     label: "User / Staff",
     icon: UserRound,
+    adminOnly: true,
     planned:
       "Akun staf, role, dan status aktif. Admin bisa menambah akun dan mengatur ulang kata sandi.",
   },

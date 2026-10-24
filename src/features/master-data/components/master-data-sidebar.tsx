@@ -7,12 +7,19 @@ import { MASTER_DATA_SECTIONS } from "@/features/master-data/sections"
 import { cn } from "@/lib/utils"
 
 /** Sidebar yang menandai bagian aktif. Membaca URL, jadi dibungkus <Suspense> di layout. */
-export function MasterDataSidebar() {
-  return <MasterDataNav pathname={usePathname()} />
+export function MasterDataSidebar({ isAdmin }: { isAdmin: boolean }) {
+  return <MasterDataNav pathname={usePathname()} isAdmin={isAdmin} />
 }
 
 /** Tampilan sidebar; tanpa pathname (fallback Suspense) tidak ada bagian yang ditandai aktif. */
-export function MasterDataNav({ pathname }: { pathname: string | null }) {
+export function MasterDataNav({
+  pathname,
+  isAdmin,
+}: {
+  pathname: string | null
+  isAdmin: boolean
+}) {
+  const sections = MASTER_DATA_SECTIONS.filter((section) => isAdmin || !section.adminOnly)
   return (
     <aside className="lg:w-[208px] lg:shrink-0">
       <p className="hidden text-xl font-bold text-brand-ink lg:block">Master Data</p>
@@ -21,7 +28,7 @@ export function MasterDataNav({ pathname }: { pathname: string | null }) {
         className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:mt-4 lg:px-0"
       >
         <ul className="flex gap-2 lg:flex-col lg:gap-1">
-          {MASTER_DATA_SECTIONS.map((section) => {
+          {sections.map((section) => {
             const href = `/master-data/${section.slug}`
             const active = pathname === href
             return (

@@ -1,5 +1,6 @@
 // Membuat (atau memperbarui) akun staf: user Supabase Auth + baris profiles.
-// Dipakai untuk akun Admin pertama; setelah Master Data › User / Staff jadi, Admin membuat akun dari UI.
+// Dipakai untuk akun Admin pertama dan akun QA. Akun staf sehari-hari dibuat Admin di
+// Master Data › User / Staff.
 //
 //   pnpm user:create --email admin@contoh.com --name "Admin" --role admin
 //   pnpm user:create --email kasir@contoh.com --name "Kasir" --role kasir --password "rahasia123"
@@ -7,7 +8,6 @@
 //
 // Tanpa --password, kata sandi acak dibuat dan dicetak sekali di terminal.
 
-import { randomBytes } from "node:crypto"
 import { parseArgs } from "node:util"
 
 import { createClient } from "@supabase/supabase-js"
@@ -16,6 +16,7 @@ import postgres from "postgres"
 
 import { ROLES, type Role } from "../src/lib/access"
 import { directDatabaseUrl } from "../src/db/url"
+import { generatePassword } from "../src/lib/password"
 
 config({ path: ".env.local", quiet: true })
 
@@ -32,12 +33,6 @@ const { values } = parseArgs({
 function fail(message: string): never {
   console.error(`✗ ${message}`)
   process.exit(1)
-}
-
-function generatePassword() {
-  // 16 karakter tanpa huruf yang mudah tertukar (0/O, 1/l/I).
-  const alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-  return Array.from(randomBytes(16), (byte) => alphabet[byte % alphabet.length]).join("")
 }
 
 async function main() {

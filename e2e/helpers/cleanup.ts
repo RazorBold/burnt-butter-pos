@@ -7,6 +7,24 @@ import { PHOTO_BUCKET } from "../../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
 
+/** Hapus satu akun staf uji (email qa-staff-…@example.com) dari Auth; profilnya ikut terhapus. */
+export async function removeStaffByEmail(email: string) {
+  if (!/^qa-staff-[\w-]+@example\.com$/.test(email))
+    throw new Error("Hanya akun uji (qa-staff-…@example.com) yang boleh dihapus")
+  const url = directDatabaseUrl()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const secret = process.env.SUPABASE_SECRET_KEY
+  if (!url || !supabaseUrl || !secret) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    const rows = await sql<{ id: string }[]>`select id from auth.users where email = ${email}`
+    const admin = createClient(supabaseUrl, secret, { auth: { persistSession: false } })
+    for (const row of rows) await admin.auth.admin.deleteUser(row.id)
+  } finally {
+    await sql.end()
+  }
+}
+
 /** Hapus satu metode pembayaran uji (nama diawali "QA Metode "). */
 export async function removePaymentMethodByName(name: string) {
   if (!name.startsWith("QA Metode "))

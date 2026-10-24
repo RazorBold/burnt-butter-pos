@@ -214,9 +214,9 @@ Aturan bisnis yang belum jelas:
 
 - [x] Format pesan WA yang dipakai customer: ada template baku atau teks bebas? **Template baku, dua jenis (Personal dan Hadiah)**; teksnya ada di `src/lib/wa-parser/templates.ts`.
 - [x] Pesanan Hadiah butuh data tambahan (nama penerima, kartu ucapan, alamat berbeda)? **Ya**: Nama Penerima, No. Telp, Alamat (penerima), Nama Pengirim, dan kartu ucapan To / Wishes / From.
-- [ ] Pesanan Hadiah: siapa yang dicatat sebagai customer, penerima (nomornya ada di template) atau pengirim (nomor WA chat, tidak ada di template)?
-- [ ] Bundle of 3: isinya bebas pilih 3 menu atau tetap? Template hanya meminta jumlah bundle.
-- [ ] Pembayaran: lunas di depan, DP, atau bayar di tempat? Status bayar perlu kolom di tabel Pesanan?
+- [x] Pesanan Hadiah: siapa yang dicatat sebagai customer, penerima (nomornya ada di template) atau pengirim (nomor WA chat, tidak ada di template)? **Penerima.** Nama pengirim dan kartu ucapan disimpan di pesanan.
+- [x] Bundle of 3: isinya bebas pilih 3 menu atau tetap? Template hanya meminta jumlah bundle. **Cukup jumlah**: satu item Rp 180.000; permintaan isi ditulis di Request.
+- [x] Pembayaran: status saat pesanan disimpan? **Belum bayar.** Pembayaran dicatat terpisah di modul Pembayaran (tabel `payments`); status bayar dihitung dari situ. (DP vs lunas masih terbuka untuk modul Pembayaran.)
 - [ ] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa?
 - [ ] Stok packaging dipotong saat pesanan dibuat, diproses, atau dikirim? Kapasitas (200, 100) disimpan di mana?
 - [ ] Rekap Produksi dihitung per tanggal kirim atau tanggal pesan?

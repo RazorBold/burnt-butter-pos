@@ -1,6 +1,14 @@
 "use client"
 
-import { CircleAlert, MessageCircle, RotateCcw, WandSparkles } from "lucide-react"
+import {
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  MessageCircle,
+  RotateCcw,
+  WandSparkles,
+} from "lucide-react"
+import Link from "next/link"
 import {
   cloneElement,
   type ReactElement,
@@ -9,10 +17,20 @@ import {
   useEffect,
   useId,
   useState,
+  useTransition,
 } from "react"
+import { toast } from "sonner"
 
 import { SegmentedControl } from "@/components/app/segmented-control"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { createOrder } from "@/features/orders/actions"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -133,6 +151,28 @@ export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
     setDraft(EMPTY_DRAFT)
     setFlagged(new Set())
     setSummary(null)
+  }
+
+  const [saving, startSaving] = useTransition()
+  const [saved, setSaved] = useState<{ orderNo: string; customerName: string; total: number }>()
+
+  function save() {
+    startSaving(async () => {
+      const result = await createOrder({ draft, waText })
+      if (result.ok) {
+        setSaved(result)
+        return
+      }
+      toast.error(result.message)
+      // Isian yang ditolak server ditandai sama seperti hasil Isi Otomatis yang tidak terbaca.
+      if (result.errors) setFlagged(new Set(Object.keys(result.errors) as DraftField[]))
+    })
+  }
+
+  /** Setelah tersimpan, form dikosongkan supaya pesanan yang sama tidak tersimpan dua kali. */
+  function closeSaved() {
+    setSaved(undefined)
+    reset()
   }
 
   const issues = draftIssues(draft, today)
@@ -442,18 +482,63 @@ export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
             )}
             <Button
               type="button"
-              disabled
-              aria-describedby="save-note"
+              onClick={save}
+              disabled={saving || pending.length > 0}
               className="h-11 rounded-lg px-6"
             >
-              Simpan pesanan
+              {saving && <LoaderCircle className="animate-spin" aria-hidden />}
+              {saving ? "Menyimpan…" : "Simpan pesanan"}
             </Button>
-            <p id="save-note" className="hidden w-full text-right text-[13px] text-text-body sm:block">
-              Menyimpan pesanan diaktifkan setelah form ini disetujui.
-            </p>
           </div>
         </div>
       </section>
+
+      <Dialog open={Boolean(saved)} onOpenChange={(open) => !open && closeSaved()}>
+        <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
+          <DialogHeader className="items-start text-left">
+            <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-status-selesai text-status-selesai-fg">
+              <CircleCheck className="size-6" aria-hidden />
+            </span>
+            <DialogTitle className="text-2xl font-bold text-brand-ink">
+              Pesanan tersimpan
+            </DialogTitle>
+            <DialogDescription className="text-text-body">
+              Status Baru, belum bayar. Pembayaran dicatat di menu Pembayaran.
+            </DialogDescription>
+          </DialogHeader>
+          {saved && (
+            <dl className="mt-5 divide-y divide-border rounded-lg border border-border bg-white">
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-text-body">No. pesanan</dt>
+                <dd
+                  className="font-semibold text-brand-ink tabular-nums"
+                  data-testid="saved-order-no"
+                >
+                  {saved.orderNo}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-text-body">Customer</dt>
+                <dd className="text-right font-medium text-text-strong">{saved.customerName}</dd>
+              </div>
+              <div className="flex justify-between gap-4 px-4 py-3">
+                <dt className="text-text-body">Total</dt>
+                <dd className="font-medium text-text-strong tabular-nums">
+                  {formatRupiah(saved.total)}
+                </dd>
+              </div>
+            </dl>
+          )}
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <Button asChild variant="outline" className="h-11 rounded-lg bg-white px-5">
+              <Link href="/pesanan">Lihat daftar pesanan</Link>
+            </Button>
+            <Button onClick={closeSaved} className="h-11 rounded-lg px-5">
+              Input pesanan baru
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

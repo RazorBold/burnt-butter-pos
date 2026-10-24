@@ -7,6 +7,71 @@ import { PHOTO_BUCKET } from "../../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
 
+export type SavedOrder = {
+  type: string
+  status: string
+  total: number
+  customer: string
+  sender_name: string | null
+  card_wishes: string | null
+  raw_wa_text: string | null
+  method: string
+  shipment_status: string | null
+  items: number
+  logs: number
+}
+
+/** Ringkasan pesanan tersimpan, untuk memastikan isi database sesuai form. */
+export async function readOrder(orderNo: string): Promise<SavedOrder | undefined> {
+  const url = directDatabaseUrl()
+  if (!url) return undefined
+  const sql = postgres(url, { max: 1 })
+  try {
+    const [row] = await sql<SavedOrder[]>`
+      select o.type, o.status, o.total, c.name as customer, o.sender_name, o.card_wishes,
+        o.raw_wa_text, s.method, s.status as shipment_status,
+        (select count(*)::int from order_items i where i.order_id = o.id) as items,
+        (select count(*)::int from order_status_logs l where l.order_id = o.id) as logs
+      from orders o
+      join customers c on c.id = o.customer_id
+      join shipments s on s.order_id = o.id
+      where o.order_no = ${orderNo}`
+    return row
+  } finally {
+    await sql.end()
+  }
+}
+
+/**
+ * Hapus pesanan uji (customer-nya bernama "QA Customer …") beserta item, pengiriman, log, dan
+ * customer-nya. Penghitung nomor harian dimundurkan bila pesanan ini yang terakhir, supaya
+ * pesanan asli tidak melompat nomornya.
+ */
+export async function removeOrderByNo(orderNo: string) {
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql.begin(async (tx) => {
+      const [order] = await tx<{ id: string; customer_id: string; name: string }[]>`
+        select o.id, o.customer_id, c.name from orders o
+        join customers c on c.id = o.customer_id where o.order_no = ${orderNo}`
+      if (!order) return
+      if (!order.name.startsWith("QA Customer "))
+        throw new Error("Hanya pesanan uji (customer QA Customer …) yang boleh dihapus")
+      await tx`delete from orders where id = ${order.id}`
+      await tx`delete from customers c where c.id = ${order.customer_id}
+        and not exists (select 1 from orders o where o.customer_id = c.id)`
+      const date = `20${orderNo.slice(2, 4)}-${orderNo.slice(4, 6)}-${orderNo.slice(6, 8)}`
+      const seq = Number(orderNo.slice(8))
+      await tx`update order_counters set last_seq = last_seq - 1
+        where date = ${date} and last_seq = ${seq}`
+    })
+  } finally {
+    await sql.end()
+  }
+}
+
 /** Hapus satu customer uji (nama diawali "QA Customer "). */
 export async function removeCustomerByName(name: string) {
   if (!name.startsWith("QA Customer "))

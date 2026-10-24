@@ -84,12 +84,12 @@ Uang disimpan sebagai `integer` dalam rupiah (tanpa desimal). Waktu disimpan seb
 | `customers` | name, phone, address | phone dinormalisasi ke format `08…`; dipakai untuk mencocokkan customer lama |
 | `menus` | name, slug, category, description, photo_path, is_active | category: `pasta`, `dessert`, `bundle`. `photo_path` = `/images/menu/<slug>-large.webp` (bawaan) atau path di Supabase Storage (upload dari Master Data) |
 | `menu_variants` | menu_id, size, price | size: `large`, `regular`, `single` (untuk menu tanpa ukuran) |
-| `orders` | order_no (unik), customer_id, type, status, delivery_date, request, total, raw_wa_text, created_by | type: `personal`, `hadiah`. Status: `baru`, `diproses`, `siap_kirim`, `dikirim`, `selesai`, `dibatalkan` |
+| `orders` | order_no (unik), customer_id, type, status, delivery_date, request, total, raw_wa_text, sender_name, card_to, card_wishes, card_from, created_by | Hadiah: customer = penerima; pengirim + kartu ucapan di kolom `sender_name`/`card_*`. type: `personal`, `hadiah`. Status: `baru`, `diproses`, `siap_kirim`, `dikirim`, `selesai`, `dibatalkan` |
 | `order_items` | order_id, menu_variant_id, qty, unit_price, subtotal | unit_price disalin saat pesanan dibuat, jadi perubahan harga tidak mengubah pesanan lama |
 | `order_counters` | date (PK), last_seq | dipakai membuat `order_no` = `BB` + `YYMMDD` + 3 digit, dalam satu transaksi |
 | `order_status_logs` | order_id, from_status, to_status, changed_by, changed_at | audit trail |
 | `couriers` | name, type, phone, is_active | type: `internal`, `eksternal` |
-| `shipments` | order_id (unik), method, courier_id, slot, status, address_lat, address_lng | method: `kurir_internal`, `instant`, `pick_up`. Slot: `09-12`, `13-17`. Status: `menunggu_kurir`, `siap_dikirim`, `siap_diambil`, `dalam_perjalanan`, `dikirim`, `selesai` |
+| `shipments` | order_id (unik), method, courier_id, slot, status, address_lat, address_lng | method: `kurir_internal`, `instant`, `pick_up`. Slot: `09-12`, `13-17`. Status: `menunggu_kurir`, `siap_dikirim`, `siap_diambil`, `dalam_perjalanan`, `dikirim`, `selesai`. Saat dibuat: Kurir Internal/Instant = `menunggu_kurir`, Pick Up = kosong sampai siap diambil |
 | `payment_methods` | name, type, is_active | type: `bank`, `ewallet`, `cash` |
 | `payments` | order_id, payment_method_id, amount, status, proof_path, paid_at | status: `menunggu`, `lunas`, `ditolak` (menunggu keputusan BELL-37) |
 | `packagings` | name, photo_path, stock, capacity, unit, min_stock | |

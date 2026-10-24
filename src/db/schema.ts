@@ -135,6 +135,11 @@ export const orders = pgTable(
     total: integer("total").notNull(),
     /** Teks WA asli yang ditempel saat Input Pesanan. */
     rawWaText: text("raw_wa_text"),
+    /** Pesanan Hadiah: customer = penerima; pemesan dan kartu ucapan disimpan di sini. */
+    senderName: text("sender_name"),
+    cardTo: text("card_to"),
+    cardWishes: text("card_wishes"),
+    cardFrom: text("card_from"),
     createdBy: uuid("created_by").references(() => profiles.id),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -209,7 +214,11 @@ export const shipments = pgTable(
     courierId: uuid("courier_id").references(() => couriers.id),
     /** Hanya untuk kurir_internal. */
     slot: deliverySlot("slot"),
-    status: shipmentStatus("status").notNull(),
+    /**
+     * Kosong untuk Pick Up sampai pesanan siap diambil. Kurir Internal dan Instant mulai dari
+     * "menunggu_kurir" saat pesanan dibuat.
+     */
+    status: shipmentStatus("status"),
     address: text("address"),
     addressLat: doublePrecision("address_lat"),
     addressLng: doublePrecision("address_lng"),

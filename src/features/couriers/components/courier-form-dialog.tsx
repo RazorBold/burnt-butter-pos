@@ -4,6 +4,7 @@ import { CircleAlert, LoaderCircle } from "lucide-react"
 import { type ReactNode, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { SegmentedControl } from "@/components/app/segmented-control"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -22,7 +23,8 @@ import { COURIER_TYPE_LABEL, COURIER_TYPES, type CourierType } from "@/features/
 import { useActionForm } from "@/hooks/use-action-form"
 import { useFieldErrors } from "@/hooks/use-field-errors"
 import { formatPhone } from "@/lib/phone"
-import { cn } from "@/lib/utils"
+
+const TYPE_OPTIONS = COURIER_TYPES.map((value) => ({ value, label: COURIER_TYPE_LABEL[value] }))
 
 export function CourierFormDialog({
   courier,
@@ -104,29 +106,18 @@ function CourierForm({ courier, onSaved }: { courier?: CourierRow; onSaved: () =
         {fieldError("name")}
       </div>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-text-strong">Tipe</legend>
-        <div role="radiogroup" className="inline-flex rounded-lg border border-border bg-white p-1">
-          {COURIER_TYPES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={type === value}
-              onClick={() => {
-                setType(value)
-                markEdited("type", "phone")
-              }}
-              className={cn(
-                "h-9 rounded-md px-3.5 text-sm font-medium text-text-body outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                type === value && "bg-brand text-white",
-              )}
-            >
-              {COURIER_TYPE_LABEL[value]}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-text-strong">Tipe</p>
+        <SegmentedControl
+          label="Tipe"
+          options={TYPE_OPTIONS}
+          value={type}
+          onChange={(value) => {
+            setType(value)
+            markEdited("type", "phone")
+          }}
+        />
+      </div>
 
       <div className="space-y-1.5">
         <Label htmlFor={`${id}-phone`} className="text-text-strong">

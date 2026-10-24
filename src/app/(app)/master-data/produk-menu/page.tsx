@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Suspense } from "react"
 
 import { ActiveBadge } from "@/components/app/active-badge"
+import { ActiveToggleMenu, EditIconButton } from "@/components/app/row-actions"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -20,9 +21,9 @@ import {
   SectionCardHeader,
   SectionCardSkeleton,
 } from "@/features/master-data/components/section-card"
+import { setMenusActive } from "@/features/menus/actions"
 import { MenuFilters } from "@/features/menus/components/menu-filters"
 import { MenuFormDialog } from "@/features/menus/components/menu-form-dialog"
-import { MenuRowActions } from "@/features/menus/components/menu-row-actions"
 import { listMenus, type MenuRow } from "@/features/menus/queries"
 import { CATEGORY_LABEL, MENU_CATEGORIES, type MenuCategory } from "@/features/menus/schemas"
 import { requirePageAccess } from "@/lib/auth"
@@ -139,7 +140,14 @@ function MenuTable({ menus, canEdit }: { menus: MenuRow[]; canEdit: boolean }) {
                 </TableCell>
                 {canEdit && (
                   <TableCell className="pr-6">
-                    <MenuRowActions menu={menu} />
+                    <div className="flex items-center justify-end gap-1">
+                      <MenuFormDialog menu={menu} trigger={<EditIconButton name={menu.name} />} />
+                      <ActiveToggleMenu
+                        name={menu.name}
+                        isActive={menu.isActive}
+                        toggle={setMenusActive.bind(null, [menu.id], !menu.isActive)}
+                      />
+                    </div>
                   </TableCell>
                 )}
               </TableRow>

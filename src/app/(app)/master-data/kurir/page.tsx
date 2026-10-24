@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 
 import { ActiveBadge } from "@/components/app/active-badge"
+import { ActiveToggleMenu, EditIconButton } from "@/components/app/row-actions"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -12,8 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { setCourierActive } from "@/features/couriers/actions"
 import { CourierFormDialog } from "@/features/couriers/components/courier-form-dialog"
-import { CourierRowActions } from "@/features/couriers/components/courier-row-actions"
 import { listCouriers } from "@/features/couriers/queries"
 import { COURIER_TYPE_LABEL } from "@/features/couriers/schemas"
 import {
@@ -97,7 +98,17 @@ async function CourierSection() {
                   </TableCell>
                   {canEdit && (
                     <TableCell className="pr-6">
-                      <CourierRowActions courier={courier} />
+                      <div className="flex items-center justify-end gap-1">
+                        <CourierFormDialog
+                          courier={courier}
+                          trigger={<EditIconButton name={courier.name} />}
+                        />
+                        <ActiveToggleMenu
+                          name={courier.name}
+                          isActive={courier.isActive}
+                          toggle={setCourierActive.bind(null, courier.id, !courier.isActive)}
+                        />
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>

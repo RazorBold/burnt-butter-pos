@@ -5,6 +5,7 @@ import Image from "next/image"
 import { type ReactNode, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { SegmentedControl } from "@/components/app/segmented-control"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -37,13 +38,17 @@ import {
   PHOTO_TYPES,
 } from "@/features/menus/schemas"
 import { photoSrc } from "@/lib/photos"
-import { cn } from "@/lib/utils"
 
 const rupiah = new Intl.NumberFormat("id-ID")
 const formatDigits = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 8)
   return digits ? rupiah.format(Number(digits)) : ""
 }
+
+const SIZING_OPTIONS = [
+  { value: "two_sizes", label: "Large & Regular" },
+  { value: "single", label: "Satu harga" },
+] as const
 
 export function MenuFormDialog({ menu, trigger }: { menu?: MenuRow; trigger: ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -261,32 +266,16 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-text-strong">Ukuran dan harga</legend>
-        <div role="radiogroup" className="inline-flex rounded-lg border border-border bg-white p-1">
-          {(
-            [
-              ["two_sizes", "Large & Regular"],
-              ["single", "Satu harga"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={sizing === value}
-              onClick={() => {
-                setSizing(value)
-                setSizingTouched(true)
-                markEdited("priceLarge", "priceRegular", "priceSingle")
-              }}
-              className={cn(
-                "h-9 rounded-md px-3.5 text-sm font-medium text-text-body outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                sizing === value && "bg-brand text-white",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="Ukuran dan harga"
+          options={SIZING_OPTIONS}
+          value={sizing}
+          onChange={(value) => {
+            setSizing(value)
+            setSizingTouched(true)
+            markEdited("priceLarge", "priceRegular", "priceSingle")
+          }}
+        />
 
         <div className="grid gap-3 pt-1 sm:grid-cols-2">
           {sizing === "two_sizes" ? (

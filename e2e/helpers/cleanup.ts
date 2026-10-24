@@ -7,6 +7,20 @@ import { PHOTO_BUCKET } from "../../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
 
+/** Hapus satu metode pembayaran uji (nama diawali "QA Metode "). */
+export async function removePaymentMethodByName(name: string) {
+  if (!name.startsWith("QA Metode "))
+    throw new Error("Hanya metode uji (QA Metode …) yang boleh dihapus")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from payment_methods where name = ${name}`
+  } finally {
+    await sql.end()
+  }
+}
+
 /** Hapus satu kurir uji (nama diawali "QA Kurir "). */
 export async function removeCourierByName(name: string) {
   if (!name.startsWith("QA Kurir "))

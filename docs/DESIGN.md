@@ -117,6 +117,10 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
 
 - **User / Staff** (desain hanya menunjukkan tabel Nama, Role, Status): nama ditemani email di bawahnya, karena email dipakai untuk masuk. Ada kolom Terakhir masuk, dan akun sendiri diberi tanda "Kamu". Role dipilih dari kartu radio 2×2 (satu kolom di ponsel); tiap kartu menyebut menu yang bisa dibuka role itu. Kata sandi dibuat otomatis dan ditampilkan sekali dalam kartu kredensial dengan tombol salin, baik saat akun dibuat maupun saat diatur ulang. Halaman dan menu sidebar ini hanya untuk Admin.
 
+- **Customer:** tabel Nama, No. HP, Alamat (dipotong satu baris, lengkap di tooltip), Pesanan, Total Belanja, Pesanan Terakhir, dengan kotak cari di kepala kartu seperti Produk & Menu. Footer paginasi mengikuti 03-pesanan.png ("Menampilkan 1–10 dari 24 …" + nomor halaman, aktif = cokelat penuh) lewat komponen bersama `TablePagination`. Tidak ada status aktif/nonaktif, karena customer hanya catatan.
+- **Pengaturan:** bukan tabel, tapi form di dalam kartu Master Data. Isian dikelompokkan (Profil toko, Lokasi pick-up): judul + keterangan di kiri, isian di kanan, bertumpuk di ponsel. Footer kartu berisi "Terakhir diubah … oleh …" dan tombol Simpan pengaturan.
+- **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
+
 ## Gerak
 
 Hampir semua statis. Cukup satu momen: angka KPI dan chart muncul halus saat halaman dimuat. Selebihnya hanya transisi hover/fokus ±150 ms. Panel detail dan modal masuk dengan fade + slide pendek. Semua animasi dimatikan saat `prefers-reduced-motion: reduce`.

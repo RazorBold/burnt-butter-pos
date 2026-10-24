@@ -2,30 +2,44 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useRef } from "react"
 
 import { MASTER_DATA_SECTIONS } from "@/features/master-data/sections"
+import { canAccessPath, ROLES, type Role } from "@/lib/access"
 import { cn } from "@/lib/utils"
 
 /** Sidebar yang menandai bagian aktif. Membaca URL, jadi dibungkus <Suspense> di layout. */
-export function MasterDataSidebar({ isAdmin }: { isAdmin: boolean }) {
-  return <MasterDataNav pathname={usePathname()} isAdmin={isAdmin} />
+export function MasterDataSidebar({ role }: { role: Role | null }) {
+  return <MasterDataNav pathname={usePathname()} role={role} />
 }
 
-/** Tampilan sidebar; tanpa pathname (fallback Suspense) tidak ada bagian yang ditandai aktif. */
-export function MasterDataNav({
-  pathname,
-  isAdmin,
-}: {
-  pathname: string | null
-  isAdmin: boolean
-}) {
-  const sections = MASTER_DATA_SECTIONS.filter((section) => isAdmin || !section.adminOnly)
+/**
+ * Tampilan sidebar; tanpa pathname (fallback Suspense) tidak ada bagian yang ditandai aktif.
+ * Hanya bagian yang boleh dibuka role ini yang tampil. Tanpa role (fallback), hanya bagian
+ * yang terbuka untuk semua role, supaya menu terbatas tidak sempat terlihat.
+ */
+export function MasterDataNav({ pathname, role }: { pathname: string | null; role: Role | null }) {
+  const sections = MASTER_DATA_SECTIONS.filter((section) => {
+    const href = `/master-data/${section.slug}`
+    return role ? canAccessPath(role, href) : ROLES.every((each) => canAccessPath(each, href))
+  })
+  const navRef = useRef<HTMLElement>(null)
+
+  // Di ponsel sidebar jadi deretan chip yang digulir ke samping: pastikan chip aktif terlihat.
+  // Hanya menggeser deret chip (scrollLeft), tidak menggulir halaman.
+  useEffect(() => {
+    const nav = navRef.current
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return
+    nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2
+  }, [pathname])
   return (
     <aside className="lg:w-[208px] lg:shrink-0">
       <p className="hidden text-xl font-bold text-brand-ink lg:block">Master Data</p>
       <nav
+        ref={navRef}
         aria-label="Bagian Master Data"
-        className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:mt-4 lg:px-0"
+        className="relative -mx-4 overflow-x-auto px-4 lg:mx-0 lg:mt-4 lg:px-0"
       >
         <ul className="flex gap-2 lg:flex-col lg:gap-1">
           {sections.map((section) => {

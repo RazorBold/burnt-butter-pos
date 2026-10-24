@@ -7,6 +7,41 @@ import { PHOTO_BUCKET } from "../../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
 
+/** Hapus satu customer uji (nama diawali "QA Customer "). */
+export async function removeCustomerByName(name: string) {
+  if (!name.startsWith("QA Customer "))
+    throw new Error("Hanya customer uji (QA Customer …) yang boleh dihapus")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from customers where name = ${name}`
+  } finally {
+    await sql.end()
+  }
+}
+
+/**
+ * Simpan isi Pengaturan toko sebelum test dan kembalikan persis sesudahnya (termasuk "belum
+ * pernah disimpan"), karena tabel ini hanya satu baris dan dipakai data asli.
+ */
+export async function snapshotStoreSettings(): Promise<() => Promise<void>> {
+  const url = directDatabaseUrl()
+  if (!url) return async () => {}
+  const sql = postgres(url, { max: 1 })
+  const [row] = await sql<Record<string, unknown>[]>`select * from store_settings where id = 1`
+  await sql.end()
+  return async () => {
+    const restore = postgres(url, { max: 1 })
+    try {
+      await restore`delete from store_settings where id = 1`
+      if (row) await restore`insert into store_settings ${restore(row)}`
+    } finally {
+      await restore.end()
+    }
+  }
+}
+
 /** Hapus satu akun staf uji (email qa-staff-…@example.com) dari Auth; profilnya ikut terhapus. */
 export async function removeStaffByEmail(email: string) {
   if (!/^qa-staff-[\w-]+@example\.com$/.test(email))

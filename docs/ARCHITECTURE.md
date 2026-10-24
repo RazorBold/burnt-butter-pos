@@ -95,6 +95,7 @@ Uang disimpan sebagai `integer` dalam rupiah (tanpa desimal). Waktu disimpan seb
 | `packagings` | name, photo_path, stock, capacity, unit, min_stock | |
 | `raw_materials` | name, unit, stock, min_stock | status Cukup/Menipis/Habis dihitung, tidak disimpan |
 | `stock_movements` | item_type, item_id, direction, qty, order_id, note, created_by | `direction`: `in`, `out` |
+| `store_settings` | store_name, whatsapp, pickup_address, pickup_maps_url, updated_by | Satu baris saja (`id = 1`, dijaga CHECK); dibaca dengan nilai bawaan bila belum disimpan |
 
 ### Data menu (seed)
 
@@ -116,9 +117,9 @@ Hal-hal yang masih menunggu keputusan di Multica BELL-37 (status bayar, pemotong
 
 ## Auth & otorisasi
 
-1. Login email + password lewat Supabase Auth (`src/features/auth/actions.ts`). Tidak ada registrasi publik; Admin membuat user di Master Data › User / Staff (pakai `SUPABASE_SECRET_KEY`, hanya di server). Sampai UI itu jadi, pakai `pnpm user:create`. Matikan juga "Allow new users to sign up" di Supabase Auth settings; walau begitu, user tanpa baris `profiles` aktif tetap ditolak.
+1. Login email + password lewat Supabase Auth (`src/features/auth/actions.ts`). Tidak ada registrasi publik; Admin membuat user di Master Data › User / Staff (pakai `SUPABASE_SECRET_KEY`, hanya di server). Akun nonaktif juga di-ban di Supabase Auth. `pnpm user:create` tetap ada untuk akun Admin pertama dan akun QA. Matikan juga "Allow new users to sign up" di Supabase Auth settings; walau begitu, user tanpa baris `profiles` aktif tetap ditolak.
 2. `proxy.ts` me-refresh sesi (`getClaims()`), mengarahkan pengguna yang belum login ke `/login?next=…`, dan setiap redirect membawa cookie sesi baru beserta header anti-cache.
-3. Halaman memanggil `requirePageAccess(path)`; Server Action memanggil `requireRole([...])`. `getCurrentUser()` memverifikasi JWT dengan `getClaims()` lalu mencocokkan `profiles` (role, `is_active`). Database diakses lewat Drizzle dengan koneksi server, sehingga RLS Supabase **tidak** jadi lapisan pengaman utama. Aktifkan RLS tanpa policy pada semua tabel supaya kunci publishable tidak bisa membaca data.
+3. Akses per halaman ada di `src/lib/access.ts`: `SECTION_ACCESS` untuk menu utama, `SUBSECTION_ACCESS` untuk sub-halaman yang lebih sempit (Customer: Admin/Kasir/Owner; User / Staff dan Pengaturan: Admin). Halaman memanggil `requirePageAccess(path)`; Server Action memanggil `requireRole([...])`. `getCurrentUser()` memverifikasi JWT dengan `getClaims()` lalu mencocokkan `profiles` (role, `is_active`). Database diakses lewat Drizzle dengan koneksi server, sehingga RLS Supabase **tidak** jadi lapisan pengaman utama. Aktifkan RLS tanpa policy pada semua tabel supaya kunci publishable tidak bisa membaca data.
 4. Matriks akses mengikuti tabel *Pengguna & peran* di [PRD.md](PRD.md).
 
 ## File & Storage

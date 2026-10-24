@@ -38,7 +38,7 @@ export default function UserStaffPage() {
 }
 
 async function StaffSection() {
-  // Hanya Admin (lihat ADMIN_ONLY_PATHS): daftar ini memuat email dan akses akun.
+  // Hanya Admin (lihat SUBSECTION_ACCESS): daftar ini memuat email dan akses akun.
   const user = await requirePageAccess("/master-data/user-staff")
   const staff = await listStaff()
 

@@ -24,6 +24,14 @@ describe("canAccessPath", () => {
     }
   })
 
+  it("Customer untuk Admin, Kasir, Owner; Pengaturan hanya Admin", () => {
+    expect(canAccessPath("kasir", "/master-data/customer")).toBe(true)
+    expect(canAccessPath("owner", "/master-data/customer")).toBe(true)
+    expect(canAccessPath("produksi", "/master-data/customer")).toBe(false)
+    expect(canAccessPath("admin", "/master-data/pengaturan")).toBe(true)
+    expect(canAccessPath("kasir", "/master-data/pengaturan")).toBe(false)
+  })
+
   it("mencocokkan per segmen, bukan awalan teks", () => {
     expect(canAccessPath("kasir", "/pesanan-lama")).toBe(false)
   })

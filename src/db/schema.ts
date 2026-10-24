@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import {
   boolean,
+  check,
   date,
   doublePrecision,
   index,
@@ -289,6 +290,25 @@ export const stockMovements = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("stock_movements_item_idx").on(t.itemType, t.itemId)],
+).enableRLS()
+
+// ── Pengaturan ──────────────────────────────────────────────────────────────
+
+/** Profil toko. Selalu tepat satu baris (id = 1); dibaca dengan nilai bawaan bila belum ada. */
+export const storeSettings = pgTable(
+  "store_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    storeName: text("store_name").notNull(),
+    /** Nomor WhatsApp toko, format 08xxxxxxxxxx. */
+    whatsapp: text("whatsapp"),
+    /** Alamat ambil pesanan (Pick Up) dan titik awal rute kurir. */
+    pickupAddress: text("pickup_address"),
+    pickupMapsUrl: text("pickup_maps_url"),
+    updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check("store_settings_single_row", sql`${t.id} = 1`)],
 ).enableRLS()
 
 // ── Relasi (untuk db.query) ─────────────────────────────────────────────────

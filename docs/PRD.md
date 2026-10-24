@@ -118,7 +118,7 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 - **F-63** Kurir & Pengiriman: nama, tipe (Kurir Internal/Eksternal), no. telp, status.
 - **F-64** Metode Pembayaran: nama, tipe (Bank, E-Wallet, Cash), status.
 - **F-65** User / Staff: nama, role, status.
-- **F-66** Customer dan Pengaturan: ada di sidebar, isinya belum didesain.
+- **F-66** Customer dan Pengaturan (desain belum ada; isi diputuskan saat implementasi, lihat DESIGN.md). Customer: nama, no. HP (kunci unik), alamat, jumlah pesanan, total belanja, pesanan terakhir; cari nama/no. HP; dikelola Admin dan Kasir, dilihat Owner, tidak untuk Produksi. Pengaturan (Admin): profil toko, yaitu nama toko, no. WhatsApp, alamat pick-up, dan link Google Maps.
 
 ### Modul tanpa desain
 

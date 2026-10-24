@@ -14,8 +14,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** Ringkasan hak akses per role, ditampilkan di form User / Staff. Selaras dengan SECTION_ACCESS. */
 export const ROLE_DESCRIPTION: Record<Role, string> = {
   admin: "Semua menu, termasuk mengelola akun staf.",
-  kasir: "Dashboard, Pesanan, Pembayaran, Pengiriman, dan lihat Master Data.",
-  produksi: "Dashboard, Produksi, Stok Packaging, dan lihat Master Data.",
+  kasir: "Dashboard, Pesanan, Pembayaran, Pengiriman, Customer, dan lihat Master Data.",
+  produksi: "Dashboard, Produksi, Stok Packaging, dan lihat Master Data (tanpa Customer).",
   owner: "Dashboard, Laporan, dan lihat Master Data.",
 }
 
@@ -35,8 +35,18 @@ export const SECTION_ACCESS = {
 
 export type Section = keyof typeof SECTION_ACCESS
 
-/** Bagian di dalam halaman utama yang hanya boleh dibuka Admin (berisi email dan akses akun). */
-export const ADMIN_ONLY_PATHS = ["/master-data/user-staff"] as const
+/**
+ * Sub-halaman yang aksesnya lebih sempit dari halaman induknya. Diperiksa sebelum SECTION_ACCESS.
+ * Customer berisi data pribadi (no. HP, alamat); User / Staff dan Pengaturan khusus Admin.
+ */
+export const SUBSECTION_ACCESS = {
+  "/master-data/customer": ["admin", "kasir", "owner"],
+  "/master-data/user-staff": ["admin"],
+  "/master-data/pengaturan": ["admin"],
+} as const satisfies Record<string, readonly Role[]>
+
+/** Role yang boleh menambah dan mengubah data customer (Kasir mencatat pesanan dari WA). */
+export const CAN_EDIT_CUSTOMER: readonly Role[] = ["admin", "kasir"]
 
 /** Role yang boleh membuat pesanan lewat tombol "Input Pesanan". */
 export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir"]
@@ -49,9 +59,10 @@ function sectionOf(pathname: string): Section | undefined {
 
 /** Path yang tidak terdaftar di SECTION_ACCESS hanya boleh dibuka Admin. */
 export function canAccessPath(role: Role, pathname: string): boolean {
-  if (ADMIN_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
-    return role === "admin"
-  }
+  const subsection = (Object.keys(SUBSECTION_ACCESS) as (keyof typeof SUBSECTION_ACCESS)[]).find(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  )
+  if (subsection) return (SUBSECTION_ACCESS[subsection] as readonly Role[]).includes(role)
   const section = sectionOf(pathname)
   if (!section) return role === "admin"
   return (SECTION_ACCESS[section] as readonly Role[]).includes(role)

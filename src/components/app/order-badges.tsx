@@ -1,0 +1,62 @@
+import { Check, Tag, X } from "lucide-react"
+
+import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
+import { cn } from "@/lib/utils"
+import type { OrderType } from "@/lib/wa-parser"
+
+const BADGE =
+  "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] font-medium whitespace-nowrap"
+
+/** Badge tipe pesanan: Personal (krem) / Hadiah (merah muda), sesuai 03-pesanan.png. */
+export function TypeBadge({ type, className }: { type: OrderType; className?: string }) {
+  return (
+    <span
+      className={cn(
+        BADGE,
+        type === "hadiah" ? "bg-hadiah text-hadiah-fg" : "bg-personal text-personal-fg",
+        className,
+      )}
+    >
+      {ORDER_TYPE_LABEL[type]}
+    </span>
+  )
+}
+
+const STATUS_STYLE: Record<OrderStatus, string> = {
+  baru: "bg-status-baru text-status-baru-fg",
+  diproses: "bg-status-diproses text-status-diproses-fg",
+  siap_kirim: "bg-status-siap text-status-siap-fg",
+  dikirim: "bg-status-dikirim text-status-dikirim-fg",
+  selesai: "bg-status-selesai text-status-selesai-fg",
+  dibatalkan: "bg-trend-down text-trend-down-fg",
+}
+
+/** Badge status pesanan: ikon + teks, supaya Siap Kirim dan Selesai tidak dibedakan warna saja. */
+export function OrderStatusBadge({
+  status,
+  className,
+}: {
+  status: OrderStatus
+  className?: string
+}) {
+  return (
+    <span className={cn(BADGE, STATUS_STYLE[status], className)}>
+      <StatusIcon status={status} />
+      {ORDER_STATUS_LABEL[status]}
+    </span>
+  )
+}
+
+function StatusIcon({ status }: { status: OrderStatus }) {
+  const icon = "size-3.5 shrink-0"
+  switch (status) {
+    case "baru":
+      return <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
+    case "diproses":
+      return <Tag aria-hidden className={icon} />
+    case "dibatalkan":
+      return <X aria-hidden className={icon} strokeWidth={2.5} />
+    default:
+      return <Check aria-hidden className={icon} strokeWidth={2.5} />
+  }
+}

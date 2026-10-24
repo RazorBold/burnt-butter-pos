@@ -72,6 +72,56 @@ export async function removeOrderByNo(orderNo: string) {
   }
 }
 
+const QA_STATUSES = ["baru", "diproses", "siap_kirim", "dikirim", "selesai", "dibatalkan"]
+const QA_METHODS = ["kurir_internal", "instant", "pick_up"]
+
+/**
+ * Buat `count` pesanan uji hari ini langsung di DB, untuk menguji daftar dan filter.
+ * Nomornya "QA<kode>NN" (bukan BB…), jadi penghitung nomor asli tidak tersentuh.
+ * Pesanan ke-1..(count-hadiah) Personal, sisanya Hadiah; status dan metode bergiliran.
+ */
+export async function seedQaOrders(code: string, count: number, hadiah: number) {
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
+  const sql = postgres(url, { max: 1 })
+  const customerName = `QA Customer ${code}`
+  const phone = `0899${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`
+  try {
+    await sql.begin(async (tx) => {
+      const [customer] = await tx<{ id: string }[]>`
+        insert into customers (name, phone) values (${customerName}, ${phone}) returning id`
+      for (let i = 0; i < count; i++) {
+        const method = QA_METHODS[i % QA_METHODS.length]
+        const [order] = await tx<{ id: string }[]>`
+          insert into orders (order_no, customer_id, type, status, delivery_date, total, created_at)
+          values (${`QA${code}${String(i + 1).padStart(2, "0")}`}, ${customer.id},
+            ${i < count - hadiah ? "personal" : "hadiah"}, ${QA_STATUSES[i % QA_STATUSES.length]},
+            (now() at time zone 'Asia/Jakarta')::date + 1, ${100_000 + i * 10_000},
+            now() - make_interval(secs => ${count - i}))
+          returning id`
+        await tx`insert into shipments (order_id, method, status)
+          values (${order.id}, ${method}, ${method === "pick_up" ? null : "menunggu_kurir"})`
+      }
+    })
+  } finally {
+    await sql.end()
+  }
+  return { customerName, phone }
+}
+
+/** Hapus pesanan dari seedQaOrders(code) beserta customer-nya. */
+export async function removeQaOrders(code: string) {
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from orders where order_no like ${`QA${code}%`}`
+    await sql`delete from customers where name = ${`QA Customer ${code}`}`
+  } finally {
+    await sql.end()
+  }
+}
+
 /** Hapus satu customer uji (nama diawali "QA Customer "). */
 export async function removeCustomerByName(name: string) {
   if (!name.startsWith("QA Customer "))

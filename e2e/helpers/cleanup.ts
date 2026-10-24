@@ -7,6 +7,20 @@ import { PHOTO_BUCKET } from "../../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
 
+/** Hapus satu kurir uji (nama diawali "QA Kurir "). */
+export async function removeCourierByName(name: string) {
+  if (!name.startsWith("QA Kurir "))
+    throw new Error("Hanya kurir uji (QA Kurir …) yang boleh dihapus")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from couriers where name = ${name}`
+  } finally {
+    await sql.end()
+  }
+}
+
 /**
  * Hapus satu menu uji (berdasarkan nama persisnya) beserta fotonya di Storage.
  * DB lokal = DB produksi, jadi hanya baris yang dibuat test itu sendiri yang dihapus.

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { fieldErrors, menuFormFromData, menuFormSchema, parseRupiah, slugify } from "./schemas"
+import { fieldErrors } from "@/lib/form"
+
+import { menuFormFromData, menuFormSchema, parseRupiah, slugify } from "./schemas"
 
 function form(entries: Record<string, string>) {
   const data = new FormData()

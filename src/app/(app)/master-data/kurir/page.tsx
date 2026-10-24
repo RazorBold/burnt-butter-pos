@@ -1,0 +1,113 @@
+import { Plus, Truck } from "lucide-react"
+import type { Metadata } from "next"
+import { Suspense } from "react"
+
+import { ActiveBadge } from "@/components/app/active-badge"
+import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { CourierFormDialog } from "@/features/couriers/components/courier-form-dialog"
+import { CourierRowActions } from "@/features/couriers/components/courier-row-actions"
+import { listCouriers } from "@/features/couriers/queries"
+import { COURIER_TYPE_LABEL } from "@/features/couriers/schemas"
+import {
+  ReadOnlyNote,
+  SectionCard,
+  SectionCardHeader,
+  SectionCardSkeleton,
+} from "@/features/master-data/components/section-card"
+import { requirePageAccess } from "@/lib/auth"
+import { formatPhone } from "@/lib/phone"
+
+export const metadata: Metadata = { title: "Kurir & Pengiriman" }
+
+export default function KurirPage() {
+  return (
+    <SectionCard>
+      <Suspense fallback={<SectionCardSkeleton rows={3} />}>
+        <CourierSection />
+      </Suspense>
+    </SectionCard>
+  )
+}
+
+async function CourierSection() {
+  const user = await requirePageAccess("/master-data")
+  const canEdit = user.role === "admin"
+  const couriers = await listCouriers()
+
+  return (
+    <>
+      <SectionCardHeader
+        icon={Truck}
+        title="Kurir & Pengiriman"
+        description="Kelola data kurir internal dan pengaturan pengiriman."
+        actions={
+          canEdit && (
+            <CourierFormDialog
+              trigger={
+                <Button className="h-10 rounded-lg px-4 font-semibold">
+                  <Plus className="size-[18px]" aria-hidden />
+                  Tambah Kurir
+                </Button>
+              }
+            />
+          )
+        }
+      />
+
+      {couriers.length === 0 ? (
+        <div className="px-6 py-12">
+          <p className="font-semibold text-brand-ink">Belum ada kurir.</p>
+          <p className="mt-1 text-sm text-text-body">
+            Tambahkan kurir internal agar bisa ditugaskan ke pesanan Kurir Internal.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table className="min-w-[620px]">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-6">Nama Kurir</TableHead>
+                <TableHead>Tipe</TableHead>
+                <TableHead>No. Telp</TableHead>
+                <TableHead>Status</TableHead>
+                {canEdit && <TableHead className="pr-6 text-right">Aksi</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {couriers.map((courier) => (
+                <TableRow
+                  key={courier.id}
+                  className={courier.isActive ? undefined : "text-text-body"}
+                >
+                  <TableCell className="pl-6 font-medium text-text-strong">
+                    {courier.name}
+                  </TableCell>
+                  <TableCell>{COURIER_TYPE_LABEL[courier.type]}</TableCell>
+                  <TableCell className="tabular-nums">{formatPhone(courier.phone)}</TableCell>
+                  <TableCell>
+                    <ActiveBadge active={courier.isActive} />
+                  </TableCell>
+                  {canEdit && (
+                    <TableCell className="pr-6">
+                      <CourierRowActions courier={courier} />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {!canEdit && <ReadOnlyNote>Hanya Admin yang bisa menambah atau mengubah kurir.</ReadOnlyNote>}
+    </>
+  )
+}

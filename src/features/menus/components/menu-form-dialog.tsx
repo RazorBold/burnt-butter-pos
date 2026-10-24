@@ -2,7 +2,7 @@
 
 import { CircleAlert, ImageUp, LoaderCircle } from "lucide-react"
 import Image from "next/image"
-import { type ReactNode, useActionState, useEffect, useId, useRef, useState } from "react"
+import { type ReactNode, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { saveMenu, type MenuFormState } from "@/features/menus/actions"
+import { useActionForm } from "@/hooks/use-action-form"
+import { useFieldErrors } from "@/hooks/use-field-errors"
 import type { MenuRow } from "@/features/menus/queries"
 import {
   CATEGORY_LABEL,
@@ -80,7 +82,7 @@ function priceOf(menu: MenuRow | undefined, size: "large" | "regular" | "single"
 }
 
 function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
-  const [state, action, pending] = useActionState<MenuFormState, FormData>(saveMenu, {})
+  const { state, pending, onSubmit } = useActionForm<MenuFormState>(saveMenu, {})
   const id = useId()
 
   const [category, setCategory] = useState<MenuCategory | "">(menu?.category ?? "")
@@ -99,19 +101,7 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
   const [fileName, setFileName] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const handled = useRef<MenuFormState | null>(null)
-
-  // Error dari server disembunyikan per field begitu field itu diubah; direset tiap simpan.
-  const [editedFor, setEditedFor] = useState(state)
-  const [edited, setEdited] = useState<ReadonlySet<string>>(new Set())
-  if (editedFor !== state) {
-    setEditedFor(state)
-    setEdited(new Set())
-  }
-  const markEdited = (...names: string[]) =>
-    setEdited((prev) => (names.every((n) => prev.has(n)) ? prev : new Set([...prev, ...names])))
-  const errors = Object.fromEntries(
-    Object.entries(state.errors ?? {}).filter(([name]) => !edited.has(name)),
-  )
+  const { errors, hasErrors, markEdited, onFormChange } = useFieldErrors(state)
 
   // Setiap hasil simpan diproses sekali saja (onSaved berubah tiap render induk).
   useEffect(() => {
@@ -156,16 +146,7 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
   const describedBy = (name: string) => (errors[name] ? `${id}-${name}-error` : undefined)
 
   return (
-    <form
-      action={action}
-      className="mt-6 space-y-5"
-      noValidate
-      onChange={(event) => {
-        // event.target = field yang berubah (input/textarea), bukan form-nya.
-        const field = event.target as unknown as { name?: unknown }
-        if (typeof field.name === "string" && field.name) markEdited(field.name)
-      }}
-    >
+    <form onSubmit={onSubmit} className="mt-6 space-y-5" noValidate onChange={onFormChange}>
       {menu && <input type="hidden" name="id" value={menu.id} />}
       <input type="hidden" name="isActive" value={String(active)} />
       <input type="hidden" name="sizing" value={sizing} />
@@ -357,7 +338,7 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
         </div>
       </div>
 
-      {state.message && !state.ok && (!state.errors || Object.keys(errors).length > 0) && (
+      {state.message && !state.ok && (!state.errors || hasErrors) && (
         <p
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-trend-down px-3 py-2.5 text-sm text-trend-down-fg"

@@ -55,6 +55,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 - **Server dulu:** halaman adalah Server Component. `"use client"` hanya untuk komponen yang butuh state atau event.
 - **Database:** pakai `getDb()` dari `@/db` (koneksi dibuat saat pertama dipakai). Script Node di luar Next (seed, tool) membuat klien sendiri dan tidak boleh mengimpor `@/db`, karena modul itu memakai `server-only`.
 - **Mutasi** lewat Server Action di `src/features/<modul>/actions.ts`. Setiap action: `requireRole()` → validasi zod → transaksi Drizzle → `revalidatePath`.
+- **Form dengan validasi** memakai `useActionForm` (`src/hooks/use-action-form.ts`) + `<form onSubmit>`, bukan `<form action>`. React 19 mengosongkan `<form action>` setiap aksi selesai, termasuk saat validasi gagal. Error per field memakai `useFieldErrors`, dan pesannya dari `fieldErrors()` di `src/lib/form.ts`.
 - **Query** di `src/features/<modul>/queries.ts`; jangan menulis query di komponen.
 - **Filter dan paginasi** disimpan di URL search params, supaya bisa dibagikan dan tetap ada setelah refresh.
 - **Uang:** integer rupiah. Format hanya lewat `formatRupiah()` di `src/lib/format.ts`.

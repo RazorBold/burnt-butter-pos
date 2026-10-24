@@ -6,7 +6,6 @@ import { Suspense } from "react"
 
 import { ActiveBadge } from "@/components/app/active-badge"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -15,6 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  ReadOnlyNote,
+  SectionCard,
+  SectionCardHeader,
+  SectionCardSkeleton,
+} from "@/features/master-data/components/section-card"
 import { MenuFilters } from "@/features/menus/components/menu-filters"
 import { MenuFormDialog } from "@/features/menus/components/menu-form-dialog"
 import { MenuRowActions } from "@/features/menus/components/menu-row-actions"
@@ -28,11 +33,11 @@ export const metadata: Metadata = { title: "Produk & Menu" }
 
 export default function ProdukMenuPage({ searchParams }: PageProps<"/master-data/produk-menu">) {
   return (
-    <section className="rounded-2xl border border-border bg-card">
-      <Suspense fallback={<SectionSkeleton />}>
+    <SectionCard>
+      <Suspense fallback={<SectionCardSkeleton rows={7} />}>
         <MenuSection searchParams={searchParams} />
       </Suspense>
-    </section>
+    </SectionCard>
   )
 }
 
@@ -50,32 +55,26 @@ async function MenuSection({
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border p-5 sm:p-6">
-        <div className="flex items-center gap-3.5">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink">
-            <UtensilsCrossed className="size-6" strokeWidth={1.75} aria-hidden />
-          </span>
-          <div>
-            <h1 className="text-xl font-bold text-brand-ink">Produk &amp; Menu</h1>
-            <p className="text-sm text-text-body">
-              Kelola daftar menu, harga, kategori, dan ketersediaan.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <MenuFilters />
-          {canEdit && (
-            <MenuFormDialog
-              trigger={
-                <Button className="h-10 rounded-lg px-4 font-semibold">
-                  <Plus className="size-[18px]" aria-hidden />
-                  Tambah Menu
-                </Button>
-              }
-            />
-          )}
-        </div>
-      </div>
+      <SectionCardHeader
+        icon={UtensilsCrossed}
+        title="Produk & Menu"
+        description="Kelola daftar menu, harga, kategori, dan ketersediaan."
+        actions={
+          <>
+            <MenuFilters />
+            {canEdit && (
+              <MenuFormDialog
+                trigger={
+                  <Button className="h-10 rounded-lg px-4 font-semibold">
+                    <Plus className="size-[18px]" aria-hidden />
+                    Tambah Menu
+                  </Button>
+                }
+              />
+            )}
+          </>
+        }
+      />
 
       {menus.length === 0 ? (
         <EmptyState filtered={filtered} />
@@ -83,11 +82,7 @@ async function MenuSection({
         <MenuTable menus={menus} canEdit={canEdit} />
       )}
 
-      {!canEdit && (
-        <p className="border-t border-border px-6 py-3 text-[13px] text-text-body">
-          Hanya Admin yang bisa menambah atau mengubah menu.
-        </p>
-      )}
+      {!canEdit && <ReadOnlyNote>Hanya Admin yang bisa menambah atau mengubah menu.</ReadOnlyNote>}
     </>
   )
 }
@@ -175,25 +170,6 @@ function EmptyState({ filtered }: { filtered: boolean }) {
           Tampilkan semua menu
         </Link>
       )}
-    </div>
-  )
-}
-
-function SectionSkeleton() {
-  return (
-    <div aria-hidden className="p-6">
-      <div className="flex items-center gap-3.5">
-        <Skeleton className="size-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-      </div>
-      <div className="mt-6 space-y-3">
-        {Array.from({ length: 6 }, (_, index) => (
-          <Skeleton key={index} className="h-11 w-full" />
-        ))}
-      </div>
     </div>
   )
 }

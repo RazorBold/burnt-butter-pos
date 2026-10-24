@@ -88,13 +88,3 @@ export function slugify(name: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60)
 }
-
-/** Pesan error pertama per field, untuk ditampilkan di bawah input. */
-export function fieldErrors(error: z.ZodError): Record<string, string> {
-  const result: Record<string, string> = {}
-  for (const issue of error.issues) {
-    const key = String(issue.path[0] ?? "form")
-    result[key] ??= issue.message
-  }
-  return result
-}

@@ -1,6 +1,8 @@
 "use client"
 
 import { MessageCircle, RotateCcw, WandSparkles } from "lucide-react"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -12,9 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { WA_DRAFT_EVENT, WA_DRAFT_KEY } from "@/features/orders/constants"
 
-// Kerangka modal dari docs/design/02-input-pesanan-modal.png.
-// Parser WA dan form hasilnya menyusul (BELL-15, BELL-16); sampai itu tombol Isi Otomatis nonaktif.
+const FORM_PATH = "/pesanan/baru"
+
+// Modal dari docs/design/02-input-pesanan-modal.png. Isi Otomatis membawa pesan ke halaman
+// /pesanan/baru (lewat sessionStorage), tempat pesan dibaca dan form hasilnya bisa dicek.
 export function InputOrderDialog({
   open,
   onOpenChange,
@@ -23,10 +28,24 @@ export function InputOrderDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const [text, setText] = useState("")
+  const router = useRouter()
+  const pathname = usePathname()
+
+  function fillForm() {
+    try {
+      sessionStorage.setItem(WA_DRAFT_KEY, text)
+    } catch {
+      // Tanpa sessionStorage, kasir tetap bisa menempel ulang pesan di halaman form.
+    }
+    setText("")
+    onOpenChange(false)
+    if (pathname === FORM_PATH) window.dispatchEvent(new Event(WA_DRAFT_EVENT))
+    else router.push(FORM_PATH)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[760px] sm:p-8">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto rounded-2xl bg-card p-6 sm:max-w-[760px] sm:p-8">
         <DialogHeader className="gap-1.5 text-left">
           <DialogTitle className="text-[28px] leading-tight font-bold text-brand-ink">
             Input Pesanan
@@ -57,14 +76,14 @@ export function InputOrderDialog({
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="Tempel pesan pesanan dari WhatsApp di sini…"
-          className="mt-5 min-h-[260px] resize-y rounded-xl bg-white p-4 text-[15px] sm:min-h-[340px]"
+          className="mt-5 max-h-[40dvh] min-h-[200px] resize-y rounded-xl bg-white p-4 text-[15px] sm:min-h-[340px]"
         />
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Button
             type="button"
-            disabled
-            aria-describedby="isi-otomatis-note"
+            onClick={fillForm}
+            disabled={!text.trim()}
             className="h-12 rounded-lg px-6 text-[15px]"
           >
             <WandSparkles aria-hidden />
@@ -80,9 +99,13 @@ export function InputOrderDialog({
             <RotateCcw aria-hidden />
             Reset
           </Button>
-          <p id="isi-otomatis-note" className="text-sm text-text-body">
-            Isi otomatis sedang disiapkan.
-          </p>
+          <Link
+            href={FORM_PATH}
+            onClick={() => onOpenChange(false)}
+            className="ml-auto text-sm font-medium text-brand-ink underline underline-offset-2"
+          >
+            Isi manual tanpa pesan WA
+          </Link>
         </div>
       </DialogContent>
     </Dialog>

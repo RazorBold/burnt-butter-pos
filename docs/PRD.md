@@ -75,7 +75,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 - **F-20** Modal berisi area teks untuk menempel pesan WA, tombol **Isi Otomatis**, dan **Reset**.
 - **F-21** Isi Otomatis mem-parsing teks menjadi: nama, no. telp, alamat, tanggal kirim, metode pengiriman, request, tipe (Personal/Hadiah), dan item menu + ukuran + jumlah.
-- **F-22** Hasil parsing tampil di form yang bisa diedit; field yang tidak terbaca ditandai agar diisi manual. Form ini belum didesain.
+- **F-22** Hasil parsing tampil di form yang bisa diedit; field yang tidak terbaca ditandai agar diisi manual. Form ada di halaman `/pesanan/baru` (pesan WA di kiri, form di kanan); Isi Otomatis di modal membawa pesan ke halaman ini. Desainnya diputuskan saat implementasi (lihat DESIGN.md).
 - **F-23** Simpan membuat pesanan berstatus **Baru** dengan nomor otomatis `BB` + `YYMMDD` + urutan 3 digit (contoh BB261021001).
 - **F-24** Total dihitung dari harga master menu sesuai ukuran.
 
@@ -212,8 +212,10 @@ Inkonsistensi di desain:
 
 Aturan bisnis yang belum jelas:
 
-- [ ] Format pesan WA yang dipakai customer: ada template baku atau teks bebas?
-- [ ] Pesanan Hadiah butuh data tambahan (nama penerima, kartu ucapan, alamat berbeda)?
+- [x] Format pesan WA yang dipakai customer: ada template baku atau teks bebas? **Template baku, dua jenis (Personal dan Hadiah)**; teksnya ada di `src/lib/wa-parser/templates.ts`.
+- [x] Pesanan Hadiah butuh data tambahan (nama penerima, kartu ucapan, alamat berbeda)? **Ya**: Nama Penerima, No. Telp, Alamat (penerima), Nama Pengirim, dan kartu ucapan To / Wishes / From.
+- [ ] Pesanan Hadiah: siapa yang dicatat sebagai customer, penerima (nomornya ada di template) atau pengirim (nomor WA chat, tidak ada di template)?
+- [ ] Bundle of 3: isinya bebas pilih 3 menu atau tetap? Template hanya meminta jumlah bundle.
 - [ ] Pembayaran: lunas di depan, DP, atau bayar di tempat? Status bayar perlu kolom di tabel Pesanan?
 - [ ] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa?
 - [ ] Stok packaging dipotong saat pesanan dibuat, diproses, atau dikirim? Kapasitas (200, 100) disimpan di mana?

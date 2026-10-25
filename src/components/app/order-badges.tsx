@@ -1,4 +1,4 @@
-import { Check, Tag, X } from "lucide-react"
+import { Check, Clock, Tag, X } from "lucide-react"
 
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
 import { cn } from "@/lib/utils"
@@ -59,4 +59,26 @@ function StatusIcon({ status }: { status: OrderStatus }) {
     default:
       return <Check aria-hidden className={icon} strokeWidth={2.5} />
   }
+}
+
+/** Badge status bayar: Belum bayar (kuning, jam) / Lunas (hijau, centang). */
+export function PaymentBadge({ paid, className }: { paid: boolean; className?: string }) {
+  return (
+    <span
+      className={cn(
+        BADGE,
+        paid
+          ? "bg-status-selesai text-status-selesai-fg"
+          : "bg-status-diproses text-status-diproses-fg",
+        className,
+      )}
+    >
+      {paid ? (
+        <Check aria-hidden className="size-3.5 shrink-0" strokeWidth={2.5} />
+      ) : (
+        <Clock aria-hidden className="size-3.5 shrink-0" />
+      )}
+      {paid ? "Lunas" : "Belum bayar"}
+    </span>
+  )
 }

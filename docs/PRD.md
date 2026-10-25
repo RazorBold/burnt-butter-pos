@@ -122,7 +122,7 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 
 ### Modul tanpa desain
 
-- **F-70** Pembayaran: catat dan verifikasi pembayaran per pesanan (metode, nominal, bukti transfer).
+- **F-70** Pembayaran: status bayar per pesanan (Lunas / Belum bayar), dibayar lewat apa (metode dari Master Data), dan catatan. Tanpa DP dan tanpa unggah bukti transfer (keputusan pemilik toko, Okt 2026).
 - **F-71** Produksi: daftar porsi per menu per tanggal kirim, ditandai selesai masak.
 - **F-72** Stok Packaging: stok masuk/keluar dan riwayatnya; pemotongan otomatis saat pesanan dibuat atau dikirim perlu diputuskan.
 
@@ -216,7 +216,7 @@ Aturan bisnis yang belum jelas:
 - [x] Pesanan Hadiah butuh data tambahan (nama penerima, kartu ucapan, alamat berbeda)? **Ya**: Nama Penerima, No. Telp, Alamat (penerima), Nama Pengirim, dan kartu ucapan To / Wishes / From.
 - [x] Pesanan Hadiah: siapa yang dicatat sebagai customer, penerima (nomornya ada di template) atau pengirim (nomor WA chat, tidak ada di template)? **Penerima.** Nama pengirim dan kartu ucapan disimpan di pesanan.
 - [x] Bundle of 3: isinya bebas pilih 3 menu atau tetap? Template hanya meminta jumlah bundle. **Cukup jumlah**: satu item Rp 180.000; permintaan isi ditulis di Request.
-- [x] Pembayaran: status saat pesanan disimpan? **Belum bayar.** Pembayaran dicatat terpisah di modul Pembayaran (tabel `payments`); status bayar dihitung dari situ. (DP vs lunas masih terbuka untuk modul Pembayaran.)
+- [x] Pembayaran: status saat pesanan disimpan? **Belum bayar.** Pembayaran dicatat terpisah di modul Pembayaran (tabel `payments`); status bayar dihitung dari situ. **Status bayar cukup Lunas / Belum bayar (tanpa DP)**, ditambah dibayar lewat apa (metode dari Master Data) dan catatan.
 - [ ] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa?
 - [ ] Stok packaging dipotong saat pesanan dibuat, diproses, atau dikirim? Kapasitas (200, 100) disimpan di mana?
 - [ ] Rekap Produksi dihitung per tanggal kirim atau tanggal pesan?

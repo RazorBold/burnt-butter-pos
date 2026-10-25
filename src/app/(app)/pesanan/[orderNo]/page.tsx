@@ -70,7 +70,10 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
       </div>
       <p className="mt-1.5 text-[15px] text-text-body">
         Dibuat {formatWaktuDibuat(order.createdAt)}
-        {order.createdByName && ` oleh ${order.createdByName}`}. Belum bayar.
+        {order.createdByName && ` oleh ${order.createdByName}`}.{" "}
+        {order.payment
+          ? `Lunas via ${order.payment.methodName}${order.payment.note ? ` (${order.payment.note})` : ""}.`
+          : "Belum bayar."}
       </p>
 
       <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">

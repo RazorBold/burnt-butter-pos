@@ -129,6 +129,15 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Pesanan Hadiah: nama pengirim tampil kecil di bawah nama penerima ("dari Rizky"); pencarian juga mencari nama pengirim.
 - **Panel Detail Pesanan:** dibuka dengan klik baris (`?pesanan=BB…`, jadi bisa dibagikan). Di layar xl, panel menjadi kolom kanan 420 px yang menempel saat digulir, seperti desain. Di bawah xl, panel menjadi laci dari kanan di atas latar gelap. Ditutup dengan X, klik latar, atau Esc. Fokus pindah ke judul panel saat dibuka. Isinya sesuai desain; untuk Hadiah, judulnya "Data Penerima" dan ada baris Pengirim serta Kartu Ucapan. Tombol Edit hanya muncul sampai status Siap Kirim. Ubah Status hanya menawarkan langkah yang sah (maju satu, mundur satu, atau Batalkan dengan konfirmasi).
 - **Detail Lengkap** (`/pesanan/BB…`, belum didesain): data customer, tabel menu dengan harga, jumlah, subtotal, dan total, lalu kartu Status dengan riwayat perubahan (siapa dan kapan), serta pesan WhatsApp asli.
+- **Pembayaran** (belum didesain): halaman ini memakai pola Daftar Pesanan.
+  - 4 kartu ringkasan tanpa tren: Belum Bayar, Nilai Belum Dibayar, Sudah Lunas, Total Diterima.
+  - Filter: cari, tanggal pesanan, status bayar, dan metode.
+  - Tabel: No. Pesanan, Customer, Tgl Kirim, Total, Status Bayar, Dibayar Lewat (metode, catatan, waktu, dan siapa yang mencatat), Aksi.
+  - Badge status bayar: "Belum bayar" kuning dengan ikon jam, "Lunas" hijau dengan centang.
+  - Tombol Tandai Lunas di baris memakai gaya garis tepi supaya tabel tidak penuh tombol cokelat.
+  - Dialog Tandai Lunas berisi kartu radio metode bayar dan catatan opsional. Dialog yang sama dipakai untuk Ubah pembayaran.
+  - "Jadikan belum bayar" ada di menu ⋮ dengan konfirmasi.
+  - Panel Detail Pesanan menampilkan badge status bayar beserta tombol Tandai Lunas atau Ubah pembayaran.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

@@ -91,7 +91,7 @@ Uang disimpan sebagai `integer` dalam rupiah (tanpa desimal). Waktu disimpan seb
 | `couriers` | name, type, phone, is_active | type: `internal`, `eksternal` |
 | `shipments` | order_id (unik), method, courier_id, slot, status, address_lat, address_lng | method: `kurir_internal`, `instant`, `pick_up`. Slot: `09-12`, `13-17`. Status: `menunggu_kurir`, `siap_dikirim`, `siap_diambil`, `dalam_perjalanan`, `dikirim`, `selesai`. Kosong sampai pesanan Siap Kirim, lalu Kurir Internal = `siap_dikirim`, Instant = `menunggu_kurir`, Pick Up = `siap_diambil` (`src/features/orders/status.ts`) |
 | `payment_methods` | name, type, is_active | type: `bank`, `ewallet`, `cash` |
-| `payments` | order_id, payment_method_id, amount, status, proof_path, paid_at | status: `menunggu`, `lunas`, `ditolak` (menunggu keputusan BELL-37) |
+| `payments` | order_id (unik), payment_method_id, amount, status, note, paid_at, recorded_by | Satu baris per pesanan: ada baris `lunas` = Lunas, tidak ada = Belum bayar (tanpa DP). `proof_path` dan status `menunggu`/`ditolak` belum dipakai |
 | `packagings` | name, photo_path, stock, capacity, unit, min_stock | |
 | `raw_materials` | name, unit, stock, min_stock | status Cukup/Menipis/Habis dihitung, tidak disimpan |
 | `stock_movements` | item_type, item_id, direction, qty, order_id, note, created_by | `direction`: `in`, `out` |

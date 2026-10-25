@@ -146,6 +146,8 @@ export type OrderDetail = {
   cardWishes: string | null
   cardFrom: string | null
   customer: { name: string; phone: string }
+  /** Kosong = belum bayar. */
+  payment: { methodId: string; methodName: string; note: string | null; paidAt: Date | null } | null
   shipment: {
     method: ShippingMethod
     status: ShipmentStatus | null
@@ -176,6 +178,10 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       customer: { columns: { name: true, phone: true } },
       shipment: { with: { courier: { columns: { name: true } } } },
       createdByProfile: { columns: { name: true } },
+      payments: {
+        where: (payment, { eq }) => eq(payment.status, "lunas"),
+        with: { method: { columns: { name: true } } },
+      },
       items: {
         with: {
           variant: {
@@ -206,6 +212,14 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     cardWishes: order.cardWishes,
     cardFrom: order.cardFrom,
     customer: order.customer,
+    payment: order.payments[0]
+      ? {
+          methodId: order.payments[0].paymentMethodId,
+          methodName: order.payments[0].method.name,
+          note: order.payments[0].note,
+          paidAt: order.payments[0].paidAt,
+        }
+      : null,
     shipment: {
       method: order.shipment.method,
       status: order.shipment.status,

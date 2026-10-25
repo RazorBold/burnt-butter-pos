@@ -253,11 +253,16 @@ export const payments = pgTable(
     amount: integer("amount").notNull(),
     status: paymentStatus("status").notNull().default("menunggu"),
     proofPath: text("proof_path"),
+    /** Catatan kasir, mis. "BCA a.n. Siti, transfer 10.12". */
+    note: text("note"),
     paidAt: timestamp("paid_at", { withTimezone: true }),
+    /** Kasir/Admin yang menandai lunas. */
+    recordedBy: uuid("recorded_by").references(() => profiles.id, { onDelete: "set null" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("payments_order_idx").on(t.orderId)],
+  // Keputusan pemilik toko: status bayar cukup Lunas/Belum (tanpa DP), jadi satu baris per pesanan.
+  (t) => [uniqueIndex("payments_order_idx").on(t.orderId)],
 ).enableRLS()
 
 // ── Stok ────────────────────────────────────────────────────────────────────

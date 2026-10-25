@@ -3,7 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { OrderStatusBadge } from "@/components/app/order-badges"
+import { OrderStatusBadge, PaymentBadge } from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
@@ -11,6 +11,8 @@ import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
 import { getOrderDetail, type OrderDetail } from "@/features/orders/queries"
 import { isEditable } from "@/features/orders/status"
+import { MarkPaidDialog } from "@/features/payments/components/mark-paid-dialog"
+import { listActivePaymentMethods } from "@/features/payments/queries"
 import { formatRupiah, formatTanggal, formatWaktuDibuat } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
 import { photoSrc } from "@/lib/photos"
@@ -25,7 +27,7 @@ export async function OrderDetailPanel({
   orderNo: string
   closeHref: string
 }) {
-  const order = await getOrderDetail(orderNo)
+  const [order, methods] = await Promise.all([getOrderDetail(orderNo), listActivePaymentMethods()])
 
   if (!order) {
     return (
@@ -54,14 +56,44 @@ export async function OrderDetailPanel({
       <OrderItems order={order} />
 
       <div className="mt-auto space-y-3 px-5 pt-2 pb-5 sm:px-6">
-        <div className="flex items-center justify-between gap-4 rounded-xl bg-nav-active/70 px-4 py-3.5">
-          <div>
+        <div className="rounded-xl bg-nav-active/70 px-4 py-3.5">
+          <div className="flex items-center justify-between gap-4">
             <p className="font-semibold text-text-strong">Total Pembayaran</p>
-            <p className="text-[13px] text-text-body">Belum bayar</p>
+            <p className="text-lg font-bold text-brand-ink tabular-nums">
+              {formatRupiah(order.total)}
+            </p>
           </div>
-          <p className="text-lg font-bold text-brand-ink tabular-nums">
-            {formatRupiah(order.total)}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 text-[13px] text-text-body">
+              <PaymentBadge paid={Boolean(order.payment)} />
+              {order.payment && <span>via {order.payment.methodName}</span>}
+            </div>
+            {order.status !== "dibatalkan" && (
+              <MarkPaidDialog
+                orderId={order.id}
+                orderNo={order.orderNo}
+                total={order.total}
+                methods={methods}
+                current={
+                  order.payment
+                    ? { methodId: order.payment.methodId, note: order.payment.note }
+                    : undefined
+                }
+                trigger={
+                  <Button
+                    variant={order.payment ? "outline" : "default"}
+                    size="sm"
+                    className="h-9 rounded-lg px-3.5"
+                  >
+                    {order.payment ? "Ubah pembayaran" : "Tandai Lunas"}
+                  </Button>
+                }
+              />
+            )}
+          </div>
+          {order.payment?.note && (
+            <p className="mt-1.5 text-[13px] break-words text-text-strong">{order.payment.note}</p>
+          )}
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <OrderStatusSelect

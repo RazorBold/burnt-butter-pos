@@ -21,6 +21,7 @@ export type ShipmentRow = {
   orderStatus: OrderStatus
   method: ShippingMethod
   address: string | null
+  courierId: string | null
   courierName: string | null
   slot: DeliverySlot | null
   status: ShipmentStatus | null
@@ -91,6 +92,7 @@ export async function listShipments(filters: ShipmentFilters) {
       orderStatus: orders.status,
       method: shipments.method,
       address: shipments.address,
+      courierId: shipments.courierId,
       courierName: couriers.name,
       slot: shipments.slot,
       status: shipments.status,

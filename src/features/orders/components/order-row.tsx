@@ -4,22 +4,26 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { ReactNode } from "react"
 
+import { SelectRowCell } from "@/components/app/row-selection"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
 /**
- * Baris Daftar Pesanan yang membuka panel detail. Seluruh baris bisa diklik dengan mouse;
- * untuk keyboard dan pembaca layar, nomor pesanan adalah link biasa.
+ * Baris Daftar Pesanan/Pengiriman yang membuka panel detail. Seluruh baris bisa diklik dengan
+ * mouse; untuk keyboard dan pembaca layar, nomor pesanan adalah link biasa.
+ * `selectId`: tampilkan checkbox aksi massal (perlu RowSelectionProvider).
  */
 export function OrderRow({
   href,
   orderNo,
   selected,
+  selectId,
   children,
 }: {
   href: string
   orderNo: string
   selected: boolean
+  selectId?: string
   children: ReactNode
 }) {
   const router = useRouter()
@@ -27,12 +31,21 @@ export function OrderRow({
     <TableRow
       aria-selected={selected}
       onClick={(event) => {
-        if ((event.target as HTMLElement).closest("a, button")) return
+        const target = event.target as HTMLElement
+        // Klik di menu ⋮ atau dialog (portal) tetap merambat ke sini lewat React; abaikan.
+        if (!event.currentTarget.contains(target)) return
+        if (target.closest("a, button, label")) return
         router.push(href, { scroll: false })
       }}
-      className={cn("cursor-pointer", selected && "bg-nav-active hover:bg-nav-active")}
+      className={cn(
+        "cursor-pointer has-data-[state=checked]:bg-nav-active/50",
+        selected && "bg-nav-active hover:bg-nav-active has-data-[state=checked]:bg-nav-active",
+      )}
     >
-      <TableCell className="pl-6 font-medium text-text-strong tabular-nums">
+      {selectId && <SelectRowCell id={selectId} label={`Pilih ${orderNo}`} />}
+      <TableCell
+        className={cn("font-medium text-text-strong tabular-nums", selectId ? "pl-3" : "pl-6")}
+      >
         <Link
           href={href}
           scroll={false}

@@ -86,7 +86,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 - **F-32** Tabel dengan checkbox, No. Pesanan, Waktu, Nama Customer, Tipe, Tgl Kirim, Pengiriman, Total, Status, menu aksi; paginasi 10 baris ("Menampilkan 1–10 dari 24 pesanan").
 - **F-33** Klik baris membuka panel Detail Pesanan: nomor + status, waktu dibuat, Data Customer (bisa Edit), Daftar Menu dengan foto dan qty, Total Pembayaran.
 - **F-34** Aksi panel: dropdown **Ubah Status** dan **Lihat Detail Lengkap** (halaman belum didesain).
-- **F-35** Checkbox memungkinkan aksi massal; jenis aksinya belum ditentukan.
+- **F-35** Checkbox memungkinkan aksi massal. Pesanan: ubah status, tandai lunas (satu metode untuk semua), batalkan, unduh CSV. Pengiriman: atur kurir & jadwal, tandai dikirim. Pesanan yang tidak memenuhi syarat dilewati dan disebutkan.
 
 ### Pengiriman
 
@@ -220,5 +220,5 @@ Aturan bisnis yang belum jelas:
 - [ ] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa?
 - [x] Stok packaging dipotong saat pesanan dibuat, diproses, atau dikirim? Kapasitas (200, 100) disimpan di mana? **Manual dulu**: Admin/Produksi mencatat stok masuk/keluar sendiri. Kapasitas dan stok minimum diatur per packaging di Master Data.
 - [x] Rekap Produksi dihitung per tanggal kirim atau tanggal pesan? **Per tanggal kirim.** "Selesai masak" = status pesanan Siap Kirim.
-- [ ] Aksi massal apa yang dibutuhkan dari checkbox di tabel Pesanan dan Pengiriman?
+- [x] Aksi massal apa yang dibutuhkan dari checkbox di tabel Pesanan dan Pengiriman? **Pesanan: ubah status, tandai lunas, batalkan, unduh CSV. Pengiriman: atur kurir & jadwal, tandai dikirim.**
 - [x] Bundle of 3 ("pilih 3 menu favorit"): pilihan menunya dicatat per pesanan? **Tidak; cukup jumlah bundle.** Isi yang diminta ditulis di Request, dan Rekap Produksi menampilkan Bundle of 3 sebagai satu baris.

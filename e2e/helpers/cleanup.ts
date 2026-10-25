@@ -3,6 +3,8 @@ import { config } from "dotenv"
 import postgres from "postgres"
 
 import { directDatabaseUrl } from "../../src/db/url"
+import type { OrderStatus } from "../../src/features/orders/filters"
+import { shipmentStatusFor } from "../../src/features/orders/status"
 import { PHOTO_BUCKET } from "../../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
@@ -19,6 +21,7 @@ export type SavedOrder = {
   shipment_status: string | null
   items: number
   logs: number
+  payments: number
 }
 
 /** Ringkasan pesanan tersimpan, untuk memastikan isi database sesuai form. */
@@ -31,7 +34,8 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
       select o.type, o.status, o.total, c.name as customer, o.sender_name, o.card_wishes,
         o.raw_wa_text, s.method, s.status as shipment_status,
         (select count(*)::int from order_items i where i.order_id = o.id) as items,
-        (select count(*)::int from order_status_logs l where l.order_id = o.id) as logs
+        (select count(*)::int from order_status_logs l where l.order_id = o.id) as logs,
+        (select count(*)::int from payments p where p.order_id = o.id) as payments
       from orders o
       join customers c on c.id = o.customer_id
       join shipments s on s.order_id = o.id
@@ -74,15 +78,30 @@ export async function removeOrderByNo(orderNo: string) {
   }
 }
 
-const QA_STATUSES = ["baru", "diproses", "siap_kirim", "dikirim", "selesai", "dibatalkan"]
-const QA_METHODS = ["kurir_internal", "instant", "pick_up"]
+const QA_STATUSES: OrderStatus[] = [
+  "baru",
+  "diproses",
+  "siap_kirim",
+  "dikirim",
+  "selesai",
+  "dibatalkan",
+]
+const QA_METHODS = ["kurir_internal", "instant", "pick_up"] as const
+
+type SeedPlan = { status: OrderStatus; method: (typeof QA_METHODS)[number] }
 
 /**
  * Buat `count` pesanan uji hari ini langsung di DB, untuk menguji daftar dan filter.
  * Nomornya "QA<kode>NN" (bukan BB…), jadi penghitung nomor asli tidak tersentuh.
- * Pesanan ke-1..(count-hadiah) Personal, sisanya Hadiah; status dan metode bergiliran.
+ * Pesanan ke-1..(count-hadiah) Personal, sisanya Hadiah; status dan metode bergiliran, kecuali
+ * diatur lewat `plan` (satu entri per pesanan). Tanggal kirim default besok (WIB).
  */
-export async function seedQaOrders(code: string, count: number, hadiah: number) {
+export async function seedQaOrders(
+  code: string,
+  count: number,
+  hadiah: number,
+  options: { deliveryDate?: string; plan?: SeedPlan[] } = {},
+) {
   const url = directDatabaseUrl()
   if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
   const sql = postgres(url, { max: 1 })
@@ -93,18 +112,24 @@ export async function seedQaOrders(code: string, count: number, hadiah: number) 
       const [customer] = await tx<{ id: string }[]>`
         insert into customers (name, phone) values (${customerName}, ${phone}) returning id`
       for (let i = 0; i < count; i++) {
-        const method = QA_METHODS[i % QA_METHODS.length]
+        const { status, method } = options.plan?.[i] ?? {
+          status: QA_STATUSES[i % QA_STATUSES.length],
+          method: QA_METHODS[i % QA_METHODS.length],
+        }
         const [order] = await tx<{ id: string }[]>`
           insert into orders (order_no, customer_id, type, sender_name, status, delivery_date,
             total, created_at)
           values (${`QA${code}${String(i + 1).padStart(2, "0")}`}, ${customer.id},
             ${i < count - hadiah ? "personal" : "hadiah"},
             ${i < count - hadiah ? null : `QA Pengirim ${code}`},
-            ${QA_STATUSES[i % QA_STATUSES.length]},
-            (now() at time zone 'Asia/Jakarta')::date + 1, ${100_000 + i * 10_000},
+            ${status},
+            coalesce(${options.deliveryDate ?? null}::date,
+              (now() at time zone 'Asia/Jakarta')::date + 1),
+            ${100_000 + i * 10_000},
             now() - make_interval(secs => ${count - i}))
           returning id`
-        await tx`insert into shipments (order_id, method) values (${order.id}, ${method})`
+        await tx`insert into shipments (order_id, method, status)
+          values (${order.id}, ${method}, ${shipmentStatusFor(status, method)})`
       }
     })
   } finally {

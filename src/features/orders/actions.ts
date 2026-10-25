@@ -17,14 +17,18 @@ import {
 } from "@/db/schema"
 import { CAN_INPUT_ORDER } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
+import { BULK_LIMIT, type BulkResult, summarizeBulk } from "@/lib/bulk"
 import { toJakartaDateString } from "@/lib/format"
 import { normalizePhone } from "@/lib/phone"
 
 import { type DraftField, draftIssues } from "./draft"
 import { ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from "./filters"
+import { ordersToCsv } from "./csv"
 import { formatOrderNo } from "./order-number"
+import { getOrdersForExport } from "./queries"
 import { orderEditSchema, orderSubmitSchema } from "./schemas"
-import { isEditable, nextStatuses, shipmentStatusFor } from "./status"
+import { isEditable, shipmentStatusFor } from "./status"
+import { changeStatuses, revalidateOrders } from "./status-change"
 
 export type CreateOrderResult =
   | { ok: true; orderNo: string; customerName: string; total: number }
@@ -169,20 +173,15 @@ async function requireOrderEditor(): Promise<string> {
   return (await requireRole(CAN_INPUT_ORDER)).id
 }
 
-function revalidateOrders(orderNo?: string) {
-  revalidatePath("/pesanan")
-  revalidatePath("/dashboard")
-  revalidatePath("/produksi")
-  revalidatePath("/pengiriman")
-  if (orderNo) revalidatePath(`/pesanan/${orderNo}`)
-}
-
 /** Langkah dapur yang boleh dilakukan tim Produksi: Baru ↔ Diproses ↔ Siap Kirim. */
 const PRODUCTION_STATUSES: readonly OrderStatus[] = ["baru", "diproses", "siap_kirim"]
 
+function parseStatus(target: string): OrderStatus | undefined {
+  return ORDER_STATUSES.find((value) => value === target)
+}
+
 /**
- * Ubah status pesanan sesuai alur (nextStatuses). Status pengiriman ikut disesuaikan
- * (shipmentStatusFor) dan perubahan dicatat di order_status_logs.
+ * Ubah status satu pesanan sesuai alur (nextStatuses), lewat changeStatuses.
  * `limitTo`: bila diisi, status asal dan tujuan harus ada di daftar ini (dipakai Produksi).
  */
 async function changeOrderStatus(
@@ -191,47 +190,22 @@ async function changeOrderStatus(
   userId: string,
   limitTo?: readonly OrderStatus[],
 ): Promise<ActionResult> {
-  const status = ORDER_STATUSES.find((value) => value === target)
+  const status = parseStatus(target)
   if (!z.uuid().safeParse(orderId).success || !status) {
     return { ok: false, message: "Status tidak dikenal. Muat ulang halaman." }
   }
 
-  const result = await getDb().transaction(async (tx) => {
-    // FOR UPDATE: dua orang yang mengubah status bersamaan tidak saling menimpa diam-diam.
-    const [current] = await tx
-      .select({ status: orders.status, orderNo: orders.orderNo, method: shipments.method })
-      .from(orders)
-      .innerJoin(shipments, eq(shipments.orderId, orders.id))
-      .where(eq(orders.id, orderId))
-      .for("update")
-    if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
-    const allowed =
-      nextStatuses(current.status, current.method).includes(status) &&
-      (!limitTo || (limitTo.includes(current.status) && limitTo.includes(status)))
-    if (!allowed) {
-      return {
-        ok: false,
-        message: `Pesanan ${ORDER_STATUS_LABEL[current.status]} tidak bisa diubah ke ${ORDER_STATUS_LABEL[status]}. Muat ulang halaman.`,
-      }
-    }
-
-    await tx.update(orders).set({ status }).where(eq(orders.id, orderId))
-    await tx
-      .update(shipments)
-      .set({ status: shipmentStatusFor(status, current.method) })
-      .where(eq(shipments.orderId, orderId))
-    await tx
-      .insert(orderStatusLogs)
-      .values({ orderId, fromStatus: current.status, toStatus: status, changedBy: userId })
+  const { done, skipped } = await changeStatuses([orderId], status, userId, { limitTo })
+  if (done.length > 0) {
+    return { ok: true, message: `Status ${done[0]} jadi ${ORDER_STATUS_LABEL[status]}.` }
+  }
+  if (skipped.length > 0) {
     return {
-      ok: true,
-      message: `Status ${current.orderNo} jadi ${ORDER_STATUS_LABEL[status]}.`,
-      orderNo: current.orderNo,
+      ok: false,
+      message: `Pesanan ${ORDER_STATUS_LABEL[skipped[0].from]} tidak bisa diubah ke ${ORDER_STATUS_LABEL[status]}. Muat ulang halaman.`,
     }
-  })
-
-  if (result.ok) revalidateOrders("orderNo" in result ? result.orderNo : undefined)
-  return { ok: result.ok, message: result.message }
+  }
+  return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
 }
 
 /** Ubah Status dari Daftar/Detail Pesanan (Admin, Kasir). */
@@ -242,6 +216,36 @@ export async function updateOrderStatus(orderId: string, target: string): Promis
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error
   }
+}
+
+const orderIdsSchema = z.array(z.uuid()).min(1).max(BULK_LIMIT)
+
+/**
+ * Aksi massal Daftar Pesanan (BELL-19): ubah status atau batalkan pesanan terpilih.
+ * Pesanan yang langkahnya tidak sah dilewati dan disebut di hasil.
+ */
+export async function updateOrderStatuses(orderIds: unknown, target: string): Promise<BulkResult> {
+  let userId: string
+  try {
+    userId = await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const ids = orderIdsSchema.safeParse(orderIds)
+  const status = parseStatus(target)
+  if (!ids.success || !status) {
+    return { ok: false, message: "Pilihan pesanan tidak terbaca. Muat ulang halaman." }
+  }
+
+  const label = ORDER_STATUS_LABEL[status]
+  return summarizeBulk({
+    ...(await changeStatuses(ids.data, status, userId)),
+    one: (orderNo) =>
+      status === "dibatalkan" ? `${orderNo} dibatalkan.` : `Status ${orderNo} jadi ${label}.`,
+    many: (count) =>
+      status === "dibatalkan" ? `${count} pesanan dibatalkan.` : `${count} pesanan jadi ${label}.`,
+  })
 }
 
 /** Mulai / selesai masak dari halaman Produksi (Admin, Produksi). Hanya langkah dapur. */
@@ -257,6 +261,27 @@ export async function updateProductionStatus(
     throw error
   }
   return changeOrderStatus(orderId, target, userId, PRODUCTION_STATUSES)
+}
+
+export type ExportOrdersResult =
+  { ok: true; csv: string; count: number } | { ok: false; message: string }
+
+/** Unduh CSV pesanan terpilih (BELL-19), urut nomor pesanan. */
+export async function exportOrdersCsv(orderIds: unknown): Promise<ExportOrdersResult> {
+  try {
+    await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const ids = orderIdsSchema.safeParse(orderIds)
+  if (!ids.success) {
+    return { ok: false, message: "Pilihan pesanan tidak terbaca. Muat ulang halaman." }
+  }
+  const rows = await getOrdersForExport(ids.data)
+  if (rows.length === 0)
+    return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+  return { ok: true, csv: ordersToCsv(rows), count: rows.length }
 }
 
 export type UpdateOrderResult =
@@ -344,7 +369,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       .where(eq(shipments.orderId, orderId))
   })
 
-  revalidateOrders(current.orderNo)
+  revalidateOrders([current.orderNo])
   revalidatePath("/master-data/customer")
   return { ok: true, message: `Data ${current.orderNo} disimpan.` }
 }

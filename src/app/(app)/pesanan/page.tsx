@@ -6,6 +6,7 @@ import { Suspense } from "react"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
+import { SelectAllHead } from "@/components/app/row-selection"
 import { TablePagination } from "@/components/app/table-pagination"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { OrderActionsProvider, OrderRowMenu } from "@/features/orders/components/order-bulk-actions"
 import { OrderDetailPanel } from "@/features/orders/components/order-detail-panel"
 import { OrderFilters } from "@/features/orders/components/order-filters"
 import { OrderRow } from "@/features/orders/components/order-row"
@@ -24,6 +26,7 @@ import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { filterParams, parseOrderFilters } from "@/features/orders/filters"
 import { computeKpis, kpiWindow } from "@/features/orders/kpis"
 import { getDailyOrderStats, listOrders, ORDER_PAGE_SIZE } from "@/features/orders/queries"
+import { listActivePaymentMethods } from "@/features/payments/queries"
 import { requirePageAccess } from "@/lib/auth"
 import {
   formatJam,
@@ -122,7 +125,10 @@ async function OrderKpis({ searchParams }: { searchParams: SearchParams }) {
 async function OrderList({ searchParams }: { searchParams: SearchParams }) {
   await requirePageAccess(PATH)
   const { today, filters, selected } = await readFilters(searchParams)
-  const { rows, total, page, pageCount } = await listOrders(filters)
+  const [{ rows, total, page, pageCount }, paymentMethods] = await Promise.all([
+    listOrders(filters),
+    listActivePaymentMethods(),
+  ])
   const listParams = { ...filterParams(filters, today), hal: page > 1 ? String(page) : undefined }
   const singleDay = filters.from === filters.to
   const filtered = Boolean(filters.q || filters.type || filters.status || filters.method)
@@ -172,19 +178,35 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
               )}
             </div>
           ) : (
-            <>
+            <OrderActionsProvider
+              // Pilihan checkbox kosong lagi saat isi halaman tabel berganti.
+              key={rows.map((order) => order.id).join()}
+              rows={rows.map((order) => ({
+                id: order.id,
+                orderNo: order.orderNo,
+                status: order.status,
+                method: order.shippingMethod,
+                paid: order.paid,
+                total: order.total,
+              }))}
+              methods={paymentMethods}
+            >
               <div className="overflow-x-auto">
-                <Table className="min-w-[900px]">
+                <Table className="min-w-[960px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="pl-6">No. Pesanan</TableHead>
+                      <SelectAllHead label="Pilih semua pesanan di halaman ini" />
+                      <TableHead className="pl-3">No. Pesanan</TableHead>
                       <TableHead>Waktu</TableHead>
                       <TableHead>Nama Customer</TableHead>
                       <TableHead>Tipe</TableHead>
                       <TableHead>Tgl Kirim</TableHead>
                       <TableHead>Pengiriman</TableHead>
                       <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="pr-6">Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-14 pr-4">
+                        <span className="sr-only">Aksi</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -194,6 +216,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         href={pageHref({ ...listParams, pesanan: order.orderNo })}
                         orderNo={order.orderNo}
                         selected={order.orderNo === selected}
+                        selectId={order.id}
                       >
                         <TableCell className="tabular-nums">
                           {singleDay
@@ -220,8 +243,11 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         <TableCell className="text-right tabular-nums">
                           {formatRupiah(order.total)}
                         </TableCell>
-                        <TableCell className="pr-6">
+                        <TableCell>
                           <OrderStatusBadge status={order.status} />
+                        </TableCell>
+                        <TableCell className="pr-4 text-right">
+                          <OrderRowMenu id={order.id} />
                         </TableCell>
                       </OrderRow>
                     ))}
@@ -237,7 +263,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                 total={total}
                 noun="pesanan"
               />
-            </>
+            </OrderActionsProvider>
           )}
         </section>
         {selected && (

@@ -136,7 +136,7 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - KPI hanya mengikuti rentang tanggal, bukan filter lain, dan pesanan Dibatalkan tidak dihitung. Tren dibandingkan dengan periode sepanjang rentang yang sama tepat sebelumnya. Sparkline memakai minimal 7 hari terakhir.
   - Rentang tanggal adalah tanggal pesanan dibuat (WIB), default hari ini. Pemilih rentangnya punya preset (Hari ini, Kemarin, 7 hari terakhir, Bulan ini) dan kalender, di komponen bersama `DateRangePicker`.
   - Urutan tabel mengikuti waktu dibuat dari yang paling awal, sebagai antrean hari itu. Kolom Waktu menampilkan jam, ditambah tanggal bila rentangnya lebih dari sehari.
-  - Checkbox dan menu ⋮ menyusul bersama aksi massal (BELL-19).
+  - Checkbox, menu ⋮, dan aksi massal: lihat **Aksi massal** di bawah.
   - Pesanan Hadiah: nama pengirim tampil kecil di bawah nama penerima ("dari Rizky"); pencarian juga mencari nama pengirim.
 - **Panel Detail Pesanan:** dibuka dengan klik baris (`?pesanan=BB…`, jadi bisa dibagikan). Di layar xl, panel menjadi kolom kanan 420 px yang menempel saat digulir, seperti desain. Di bawah xl, panel menjadi laci dari kanan di atas latar gelap. Ditutup dengan X, klik latar, atau Esc. Fokus pindah ke judul panel saat dibuka. Isinya sesuai desain; untuk Hadiah, judulnya "Data Penerima" dan ada baris Pengirim serta Kartu Ucapan. Tombol Edit hanya muncul sampai status Siap Kirim. Ubah Status hanya menawarkan langkah yang sah (maju satu, mundur satu, atau Batalkan dengan konfirmasi).
 - **Detail Lengkap** (`/pesanan/BB…`, belum didesain): data customer, tabel menu dengan harga, jumlah, subtotal, dan total, lalu kartu Status dengan riwayat perubahan (siapa dan kapan), serta pesan WhatsApp asli.
@@ -166,8 +166,15 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Tab segmen berupa grup tombol `aria-pressed`, bukan tablist, karena tombolnya menyaring tabel.
   - Filter tanggal kirim memakai komponen bersama `DeliveryDatePicker` (Hari ini/Besok/tanggal), sama dengan Produksi.
   - Pesanan yang belum selesai dimasak ikut tampil dengan status abu "Belum siap", supaya kurir dan slotnya bisa diatur lebih awal.
-  - Checkbox dan menu ⋮ menyusul bersama aksi massal (BELL-19).
+  - Checkbox, menu ⋮, dan aksi massal: lihat **Aksi massal** di bawah.
   - **Panel detail** memakai bingkai yang sama dengan Detail Pesanan. Peta mini berupa embed Google Maps tanpa API key, dan "Lihat Rute di Maps" membuka rute dari alamat toko (Pengaturan) ke customer.
+- **Aksi massal** (BELL-19, belum didesain; Pesanan dan Pengiriman):
+  - Kolom checkbox di awal tabel, dengan checkbox "pilih semua" di kepala tabel yang setengah tercentang bila sebagian baris dipilih. Pilihan hanya berlaku untuk halaman tabel yang sedang tampil dan kosong lagi saat filter atau halaman berganti. Seluruh sel checkbox bisa diklik dan tidak membuka panel detail. Baris terpilih diberi latar krem muda.
+  - Saat ada baris terpilih, muncul bar cokelat tua (`brand-ink`) yang melayang di tengah bawah layar: "N pesanan dipilih", tombol aksi, dan X untuk batal pilih. Bar sengaja melayang supaya tabel tidak bergeser saat checkbox pertama dicentang dan bar tetap terlihat saat digulir. Muncul dengan geser-naik 180 ms (tanpa geser bila reduced motion). Jumlah terpilih diumumkan ke pembaca layar.
+  - Tombol hanya mengirim pesanan yang memenuhi syarat. Bila hanya sebagian yang memenuhi, jumlahnya ditulis di tombol ("Tandai lunas (5)"). Tombol yang tidak berlaku untuk semua pesanan terpilih tampak redup (`aria-disabled`) tapi tetap bisa difokus dan diklik untuk memunculkan alasannya, karena tombol `disabled` tidak bisa menjelaskan kenapa. Server memeriksa ulang, lalu toast menyebut pesanan yang dilewati beserta alasannya.
+  - **Pesanan:** Ubah status (menu berisi badge status tujuan dan "N pesanan" / "3 dari 6" / "tidak bisa"), Tandai lunas (dialog Tandai Lunas dengan satu metode dan catatan untuk semua; yang sudah lunas atau dibatalkan dilewati), Batalkan (konfirmasi berisi daftar nomor pesanan), dan Unduh CSV (koma, UTF-8 dengan BOM, satu baris per pesanan termasuk menu dan status bayar).
+  - **Pengiriman:** Atur kurir & jadwal (dialog kurir yang sama, satu kurir dan slot untuk semua pesanan Kurir Internal terpilih) dan Tandai dikirim (hanya Siap Kirim; Kurir Internal harus sudah punya kurir, Pick Up tidak ikut).
+  - **Menu ⋮ per baris** memakai aksi dan dialog yang sama untuk satu pesanan. Pesanan: Detail lengkap, Jadikan {status}, Tandai lunas, Batalkan pesanan (merah). Pengiriman: Lihat pesanan, langkah berikutnya (Tandai Dikirim / Tandai Selesai / Sudah Diambil), Ubah kurir / jadwal.
 - **Laporan (tab Ringkasan):** tata letak mengikuti 05-laporan.png.
   - Tab lain belum didesain (BELL-36), jadi belum ditampilkan supaya tidak ada tab kosong. Pilihan "Bulan Ini" ada di preset pemilih tanggal, bukan dropdown terpisah.
   - Donat metode kirim tidak punya irisan "Lainnya" karena metodenya hanya tiga (lihat BELL-37).

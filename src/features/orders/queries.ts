@@ -1,12 +1,37 @@
 import "server-only"
 
-import { and, asc, count, desc, eq, gte, ilike, like, lt, ne, or, sql } from "drizzle-orm"
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  like,
+  lt,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { customers, menus, menuVariants, orders, shipments } from "@/db/schema"
+import {
+  customers,
+  menus,
+  menuVariants,
+  orderItems,
+  orders,
+  paymentMethods,
+  payments,
+  shipments,
+} from "@/db/schema"
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 import type { CatalogVariant } from "./catalog"
+import type { OrderExportRow } from "./csv"
 import { addDays, type OrderFilters, type OrderStatus } from "./filters"
 import type { DailyOrderStats } from "./kpis"
 import type { ShipmentStatus } from "./status"
@@ -54,6 +79,8 @@ export type OrderListRow = {
   shippingMethod: ShippingMethod
   total: number
   status: OrderStatus
+  /** Sudah ada pembayaran Lunas. */
+  paid: boolean
 }
 
 /** Cari nama customer, nama pengirim hadiah, no. pesanan, atau no. HP (bila berisi angka). */
@@ -102,10 +129,12 @@ export async function listOrders(filters: OrderFilters) {
       shippingMethod: shipments.method,
       total: orders.total,
       status: orders.status,
+      paid: isNotNull(payments.id).mapWith(Boolean),
     })
     .from(orders)
     .innerJoin(customers, eq(customers.id, orders.customerId))
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .leftJoin(payments, and(eq(payments.orderId, orders.id), eq(payments.status, "lunas")))
     .where(where)
     .orderBy(asc(orders.createdAt), asc(orders.orderNo))
     .limit(ORDER_PAGE_SIZE)
@@ -276,7 +305,7 @@ export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntr
 
 /** Pesanan terbaru pada rentang ini (termasuk dibatalkan), terbaru di atas. Untuk Dashboard. */
 export async function listLatestOrders(from: string, to: string, limit = 5) {
-  const rows: OrderListRow[] = await getDb()
+  const rows: Omit<OrderListRow, "paid">[] = await getDb()
     .select({
       id: orders.id,
       orderNo: orders.orderNo,
@@ -296,4 +325,51 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
     .orderBy(desc(orders.createdAt))
     .limit(limit)
   return rows
+}
+
+/** Data lengkap pesanan terpilih untuk Unduh CSV, urut nomor pesanan. */
+export async function getOrdersForExport(orderIds: string[]): Promise<OrderExportRow[]> {
+  const db = getDb()
+  const [rows, items] = await Promise.all([
+    db
+      .select({
+        id: orders.id,
+        orderNo: orders.orderNo,
+        createdAt: orders.createdAt,
+        type: orders.type,
+        customerName: customers.name,
+        phone: customers.phone,
+        address: shipments.address,
+        senderName: orders.senderName,
+        deliveryDate: orders.deliveryDate,
+        method: shipments.method,
+        status: orders.status,
+        paidWith: paymentMethods.name,
+        request: orders.request,
+        total: orders.total,
+      })
+      .from(orders)
+      .innerJoin(customers, eq(customers.id, orders.customerId))
+      .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .leftJoin(payments, and(eq(payments.orderId, orders.id), eq(payments.status, "lunas")))
+      .leftJoin(paymentMethods, eq(paymentMethods.id, payments.paymentMethodId))
+      .where(inArray(orders.id, orderIds))
+      .orderBy(asc(orders.orderNo)),
+    db
+      .select({
+        orderId: orderItems.orderId,
+        menuName: menus.name,
+        size: menuVariants.size,
+        qty: orderItems.qty,
+      })
+      .from(orderItems)
+      .innerJoin(menuVariants, eq(menuVariants.id, orderItems.menuVariantId))
+      .innerJoin(menus, eq(menus.id, menuVariants.menuId))
+      .where(inArray(orderItems.orderId, orderIds))
+      .orderBy(asc(menus.category), asc(menus.createdAt), asc(menuVariants.size)),
+  ])
+  return rows.map(({ id, ...row }) => ({
+    ...row,
+    items: items.filter((item) => item.orderId === id),
+  }))
 }

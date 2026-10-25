@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { isEditable, nextStatuses, shipmentStatusFor } from "./status"
+import { isEditable, nextStatuses, shipmentStatusFor, statusSkipReason } from "./status"
 
 describe("nextStatuses", () => {
   it("maju satu langkah, mundur satu langkah, dan batal", () => {
@@ -47,5 +47,48 @@ describe("isEditable", () => {
     expect(isEditable("siap_kirim")).toBe(true)
     expect(isEditable("dikirim")).toBe(false)
     expect(isEditable("dibatalkan")).toBe(false)
+  })
+})
+
+describe("statusSkipReason", () => {
+  const order = (
+    status: Parameters<typeof statusSkipReason>[0]["status"],
+    method: Parameters<typeof statusSkipReason>[0]["method"] = "instant",
+    hasCourier = false,
+  ) => ({ status, method, hasCourier })
+
+  it("langkah yang sah tidak dilewati", () => {
+    expect(statusSkipReason(order("baru"), "diproses")).toBeNull()
+    expect(statusSkipReason(order("siap_kirim"), "dibatalkan")).toBeNull()
+  })
+
+  it("langkah yang tidak sah menyebut status sekarang", () => {
+    expect(statusSkipReason(order("selesai"), "diproses")).toBe("status Selesai")
+    expect(statusSkipReason(order("baru"), "siap_kirim")).toBe("status Baru")
+    expect(statusSkipReason(order("dikirim"), "dibatalkan")).toBe("status Dikirim")
+  })
+
+  it("Pick Up tidak pernah Dikirim", () => {
+    expect(statusSkipReason(order("siap_kirim", "pick_up"), "dikirim")).toBe(
+      "Pick Up, tidak dikirim",
+    )
+  })
+
+  it("requireCourier: Kurir Internal tanpa kurir dilewati, Instant tidak", () => {
+    const rules = { requireCourier: true }
+    expect(statusSkipReason(order("siap_kirim", "kurir_internal"), "dikirim", rules)).toBe(
+      "belum ada kurir",
+    )
+    expect(
+      statusSkipReason(order("siap_kirim", "kurir_internal", true), "dikirim", rules),
+    ).toBeNull()
+    expect(statusSkipReason(order("siap_kirim", "instant"), "dikirim", rules)).toBeNull()
+    expect(statusSkipReason(order("siap_kirim", "kurir_internal"), "dikirim")).toBeNull()
+  })
+
+  it("limitTo membatasi status asal dan tujuan", () => {
+    const rules = { limitTo: ["baru", "diproses", "siap_kirim"] as const }
+    expect(statusSkipReason(order("diproses"), "siap_kirim", rules)).toBeNull()
+    expect(statusSkipReason(order("siap_kirim"), "dikirim", rules)).toBe("status Siap Kirim")
   })
 })

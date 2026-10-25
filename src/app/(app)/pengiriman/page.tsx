@@ -5,6 +5,7 @@ import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
+import { SelectAllHead } from "@/components/app/row-selection"
 import { ShipmentStatusBadge, ShippingMethodLabel } from "@/components/app/shipment-badges"
 import { TablePagination } from "@/components/app/table-pagination"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,6 +18,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { OrderRow } from "@/features/orders/components/order-row"
+import {
+  ShipmentActionsProvider,
+  ShipmentRowMenu,
+} from "@/features/shipments/components/shipment-bulk-actions"
 import { ShipmentDetailPanel } from "@/features/shipments/components/shipment-detail-panel"
 import { ShipmentFilters } from "@/features/shipments/components/shipment-filters"
 import {
@@ -160,18 +165,34 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
               </p>
             </div>
           ) : (
-            <>
+            <ShipmentActionsProvider
+              // Pilihan checkbox kosong lagi saat isi halaman tabel berganti.
+              key={rows.map((row) => row.orderId).join()}
+              rows={rows.map((row) => ({
+                id: row.orderId,
+                orderNo: row.orderNo,
+                orderStatus: row.orderStatus,
+                method: row.method,
+                courierId: row.courierId,
+                slot: row.slot,
+              }))}
+              couriers={couriers}
+            >
               <div className="overflow-x-auto">
-                <Table className="min-w-[900px]">
+                <Table className="min-w-[960px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="pl-6">No. Pesanan</TableHead>
+                      <SelectAllHead label="Pilih semua pesanan di halaman ini" />
+                      <TableHead className="pl-3">No. Pesanan</TableHead>
                       <TableHead>Nama Customer</TableHead>
                       <TableHead>Metode</TableHead>
                       <TableHead>Alamat</TableHead>
                       <TableHead>Kurir</TableHead>
                       <TableHead>Estimasi</TableHead>
-                      <TableHead className="pr-6">Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-14 pr-4">
+                        <span className="sr-only">Aksi</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -181,6 +202,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                         href={pageHref({ ...params, pesanan: row.orderNo })}
                         orderNo={row.orderNo}
                         selected={row.orderNo === selected}
+                        selectId={row.orderId}
                       >
                         <TableCell>
                           <span className="block font-medium text-text-strong">
@@ -204,8 +226,11 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                         <TableCell className="whitespace-nowrap tabular-nums">
                           {row.slot ? SLOT_LABEL[row.slot] : "-"}
                         </TableCell>
-                        <TableCell className="pr-6">
+                        <TableCell>
                           <ShipmentStatusBadge state={stateOf(row.status)} />
+                        </TableCell>
+                        <TableCell className="pr-4 text-right">
+                          <ShipmentRowMenu id={row.orderId} />
                         </TableCell>
                       </OrderRow>
                     ))}
@@ -221,7 +246,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                 total={total}
                 noun="pesanan"
               />
-            </>
+            </ShipmentActionsProvider>
           )}
         </section>
         {selected && (

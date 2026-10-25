@@ -3,7 +3,7 @@
 
 import type { ShippingMethod } from "@/lib/wa-parser"
 
-import type { OrderStatus } from "./filters"
+import { ORDER_STATUS_LABEL, type OrderStatus } from "./filters"
 
 export type ShipmentStatus =
   "menunggu_kurir" | "siap_dikirim" | "siap_diambil" | "dalam_perjalanan" | "dikirim" | "selesai"
@@ -55,6 +55,38 @@ export function shipmentStatusFor(
     default:
       return null
   }
+}
+
+export type StatusRules = {
+  /** Status asal dan tujuan harus ada di daftar ini (dipakai Produksi: hanya langkah dapur). */
+  limitTo?: readonly OrderStatus[]
+  /** Kurir Internal baru boleh Dikirim setelah kurirnya dipilih (dipakai Pengiriman). */
+  requireCourier?: boolean
+}
+
+/**
+ * Alasan singkat sebuah pesanan tidak bisa diubah ke `target`, untuk daftar "dilewati" di aksi
+ * massal; `null` bila boleh.
+ */
+export function statusSkipReason(
+  order: { status: OrderStatus; method: ShippingMethod; hasCourier: boolean },
+  target: OrderStatus,
+  rules: StatusRules = {},
+): string | null {
+  if (target === "dikirim" && order.method === "pick_up") return "Pick Up, tidak dikirim"
+  const allowed =
+    nextStatuses(order.status, order.method).includes(target) &&
+    (!rules.limitTo || (rules.limitTo.includes(order.status) && rules.limitTo.includes(target)))
+  if (!allowed) return `status ${ORDER_STATUS_LABEL[order.status]}`
+  if (
+    rules.requireCourier &&
+    target === "dikirim" &&
+    order.method === "kurir_internal" &&
+    !order.hasCourier
+  ) {
+    return "belum ada kurir"
+  }
+  return null
 }
 
 /** Status yang masih boleh diubah datanya (customer, alamat, tanggal, metode). */

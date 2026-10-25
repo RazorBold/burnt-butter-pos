@@ -1,24 +1,20 @@
 "use client"
 
-import { usePathname, useRouter } from "next/navigation"
-import { useTransition } from "react"
-
 import { Input } from "@/components/ui/input"
 import { addDays } from "@/features/orders/filters"
+import { useUrlFilters } from "@/hooks/use-url-filters"
 import { cn } from "@/lib/utils"
 
-/** Pilih tanggal kirim (?tanggal=): Hari ini, Besok, atau tanggal lain. Default hari ini. */
-export function ProductionDatePicker({ date, today }: { date: string; today: string }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [pending, startTransition] = useTransition()
+/**
+ * Pilih tanggal kirim (?tanggal=): Hari ini, Besok, atau tanggal lain. Default (tanpa parameter)
+ * hari ini. Filter lain di URL dipertahankan; halaman kembali ke 1.
+ */
+export function DeliveryDatePicker({ date, today }: { date: string; today: string }) {
+  const { update, pending } = useUrlFilters()
   const tomorrow = addDays(today, 1)
 
   function go(next: string) {
-    if (!next) return
-    startTransition(() =>
-      router.replace(next === today ? pathname : `${pathname}?tanggal=${next}`, { scroll: false }),
-    )
+    if (next) update({ tanggal: next === today ? null : next })
   }
 
   const chip = (value: string, label: string) => (
@@ -41,11 +37,11 @@ export function ProductionDatePicker({ date, today }: { date: string; today: str
     <div className={cn("flex flex-wrap items-center gap-2", pending && "opacity-80")}>
       {chip(today, "Hari ini")}
       {chip(tomorrow, "Besok")}
-      <label className="sr-only" htmlFor="production-date">
+      <label className="sr-only" htmlFor="delivery-date">
         Tanggal kirim
       </label>
       <Input
-        id="production-date"
+        id="delivery-date"
         type="date"
         value={date}
         onChange={(event) => go(event.target.value)}

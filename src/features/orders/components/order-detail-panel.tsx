@@ -164,7 +164,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
   )
 }
 
-function OrderItems({ order }: { order: OrderDetail }) {
+export function OrderItems({ order }: { order: OrderDetail }) {
   return (
     <section aria-labelledby="order-items" className="border-t border-border px-5 py-4 sm:px-6">
       <div className="mb-2 flex items-center justify-between gap-3">

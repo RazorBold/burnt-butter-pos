@@ -6,7 +6,7 @@ import { Suspense } from "react"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ProductionDatePicker } from "@/features/production/components/production-date-picker"
+import { DeliveryDatePicker } from "@/components/app/delivery-date-picker"
 import { ProductionOrderCard } from "@/features/production/components/production-order-card"
 import { listProductionOrders } from "@/features/production/queries"
 import {
@@ -64,7 +64,7 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
       <PageHeader
         title="Produksi"
         description={`Porsi yang harus dimasak untuk pesanan yang dikirim ${dateLabel}.`}
-        actions={<ProductionDatePicker date={date} today={today} />}
+        actions={<DeliveryDatePicker date={date} today={today} />}
       />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

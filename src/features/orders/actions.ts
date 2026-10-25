@@ -172,6 +172,8 @@ async function requireOrderEditor(): Promise<string> {
 function revalidateOrders(orderNo?: string) {
   revalidatePath("/pesanan")
   revalidatePath("/dashboard")
+  revalidatePath("/produksi")
+  revalidatePath("/pengiriman")
   if (orderNo) revalidatePath(`/pesanan/${orderNo}`)
 }
 
@@ -228,10 +230,7 @@ async function changeOrderStatus(
     }
   })
 
-  if (result.ok) {
-    revalidateOrders("orderNo" in result ? result.orderNo : undefined)
-    revalidatePath("/produksi")
-  }
+  if (result.ok) revalidateOrders("orderNo" in result ? result.orderNo : undefined)
   return { ok: result.ok, message: result.message }
 }
 

@@ -152,7 +152,9 @@ export type OrderDetail = {
     method: ShippingMethod
     status: ShipmentStatus | null
     address: string | null
+    courierId: string | null
     courierName: string | null
+    slot: "09-12" | "13-17" | null
   }
   items: {
     id: string
@@ -224,7 +226,9 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       method: order.shipment.method,
       status: order.shipment.status,
       address: order.shipment.address,
+      courierId: order.shipment.courierId,
       courierName: order.shipment.courier?.name ?? null,
+      slot: order.shipment.slot,
     },
     items: [...order.items]
       .sort(

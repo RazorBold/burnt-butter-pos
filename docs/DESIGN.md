@@ -149,6 +149,14 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Rekap per Menu: kartu berisi foto, total porsi, baris per ukuran ("0 / 2 selesai"), dan bar hijau porsi yang selesai. Urutannya mengikuti template WA.
   - Papan Pesanan: 3 kolom (Belum mulai, Sedang dimasak, Selesai masak), bertumpuk di ponsel. Kartu pesanan berisi daftar "2× Menu (Large)", request (latar kuning), badge "Hadiah + kartu" untuk packing, metode kirim, dan jam masuk.
   - Tombol: Mulai masak / Selesai masak, plus tombol teks untuk mundur satu langkah bila salah klik.
+- **Pengiriman** (04-pengiriman.png):
+  - Hiasan header berupa potongan `public/images/brand/header-pasta.webp` dari bg-beige-brand, memudar ke kiri/bawah, hanya di lg ke atas. Teks tulisan tangan di desain tidak dibuat.
+  - 5 KPI untuk tanggal kirim terpilih, tanpa tren.
+  - Tab segmen berupa grup tombol `aria-pressed`, bukan tablist, karena tombolnya menyaring tabel.
+  - Filter tanggal kirim memakai komponen bersama `DeliveryDatePicker` (Hari ini/Besok/tanggal), sama dengan Produksi.
+  - Pesanan yang belum selesai dimasak ikut tampil dengan status abu "Belum siap", supaya kurir dan slotnya bisa diatur lebih awal.
+  - Checkbox dan menu ⋮ menyusul bersama aksi massal (BELL-19).
+  - **Panel detail** memakai bingkai yang sama dengan Detail Pesanan. Peta mini berupa embed Google Maps tanpa API key, dan "Lihat Rute di Maps" membuka rute dari alamat toko (Pengaturan) ke customer.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

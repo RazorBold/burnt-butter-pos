@@ -157,7 +157,7 @@ test.describe("Input Pesanan › Simpan", () => {
       customer: name,
       sender_name: null,
       method: "instant",
-      shipment_status: "menunggu_kurir",
+      shipment_status: null,
       items: 4,
       logs: 1,
     })

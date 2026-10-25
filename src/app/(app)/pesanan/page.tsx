@@ -17,7 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { OrderDetailPanel } from "@/features/orders/components/order-detail-panel"
 import { OrderFilters } from "@/features/orders/components/order-filters"
+import { OrderRow } from "@/features/orders/components/order-row"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { filterParams, parseOrderFilters } from "@/features/orders/filters"
 import { computeKpis, kpiWindow } from "@/features/orders/kpis"
@@ -30,6 +32,7 @@ import {
   formatTanggalPendek,
   toJakartaDateString,
 } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = { title: "Daftar Pesanan" }
 
@@ -56,7 +59,17 @@ export default function PesananPage({ searchParams }: PageProps<"/pesanan">) {
 
 async function readFilters(searchParams: SearchParams) {
   const today = toJakartaDateString(new Date())
-  return { today, filters: parseOrderFilters(await searchParams, today) }
+  const params = await searchParams
+  const selected = typeof params.pesanan === "string" ? params.pesanan : undefined
+  return { today, filters: parseOrderFilters(params, today), selected }
+}
+
+/** URL halaman ini dengan filter yang sama, ditambah/dikurangi parameter tertentu. */
+function pageHref(params: Record<string, string | undefined>) {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) if (value) search.set(key, value)
+  const qs = search.toString()
+  return qs ? `${PATH}?${qs}` : PATH
 }
 
 /** KPI periode (03-pesanan.png). Hanya rentang tanggal yang berpengaruh, bukan filter lain. */
@@ -108,8 +121,9 @@ async function OrderKpis({ searchParams }: { searchParams: SearchParams }) {
 
 async function OrderList({ searchParams }: { searchParams: SearchParams }) {
   await requirePageAccess(PATH)
-  const { today, filters } = await readFilters(searchParams)
+  const { today, filters, selected } = await readFilters(searchParams)
   const { rows, total, page, pageCount } = await listOrders(filters)
+  const listParams = { ...filterParams(filters, today), hal: page > 1 ? String(page) : undefined }
   const singleDay = filters.from === filters.to
   const filtered = Boolean(filters.q || filters.type || filters.status || filters.method)
   const rangeText = singleDay
@@ -124,94 +138,128 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
         <OrderFilters from={filters.from} to={filters.to} today={today} />
       </div>
 
-      <section
-        aria-label="Daftar pesanan"
-        className="mt-6 rounded-2xl border border-border bg-card"
-      >
-        {rows.length === 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-12">
-            <div>
-              <p className="font-semibold text-brand-ink">
-                {filtered
-                  ? "Tidak ada pesanan yang cocok dengan filter."
-                  : `Belum ada pesanan ${rangeText}.`}
-              </p>
-              <p className="mt-1 text-sm text-text-body">
-                {filtered
-                  ? "Ubah filter atau tekan Reset untuk melihat semua pesanan."
-                  : "Pesanan baru muncul di sini setelah disimpan dari Input Pesanan."}
-              </p>
-            </div>
-            {!filtered && (
-              <Button asChild className="h-10 rounded-lg px-4 font-semibold">
-                <Link href="/pesanan/baru">
-                  <Plus className="size-[18px]" aria-hidden />
-                  Input Pesanan
-                </Link>
-              </Button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table className="min-w-[900px]">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="pl-6">No. Pesanan</TableHead>
-                    <TableHead>Waktu</TableHead>
-                    <TableHead>Nama Customer</TableHead>
-                    <TableHead>Tipe</TableHead>
-                    <TableHead>Tgl Kirim</TableHead>
-                    <TableHead>Pengiriman</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="pr-6">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="pl-6 font-medium text-text-strong tabular-nums">
-                        {order.orderNo}
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {singleDay
-                          ? formatJam(order.createdAt)
-                          : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
-                      </TableCell>
-                      <TableCell className="font-medium text-text-strong">
-                        {order.customerName}
-                      </TableCell>
-                      <TableCell>
-                        <TypeBadge type={order.type} />
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {formatTanggalPendek(order.deliveryDate)}
-                      </TableCell>
-                      <TableCell>{SHIPPING_METHOD_LABEL[order.shippingMethod]}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatRupiah(order.total)}
-                      </TableCell>
-                      <TableCell className="pr-6">
-                        <OrderStatusBadge status={order.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <TablePagination
-              pathname={PATH}
-              params={filterParams(filters, today)}
-              page={page}
-              pageCount={pageCount}
-              pageSize={ORDER_PAGE_SIZE}
-              total={total}
-              noun="pesanan"
-            />
-          </>
+      <div
+        className={cn(
+          "mt-6 grid items-start gap-6",
+          selected && "xl:grid-cols-[minmax(0,1fr)_420px]",
         )}
-      </section>
+      >
+        <section
+          aria-label="Daftar pesanan"
+          className="min-w-0 rounded-2xl border border-border bg-card"
+        >
+          {rows.length === 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-12">
+              <div>
+                <p className="font-semibold text-brand-ink">
+                  {filtered
+                    ? "Tidak ada pesanan yang cocok dengan filter."
+                    : `Belum ada pesanan ${rangeText}.`}
+                </p>
+                <p className="mt-1 text-sm text-text-body">
+                  {filtered
+                    ? "Ubah filter atau tekan Reset untuk melihat semua pesanan."
+                    : "Pesanan baru muncul di sini setelah disimpan dari Input Pesanan."}
+                </p>
+              </div>
+              {!filtered && (
+                <Button asChild className="h-10 rounded-lg px-4 font-semibold">
+                  <Link href="/pesanan/baru">
+                    <Plus className="size-[18px]" aria-hidden />
+                    Input Pesanan
+                  </Link>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[900px]">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="pl-6">No. Pesanan</TableHead>
+                      <TableHead>Waktu</TableHead>
+                      <TableHead>Nama Customer</TableHead>
+                      <TableHead>Tipe</TableHead>
+                      <TableHead>Tgl Kirim</TableHead>
+                      <TableHead>Pengiriman</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="pr-6">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((order) => (
+                      <OrderRow
+                        key={order.id}
+                        href={pageHref({ ...listParams, pesanan: order.orderNo })}
+                        orderNo={order.orderNo}
+                        selected={order.orderNo === selected}
+                      >
+                        <TableCell className="tabular-nums">
+                          {singleDay
+                            ? formatJam(order.createdAt)
+                            : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
+                        </TableCell>
+                        <TableCell>
+                          <span className="block font-medium text-text-strong">
+                            {order.customerName}
+                          </span>
+                          {order.type === "hadiah" && order.senderName && (
+                            <span className="block text-[13px] text-text-body">
+                              dari {order.senderName}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <TypeBadge type={order.type} />
+                        </TableCell>
+                        <TableCell className="tabular-nums">
+                          {formatTanggalPendek(order.deliveryDate)}
+                        </TableCell>
+                        <TableCell>{SHIPPING_METHOD_LABEL[order.shippingMethod]}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatRupiah(order.total)}
+                        </TableCell>
+                        <TableCell className="pr-6">
+                          <OrderStatusBadge status={order.status} />
+                        </TableCell>
+                      </OrderRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <TablePagination
+                pathname={PATH}
+                params={filterParams(filters, today)}
+                page={page}
+                pageCount={pageCount}
+                pageSize={ORDER_PAGE_SIZE}
+                total={total}
+                noun="pesanan"
+              />
+            </>
+          )}
+        </section>
+        {selected && (
+          <Suspense key={selected} fallback={<PanelSkeleton />}>
+            <OrderDetailPanel orderNo={selected} closeHref={pageHref(listParams)} />
+          </Suspense>
+        )}
+      </div>
     </>
+  )
+}
+
+function PanelSkeleton() {
+  return (
+    <div
+      aria-hidden
+      className="fixed inset-y-0 right-0 z-50 w-full max-w-[460px] space-y-4 bg-card p-6 xl:static xl:max-w-none xl:rounded-2xl xl:border xl:border-border"
+    >
+      <Skeleton className="h-7 w-48" />
+      <Skeleton className="h-40 w-full" />
+      <Skeleton className="h-48 w-full" />
+    </div>
   )
 }
 

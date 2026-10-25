@@ -9,6 +9,7 @@ import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 import type { CatalogVariant } from "./catalog"
 import { addDays, type OrderFilters, type OrderStatus } from "./filters"
 import type { DailyOrderStats } from "./kpis"
+import type { ShipmentStatus } from "./status"
 
 export const ORDER_PAGE_SIZE = 10
 
@@ -46,6 +47,8 @@ export type OrderListRow = {
   orderNo: string
   createdAt: Date
   customerName: string
+  /** Pesanan Hadiah: customer = penerima, ini yang memesan. */
+  senderName: string | null
   type: OrderType
   deliveryDate: string
   shippingMethod: ShippingMethod
@@ -53,7 +56,7 @@ export type OrderListRow = {
   status: OrderStatus
 }
 
-/** Cari nama customer, no. pesanan, atau no. HP (bila yang diketik berisi angka). */
+/** Cari nama customer, nama pengirim hadiah, no. pesanan, atau no. HP (bila berisi angka). */
 function searchCondition(q: string | undefined) {
   if (!q) return undefined
   const escaped = q.replace(/[\\%_]/g, (char) => `\\${char}`)
@@ -61,6 +64,7 @@ function searchCondition(q: string | undefined) {
   if (digits.startsWith("62")) digits = `0${digits.slice(2)}`
   return or(
     ilike(customers.name, `%${escaped}%`),
+    ilike(orders.senderName, `%${escaped}%`),
     ilike(orders.orderNo, `%${escaped}%`),
     digits.length >= 3 ? like(customers.phone, `%${digits}%`) : undefined,
   )
@@ -92,6 +96,7 @@ export async function listOrders(filters: OrderFilters) {
       orderNo: orders.orderNo,
       createdAt: orders.createdAt,
       customerName: customers.name,
+      senderName: orders.senderName,
       type: orders.type,
       deliveryDate: orders.deliveryDate,
       shippingMethod: shipments.method,
@@ -123,4 +128,130 @@ export async function getDailyOrderStats(from: string, to: string): Promise<Dail
     .from(orders)
     .where(and(createdBetween(from, to), ne(orders.status, "dibatalkan")))
     .groupBy(day)
+}
+
+export type OrderDetail = {
+  id: string
+  orderNo: string
+  createdAt: Date
+  createdByName: string | null
+  type: OrderType
+  status: OrderStatus
+  deliveryDate: string
+  request: string | null
+  total: number
+  rawWaText: string | null
+  senderName: string | null
+  cardTo: string | null
+  cardWishes: string | null
+  cardFrom: string | null
+  customer: { name: string; phone: string }
+  shipment: {
+    method: ShippingMethod
+    status: ShipmentStatus | null
+    address: string | null
+    courierName: string | null
+  }
+  items: {
+    id: string
+    menuName: string
+    size: "large" | "regular" | "single"
+    qty: number
+    unitPrice: number
+    subtotal: number
+    photoPath: string | null
+  }[]
+}
+
+// Urutan seperti template WA: pasta Large, pasta Regular, dessert, bundle; dalam satu
+// kelompok mengikuti urutan menu di Master Data (A–E di template).
+const CATEGORY_ORDER = { pasta: 0, dessert: 1, bundle: 2 } as const
+const SIZE_ORDER = { large: 0, regular: 1, single: 2 } as const
+
+/** Detail satu pesanan untuk panel kanan Daftar Pesanan dan halaman Detail Lengkap. */
+export async function getOrderDetail(orderNo: string): Promise<OrderDetail | null> {
+  const order = await getDb().query.orders.findFirst({
+    where: (order, { eq }) => eq(order.orderNo, orderNo),
+    with: {
+      customer: { columns: { name: true, phone: true } },
+      shipment: { with: { courier: { columns: { name: true } } } },
+      createdByProfile: { columns: { name: true } },
+      items: {
+        with: {
+          variant: {
+            columns: { size: true },
+            with: {
+              menu: { columns: { name: true, photoPath: true, category: true, createdAt: true } },
+            },
+          },
+        },
+      },
+    },
+  })
+  if (!order || !order.shipment) return null
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    createdAt: order.createdAt,
+    createdByName: order.createdByProfile?.name ?? null,
+    type: order.type,
+    status: order.status,
+    deliveryDate: order.deliveryDate,
+    request: order.request,
+    total: order.total,
+    rawWaText: order.rawWaText,
+    senderName: order.senderName,
+    cardTo: order.cardTo,
+    cardWishes: order.cardWishes,
+    cardFrom: order.cardFrom,
+    customer: order.customer,
+    shipment: {
+      method: order.shipment.method,
+      status: order.shipment.status,
+      address: order.shipment.address,
+      courierName: order.shipment.courier?.name ?? null,
+    },
+    items: [...order.items]
+      .sort(
+        (a, b) =>
+          CATEGORY_ORDER[a.variant.menu.category] - CATEGORY_ORDER[b.variant.menu.category] ||
+          SIZE_ORDER[a.variant.size] - SIZE_ORDER[b.variant.size] ||
+          a.variant.menu.createdAt.getTime() - b.variant.menu.createdAt.getTime() ||
+          a.variant.menu.name.localeCompare(b.variant.menu.name),
+      )
+      .map((item) => ({
+        id: item.id,
+        menuName: item.variant.menu.name,
+        size: item.variant.size,
+        qty: item.qty,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+        photoPath: item.variant.menu.photoPath,
+      })),
+  }
+}
+
+export type OrderHistoryEntry = {
+  id: string
+  fromStatus: OrderStatus | null
+  toStatus: OrderStatus
+  changedAt: Date
+  changedByName: string | null
+}
+
+/** Riwayat perubahan status, terbaru di atas. */
+export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntry[]> {
+  const logs = await getDb().query.orderStatusLogs.findMany({
+    where: (log, { eq }) => eq(log.orderId, orderId),
+    with: { changedByProfile: { columns: { name: true } } },
+    orderBy: (log, { desc }) => [desc(log.changedAt)],
+  })
+  return logs.map((log) => ({
+    id: log.id,
+    fromStatus: log.fromStatus,
+    toStatus: log.toStatus,
+    changedAt: log.changedAt,
+    changedByName: log.changedByProfile?.name ?? null,
+  }))
 }

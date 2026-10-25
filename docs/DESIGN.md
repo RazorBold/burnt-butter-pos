@@ -125,7 +125,10 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - KPI hanya mengikuti rentang tanggal, bukan filter lain, dan pesanan Dibatalkan tidak dihitung. Tren dibandingkan dengan periode sepanjang rentang yang sama tepat sebelumnya. Sparkline memakai minimal 7 hari terakhir.
   - Rentang tanggal adalah tanggal pesanan dibuat (WIB), default hari ini. Pemilih rentangnya punya preset (Hari ini, Kemarin, 7 hari terakhir, Bulan ini) dan kalender, di komponen bersama `DateRangePicker`.
   - Urutan tabel mengikuti waktu dibuat dari yang paling awal, sebagai antrean hari itu. Kolom Waktu menampilkan jam, ditambah tanggal bila rentangnya lebih dari sehari.
-  - Checkbox dan menu ⋮ menyusul bersama aksi massal (BELL-19). Panel detail menyusul di BELL-18.
+  - Checkbox dan menu ⋮ menyusul bersama aksi massal (BELL-19).
+  - Pesanan Hadiah: nama pengirim tampil kecil di bawah nama penerima ("dari Rizky"); pencarian juga mencari nama pengirim.
+- **Panel Detail Pesanan:** dibuka dengan klik baris (`?pesanan=BB…`, jadi bisa dibagikan). Di layar xl, panel menjadi kolom kanan 420 px yang menempel saat digulir, seperti desain. Di bawah xl, panel menjadi laci dari kanan di atas latar gelap. Ditutup dengan X, klik latar, atau Esc. Fokus pindah ke judul panel saat dibuka. Isinya sesuai desain; untuk Hadiah, judulnya "Data Penerima" dan ada baris Pengirim serta Kartu Ucapan. Tombol Edit hanya muncul sampai status Siap Kirim. Ubah Status hanya menawarkan langkah yang sah (maju satu, mundur satu, atau Batalkan dengan konfirmasi).
+- **Detail Lengkap** (`/pesanan/BB…`, belum didesain): data customer, tabel menu dengan harga, jumlah, subtotal, dan total, lalu kartu Status dengan riwayat perubahan (siapa dan kapan), serta pesan WhatsApp asli.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq, inArray, sql } from "drizzle-orm"
+import { z } from "zod"
 import { revalidatePath } from "next/cache"
 
 import { getDb } from "@/db"
@@ -20,8 +21,10 @@ import { toJakartaDateString } from "@/lib/format"
 import { normalizePhone } from "@/lib/phone"
 
 import { type DraftField, draftIssues } from "./draft"
+import { ORDER_STATUS_LABEL, ORDER_STATUSES } from "./filters"
 import { formatOrderNo } from "./order-number"
-import { orderSubmitSchema } from "./schemas"
+import { orderEditSchema, orderSubmitSchema } from "./schemas"
+import { isEditable, nextStatuses, shipmentStatusFor } from "./status"
 
 export type CreateOrderResult =
   | { ok: true; orderNo: string; customerName: string; total: number }
@@ -134,7 +137,8 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
       await tx.insert(shipments).values({
         orderId: order.id,
         method: shippingMethod,
-        status: shippingMethod === "pick_up" ? null : "menunggu_kurir",
+        // Kosong sampai pesanan Siap Kirim (lihat shipmentStatusFor).
+        status: null,
         address,
       })
       await tx
@@ -157,4 +161,158 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
     }
     throw error
   }
+}
+
+type ActionResult = { ok: boolean; message: string }
+
+async function requireOrderEditor(): Promise<string> {
+  return (await requireRole(CAN_INPUT_ORDER)).id
+}
+
+function revalidateOrders(orderNo?: string) {
+  revalidatePath("/pesanan")
+  revalidatePath("/dashboard")
+  if (orderNo) revalidatePath(`/pesanan/${orderNo}`)
+}
+
+/**
+ * Ubah status pesanan sesuai alur (nextStatuses). Status pengiriman ikut disesuaikan
+ * (shipmentStatusFor) dan perubahan dicatat di order_status_logs.
+ */
+export async function updateOrderStatus(orderId: string, target: string): Promise<ActionResult> {
+  let userId: string
+  try {
+    userId = await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const status = ORDER_STATUSES.find((value) => value === target)
+  if (!z.uuid().safeParse(orderId).success || !status) {
+    return { ok: false, message: "Status tidak dikenal. Muat ulang halaman." }
+  }
+
+  const result = await getDb().transaction(async (tx) => {
+    // FOR UPDATE: dua kasir yang mengubah status bersamaan tidak saling menimpa diam-diam.
+    const [current] = await tx
+      .select({ status: orders.status, orderNo: orders.orderNo, method: shipments.method })
+      .from(orders)
+      .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .where(eq(orders.id, orderId))
+      .for("update")
+    if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+    if (!nextStatuses(current.status, current.method).includes(status)) {
+      return {
+        ok: false,
+        message: `Pesanan ${ORDER_STATUS_LABEL[current.status]} tidak bisa diubah ke ${ORDER_STATUS_LABEL[status]}. Muat ulang halaman.`,
+      }
+    }
+
+    await tx.update(orders).set({ status }).where(eq(orders.id, orderId))
+    await tx
+      .update(shipments)
+      .set({ status: shipmentStatusFor(status, current.method) })
+      .where(eq(shipments.orderId, orderId))
+    await tx
+      .insert(orderStatusLogs)
+      .values({ orderId, fromStatus: current.status, toStatus: status, changedBy: userId })
+    return {
+      ok: true,
+      message: `Status ${current.orderNo} jadi ${ORDER_STATUS_LABEL[status]}.`,
+      orderNo: current.orderNo,
+    }
+  })
+
+  if (result.ok) revalidateOrders("orderNo" in result ? result.orderNo : undefined)
+  return { ok: result.ok, message: result.message }
+}
+
+export type UpdateOrderResult =
+  | { ok: true; message: string }
+  | { ok: false; message: string; errors?: Partial<Record<DraftField, string>> }
+
+/**
+ * Edit data pesanan (customer, alamat, tanggal, metode, request, data hadiah) selama belum
+ * dikirim. No. HP baru menautkan pesanan ke customer dengan nomor itu (dibuat bila belum ada).
+ */
+export async function updateOrderDetails(input: unknown): Promise<UpdateOrderResult> {
+  try {
+    await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const parsed = orderEditSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, message: "Data pesanan tidak terbaca. Muat ulang halaman lalu coba lagi." }
+  }
+  const { orderId, draft } = parsed.data
+  const db = getDb()
+
+  const [current] = await db
+    .select({
+      status: orders.status,
+      orderNo: orders.orderNo,
+      deliveryDate: orders.deliveryDate,
+    })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+  if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+  if (!isEditable(current.status)) {
+    return {
+      ok: false,
+      message: `Pesanan ${ORDER_STATUS_LABEL[current.status]} tidak bisa diubah lagi.`,
+    }
+  }
+
+  // Menu tidak diubah di sini; "items" diisi supaya aturan kelengkapan lain tetap sama dengan form.
+  const issues = draftIssues({ ...draft, quantities: { menu: 1 } }, toJakartaDateString(new Date()))
+  // Pesanan lama boleh tetap memakai tanggal kirimnya walau sudah lewat.
+  if (draft.deliveryDate === current.deliveryDate) delete issues.deliveryDate
+  if (Object.keys(issues).length > 0) {
+    return { ok: false, message: "Masih ada isian yang belum benar.", errors: issues }
+  }
+
+  const phone = normalizePhone(draft.phone)!
+  const optional = (value: string) => value.trim() || null
+  const isHadiah = draft.type === "hadiah"
+  const method = draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">
+  const address = optional(draft.address)
+
+  await db.transaction(async (tx) => {
+    const [customer] = await tx
+      .insert(customers)
+      .values({ name: draft.name.trim(), phone, address })
+      .onConflictDoUpdate({
+        target: customers.phone,
+        set: {
+          name: sql`excluded.name`,
+          address: sql`coalesce(excluded.address, ${customers.address})`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning({ id: customers.id })
+
+    await tx
+      .update(orders)
+      .set({
+        customerId: customer.id,
+        type: draft.type,
+        deliveryDate: draft.deliveryDate,
+        request: optional(draft.request),
+        senderName: isHadiah ? optional(draft.senderName) : null,
+        cardTo: isHadiah ? optional(draft.cardTo) : null,
+        cardWishes: isHadiah ? optional(draft.cardWishes) : null,
+        cardFrom: isHadiah ? optional(draft.cardFrom) : null,
+      })
+      .where(eq(orders.id, orderId))
+    await tx
+      .update(shipments)
+      .set({ method, address, status: shipmentStatusFor(current.status, method) })
+      .where(eq(shipments.orderId, orderId))
+  })
+
+  revalidateOrders(current.orderNo)
+  revalidatePath("/master-data/customer")
+  return { ok: true, message: `Data ${current.orderNo} disimpan.` }
 }

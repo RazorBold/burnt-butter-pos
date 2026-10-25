@@ -9,16 +9,7 @@ import {
   WandSparkles,
 } from "lucide-react"
 import Link from "next/link"
-import {
-  cloneElement,
-  type ReactElement,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useState,
-  useTransition,
-} from "react"
+import { type ReactNode, useCallback, useEffect, useId, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { SegmentedControl } from "@/components/app/segmented-control"
@@ -32,16 +23,10 @@ import {
 } from "@/components/ui/dialog"
 import { createOrder } from "@/features/orders/actions"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { type CatalogVariant, matchParsedItems, orderTotal } from "@/features/orders/catalog"
-import {
-  SHIPPING_METHOD_LABEL,
-  SHIPPING_METHOD_NOTE,
-  SHIPPING_METHODS,
-  WA_DRAFT_EVENT,
-  WA_DRAFT_KEY,
-} from "@/features/orders/constants"
+import { WA_DRAFT_EVENT, WA_DRAFT_KEY } from "@/features/orders/constants"
+import { FlagNote, Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
 import { OrderMenuPicker } from "@/features/orders/components/order-menu-picker"
 import {
   type DraftField,
@@ -381,48 +366,11 @@ export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
           )}
 
           <FormGroup title="Pengiriman">
-            <div id="field-shippingMethod" className="scroll-mt-28">
-              <div
-                role="radiogroup"
-                aria-label="Metode pengiriman"
-                aria-describedby={flagFor("shippingMethod") ? "shippingMethod-flag" : undefined}
-                className="grid gap-2 sm:grid-cols-3"
-              >
-                {SHIPPING_METHODS.map((method) => {
-                  const checked = draft.shippingMethod === method
-                  return (
-                    <label
-                      key={method}
-                      className={cn(
-                        "flex cursor-pointer gap-3 rounded-lg border bg-white px-3.5 py-3 has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                        checked ? "border-brand bg-nav-active" : "border-border",
-                        flagged.has("shippingMethod") && "border-[#d9a441]",
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="shippingMethod"
-                        value={method}
-                        checked={checked}
-                        onChange={() => update("shippingMethod", method)}
-                        className="mt-1 size-4 shrink-0 accent-brand"
-                      />
-                      <span>
-                        <span className="block font-semibold text-text-strong">
-                          {SHIPPING_METHOD_LABEL[method]}
-                        </span>
-                        <span className="block text-[13px] leading-snug text-text-body">
-                          {SHIPPING_METHOD_NOTE[method]}
-                        </span>
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
-              {flagFor("shippingMethod") && (
-                <FlagNote id="shippingMethod-flag">{flagFor("shippingMethod")}</FlagNote>
-              )}
-            </div>
+            <ShippingMethodPicker
+              value={draft.shippingMethod}
+              onChange={(method) => update("shippingMethod", method)}
+              flag={flagFor("shippingMethod")}
+            />
             <Field id="request" label="Request" optional>
               <Textarea
                 value={draft.request}
@@ -552,55 +500,5 @@ function FormGroup({ title, children }: { title: string; children: ReactNode }) 
       </h3>
       {children}
     </section>
-  )
-}
-
-function FlagNote({ id, children }: { id: string; children: ReactNode }) {
-  return (
-    <p id={id} className="mt-1.5 flex items-start gap-1.5 text-[13px] text-[#8a5a00]">
-      <CircleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-      {children}
-    </p>
-  )
-}
-
-type ControlProps = { id?: string; "aria-describedby"?: string }
-
-/** Label + isian + catatan. Isian (satu elemen) diberi id dan aria-describedby di sini. */
-function Field({
-  id,
-  label,
-  optional = false,
-  flag,
-  hint,
-  children,
-}: {
-  id: string
-  label: string
-  optional?: boolean
-  flag?: string
-  hint?: string
-  children: ReactElement<ControlProps>
-}) {
-  const note = flag ? `${id}-flag` : hint ? `${id}-hint` : undefined
-  return (
-    <div
-      id={`field-${id}`}
-      className={cn(
-        "scroll-mt-28 space-y-1.5 [&_input]:h-11 [&_input]:rounded-lg [&_input]:bg-white [&_textarea]:rounded-lg [&_textarea]:bg-white",
-        flag && "[&_input]:border-[#d9a441] [&_textarea]:border-[#d9a441]",
-      )}
-    >
-      <Label htmlFor={`order-${id}`} className="text-text-strong">
-        {label} {optional && <span className="font-normal text-text-body">(opsional)</span>}
-      </Label>
-      {cloneElement(children, { id: `order-${id}`, "aria-describedby": note })}
-      {hint && !flag && (
-        <p id={`${id}-hint`} className="text-[13px] text-text-body">
-          {hint}
-        </p>
-      )}
-      {flag && <FlagNote id={`${id}-flag`}>{flag}</FlagNote>}
-    </div>
   )
 }

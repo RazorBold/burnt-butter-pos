@@ -27,3 +27,11 @@ export const orderSubmitSchema = z.object({
 })
 
 export type OrderSubmit = z.infer<typeof orderSubmitSchema>
+
+/** Edit data pesanan dari panel detail: semua isian form kecuali menu. */
+export const orderEditSchema = z.object({
+  orderId: z.uuid(),
+  draft: orderSubmitSchema.shape.draft.omit({ quantities: true }),
+})
+
+export type OrderEdit = z.infer<typeof orderEditSchema>

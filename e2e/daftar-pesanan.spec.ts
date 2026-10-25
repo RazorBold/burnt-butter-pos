@@ -65,6 +65,8 @@ test.describe("Daftar Pesanan", () => {
     await page.getByRole("option", { name: "Siap Kirim" }).click()
     await expect(dataRows(page)).toHaveCount(1)
     await expect(dataRows(page).first()).toContainText(`QA${code}09`)
+    // Hadiah: pengirim tampil di bawah nama penerima.
+    await expect(dataRows(page).first()).toContainText(`dari QA Pengirim ${code}`)
 
     await page.getByRole("button", { name: /^Tanggal pesanan/ }).click()
     await page.getByRole("button", { name: "Kemarin" }).click()

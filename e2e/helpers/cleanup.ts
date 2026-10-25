@@ -93,14 +93,16 @@ export async function seedQaOrders(code: string, count: number, hadiah: number) 
       for (let i = 0; i < count; i++) {
         const method = QA_METHODS[i % QA_METHODS.length]
         const [order] = await tx<{ id: string }[]>`
-          insert into orders (order_no, customer_id, type, status, delivery_date, total, created_at)
+          insert into orders (order_no, customer_id, type, sender_name, status, delivery_date,
+            total, created_at)
           values (${`QA${code}${String(i + 1).padStart(2, "0")}`}, ${customer.id},
-            ${i < count - hadiah ? "personal" : "hadiah"}, ${QA_STATUSES[i % QA_STATUSES.length]},
+            ${i < count - hadiah ? "personal" : "hadiah"},
+            ${i < count - hadiah ? null : `QA Pengirim ${code}`},
+            ${QA_STATUSES[i % QA_STATUSES.length]},
             (now() at time zone 'Asia/Jakarta')::date + 1, ${100_000 + i * 10_000},
             now() - make_interval(secs => ${count - i}))
           returning id`
-        await tx`insert into shipments (order_id, method, status)
-          values (${order.id}, ${method}, ${method === "pick_up" ? null : "menunggu_kurir"})`
+        await tx`insert into shipments (order_id, method) values (${order.id}, ${method})`
       }
     })
   } finally {

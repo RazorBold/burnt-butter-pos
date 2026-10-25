@@ -215,8 +215,8 @@ export const shipments = pgTable(
     /** Hanya untuk kurir_internal. */
     slot: deliverySlot("slot"),
     /**
-     * Kosong untuk Pick Up sampai pesanan siap diambil. Kurir Internal dan Instant mulai dari
-     * "menunggu_kurir" saat pesanan dibuat.
+     * Kosong sampai pesanan Siap Kirim, lalu mengikuti metode: Kurir Internal → siap_dikirim,
+     * Instant → menunggu_kurir, Pick Up → siap_diambil (src/features/orders/status.ts).
      */
     status: shipmentStatus("status"),
     address: text("address"),
@@ -336,6 +336,7 @@ export const customersRelations = relations(customers, ({ many }) => ({
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
+  createdByProfile: one(profiles, { fields: [orders.createdBy], references: [profiles.id] }),
   items: many(orderItems),
   shipment: one(shipments),
   payments: many(payments),
@@ -349,6 +350,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 
 export const orderStatusLogsRelations = relations(orderStatusLogs, ({ one }) => ({
   order: one(orders, { fields: [orderStatusLogs.orderId], references: [orders.id] }),
+  changedByProfile: one(profiles, {
+    fields: [orderStatusLogs.changedBy],
+    references: [profiles.id],
+  }),
 }))
 
 export const shipmentsRelations = relations(shipments, ({ one }) => ({

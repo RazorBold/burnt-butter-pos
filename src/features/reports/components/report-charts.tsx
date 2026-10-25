@@ -62,7 +62,7 @@ const trendConfig = {
 export function OrderTrendChart({ perDay }: { perDay: PerDay[] }) {
   return (
     <>
-      <ChartContainer config={trendConfig} className="aspect-auto h-[230px] w-full">
+      <ChartContainer config={trendConfig} className="aspect-auto h-[230px] w-full overflow-hidden">
         <LineChart data={perDay} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="#ece3da" />
           <XAxis
@@ -134,7 +134,7 @@ export function DailySalesChart({ perDay }: { perDay: PerDay[] }) {
           onChange={setMode}
         />
       </div>
-      <ChartContainer config={config} className="mt-3 aspect-auto h-[220px] w-full">
+      <ChartContainer config={config} className="mt-3 aspect-auto h-[220px] w-full overflow-hidden">
         <BarChart data={perDay} margin={{ top: 8, right: 8, left: revenue ? 0 : -16, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="#ece3da" />
           <XAxis
@@ -237,7 +237,7 @@ export function ShareDonut({
   return (
     <div className="flex flex-col items-center gap-5 sm:flex-row">
       <div className="relative size-[168px] shrink-0">
-        <ChartContainer config={config} className="aspect-square size-[168px]">
+        <ChartContainer config={config} className="aspect-square size-[168px] overflow-hidden">
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent nameKey="key" hideLabel />} />
             <Pie

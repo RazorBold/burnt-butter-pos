@@ -40,7 +40,7 @@ export function StatusBarChart({
   const config = { value: { label: "Pesanan" } } satisfies ChartConfig
   return (
     <>
-      <ChartContainer config={config} className="aspect-auto h-[170px] w-full">
+      <ChartContainer config={config} className="aspect-auto h-[170px] w-full overflow-hidden">
         <BarChart data={data} margin={{ top: 18, right: 4, left: -24, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={GRID} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} fontSize={11} />
@@ -80,7 +80,7 @@ export function PaymentLineChart({ data }: { data: { day: string; value: number 
   const shortDay = (day: string) => format(parseISO(day), "d MMM", { locale: localeId })
   return (
     <>
-      <ChartContainer config={config} className="aspect-auto h-[130px] w-full">
+      <ChartContainer config={config} className="aspect-auto h-[130px] w-full overflow-hidden">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
           <defs>
             <linearGradient id="payment-area" x1="0" x2="0" y1="0" y2="1">

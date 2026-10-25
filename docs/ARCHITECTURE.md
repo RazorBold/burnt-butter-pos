@@ -59,7 +59,7 @@ src/
   features/<modul>/               # per modul: queries.ts, actions.ts, schemas.ts, components/
   db/
     schema.ts                     # skema Drizzle (satu sumber kebenaran)
-    index.ts                      # getDb(): klien lazy (postgres-js, prepare: false)
+    index.ts                      # getDb(): klien lazy (postgres-js, pooler mode session, max 3)
     seed.ts                       # data master dari gambar desain (klien sendiri, tanpa server-only)
   lib/
     supabase/{env,server,client,proxy}.ts
@@ -134,13 +134,19 @@ Semua env (kecuali `CRON_SECRET`) diisi otomatis oleh integrasi **Supabase di Ve
 
 | Nama | Dipakai untuk |
 | --- | --- |
-| `POSTGRES_URL` | Aplikasi: pooler mode transaction (port 6543), `prepare: false` |
-| `POSTGRES_URL_NON_POOLING` | drizzle-kit migrate & seed: koneksi session (port 5432) |
+| `POSTGRES_URL` | Pooler mode transaction (port 6543). **Tidak dipakai aplikasi** (lihat catatan di bawah) |
+| `POSTGRES_URL_NON_POOLING` | Aplikasi, drizzle-kit migrate, seed, dan skrip: pooler mode session (port 5432) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Klien Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Klien Supabase (auth di browser) |
 | `SUPABASE_SECRET_KEY` | Server saja: membuat user, upload dengan hak admin |
 | `CRON_SECRET` | Production saja, ditambahkan manual. Melindungi `/api/cron/keep-alive` |
 | `DATABASE_URL`, `DIRECT_DATABASE_URL` | Opsional: menimpa dua URL di atas untuk setup di luar Vercel |
+
+**Kenapa aplikasi memakai mode session (Okt 2026).** postgres-js mengirim beberapa query berurutan lewat satu koneksi tanpa menunggu jawaban (pipelining). Di belakang Supavisor mode transaction, koneksi server bisa dilepas di tengahnya. Akibatnya ada query yang menggantung (Postgres menunggu `ClientRead` sampai statement timeout 2 menit) dan halaman tidak selesai dimuat. Ini muncul setelah halaman mulai menjalankan banyak query paralel (Dashboard, Laporan).
+
+- Mematikan pipelining lewat `max_pipeline: 0` **tidak aman**: transaksi `sql.begin` tidak terkunci ke satu koneksi, sehingga query lain terselip ke dalam transaksi.
+- Mode session mengikat satu koneksi klien ke satu koneksi server, jadi kedua masalah itu tidak terjadi.
+- Klien dibatasi `max: 3` per instance, dengan `idle_timeout: 20` dan `max_lifetime`, karena mode session punya batas jumlah koneksi.
 
 Lokal: `vercel env pull .env.local` (project sudah di-link lewat `.vercel/`). `.env.local` tidak di-commit.
 

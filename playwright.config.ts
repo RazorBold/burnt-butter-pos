@@ -22,11 +22,14 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
+    // Login sekali per akun QA; test lain memakai sesinya (lihat e2e/helpers/login.ts).
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
       name: "desktop",
+      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1536, height: 900 } },
     },
-    { name: "mobile", use: { ...devices["Pixel 7"], channel: "chrome" } },
+    { name: "mobile", dependencies: ["setup"], use: { ...devices["Pixel 7"], channel: "chrome" } },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

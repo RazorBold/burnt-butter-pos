@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test"
 
+import { loginAs } from "./helpers/login"
+
 const email = process.env.E2E_EMAIL
 const password = process.env.E2E_PASSWORD
 
@@ -9,10 +11,7 @@ test("kartu KPI menampilkan nilai, badge tren, dan teks untuk pembaca layar", as
   test.skip(!email || !password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
   test.skip(Boolean(process.env.E2E_BASE_URL), "halaman pratinjau hanya ada di dev")
 
-  await page.goto("/dev/komponen")
-  await page.getByLabel("Email").fill(email!)
-  await page.getByLabel("Kata sandi", { exact: true }).fill(password!)
-  await page.getByRole("button", { name: "Masuk" }).click()
+  await loginAs(page, email!, password!, "/dev/komponen")
   await page.waitForURL(/\/dev\/komponen/)
 
   const dashboard = page.getByTestId("kpi-dashboard")

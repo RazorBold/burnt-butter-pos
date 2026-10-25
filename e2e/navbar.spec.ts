@@ -1,13 +1,11 @@
 import { expect, type Page, test } from "@playwright/test"
+import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasir = { email: process.env.E2E_KASIR_EMAIL, password: process.env.E2E_PASSWORD }
 
 async function login(page: Page, email: string, password: string, path = "/dashboard") {
-  await page.goto(path)
-  await page.getByLabel("Email").fill(email)
-  await page.getByLabel("Kata sandi", { exact: true }).fill(password)
-  await page.getByRole("button", { name: "Masuk" }).click()
+  await loginAs(page, email, password, path)
   await page.waitForURL(/\/dashboard/)
 }
 

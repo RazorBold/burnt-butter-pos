@@ -2,14 +2,12 @@ import { expect, type Page, test } from "@playwright/test"
 
 import { HADIAH_SAMPLE, PERSONAL_SAMPLE } from "../src/lib/wa-parser/templates"
 import { readOrder, removeOrderByNo } from "./helpers/cleanup"
+import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 
 async function login(page: Page, target: string) {
-  await page.goto(target)
-  await page.getByLabel("Email").fill(admin.email!)
-  await page.getByLabel("Kata sandi", { exact: true }).fill(admin.password!)
-  await page.getByRole("button", { name: "Masuk" }).click()
+  await loginAs(page, admin.email!, admin.password!, target)
 }
 
 const randomPhone = () => `0899${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`

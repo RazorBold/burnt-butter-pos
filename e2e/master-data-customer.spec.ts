@@ -2,15 +2,13 @@ import { expect, type Page, test } from "@playwright/test"
 
 import { removeCustomerByName, snapshotStoreSettings } from "./helpers/cleanup"
 import { expectAccessDenied } from "./helpers/access"
+import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
 
 async function login(page: Page, email: string, password: string, target: string) {
-  await page.goto(target)
-  await page.getByLabel("Email").fill(email)
-  await page.getByLabel("Kata sandi", { exact: true }).fill(password)
-  await page.getByRole("button", { name: "Masuk" }).click()
+  await loginAs(page, email, password, target)
 }
 
 /** No. HP acak 0899 + 8 digit, supaya tidak bentrok dengan customer asli. */

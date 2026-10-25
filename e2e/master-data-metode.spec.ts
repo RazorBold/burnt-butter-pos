@@ -1,15 +1,13 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { removePaymentMethodByName } from "./helpers/cleanup"
+import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
 
 async function login(page: Page, email: string, password: string, target: string) {
-  await page.goto(target)
-  await page.getByLabel("Email").fill(email)
-  await page.getByLabel("Kata sandi", { exact: true }).fill(password)
-  await page.getByRole("button", { name: "Masuk" }).click()
+  await loginAs(page, email, password, target)
 }
 
 test.describe("Master Data › Metode Pembayaran", () => {

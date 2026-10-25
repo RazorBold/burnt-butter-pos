@@ -56,7 +56,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
     .limit(1)
 
   if (!profile?.isActive) {
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: "local" })
     return {
       error: "Akun ini belum punya akses ke panel. Minta Admin mengaktifkannya di User / Staff.",
       email,
@@ -66,8 +66,9 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   redirect(safeNextPath(parsed.data.next))
 }
 
+/** Keluar dari perangkat ini saja; sesi di perangkat lain (mis. HP kasir) tetap aktif. */
 export async function signOut() {
   const supabase = await createSupabaseServerClient()
-  await supabase.auth.signOut()
+  await supabase.auth.signOut({ scope: "local" })
   redirect("/login")
 }

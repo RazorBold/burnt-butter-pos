@@ -4,13 +4,25 @@ import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 
 import * as schema from "./schema"
-import { pooledDatabaseUrl } from "./url"
+import { appDatabaseUrl } from "./url"
 
 function createDb() {
-  const url = pooledDatabaseUrl()
-  if (!url) throw new Error("POSTGRES_URL / DATABASE_URL belum diisi. Lihat .env.example.")
-  // Pooler Supabase mode transaction tidak mendukung prepared statement.
-  return drizzle(postgres(url, { prepare: false, max: 5 }), { schema })
+  const url = appDatabaseUrl()
+  if (!url) throw new Error("POSTGRES_URL_NON_POOLING / DATABASE_URL belum diisi. Lihat .env.example.")
+  return drizzle(
+    postgres(url, {
+      // Aman untuk mode session maupun transaction.
+      prepare: false,
+      // Mode session membatasi jumlah koneksi; tiap instance (termasuk fungsi Vercel) cukup 3.
+      max: 3,
+      // Pooler menutup koneksi yang lama menganggur tanpa memberi tahu klien. Tutup duluan dari
+      // sisi kita, batasi umur koneksi, dan jangan menunggu tanpa batas saat membuka koneksi.
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
+      connect_timeout: 10,
+    }),
+    { schema },
+  )
 }
 
 export type Db = ReturnType<typeof createDb>

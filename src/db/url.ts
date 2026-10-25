@@ -1,6 +1,6 @@
 // URL database dari env. Integrasi Supabase di Vercel mengisi POSTGRES_URL (pooler transaction,
-// port 6543) dan POSTGRES_URL_NON_POOLING (session, port 5432). DATABASE_URL dan
-// DIRECT_DATABASE_URL tetap bisa dipakai untuk menimpa keduanya di luar Vercel.
+// port 6543) dan POSTGRES_URL_NON_POOLING (pooler session, port 5432). Aplikasi dan skrip
+// sama-sama memakai mode session. DATABASE_URL dan DIRECT_DATABASE_URL bisa menimpa.
 
 // Parameter khusus Prisma/Supavisor yang tidak dikenal driver postgres-js.
 const UNSUPPORTED_PARAMS = ["supa", "pgbouncer"]
@@ -11,9 +11,15 @@ function clean(raw: string): string {
   return url.toString()
 }
 
-/** Untuk aplikasi (serverless): pooler mode transaction. */
-export function pooledDatabaseUrl(): string | undefined {
-  const raw = process.env.DATABASE_URL ?? process.env.POSTGRES_URL
+/**
+ * Untuk aplikasi: pooler mode session (port 5432). Mode transaction (POSTGRES_URL, port 6543)
+ * tidak dipakai: postgres-js mengirim beberapa query beruntun lewat satu koneksi (pipelining),
+ * dan Supavisor mode transaction bisa melepas koneksi server di tengahnya. Akibatnya query
+ * menggantung (Postgres menunggu ClientRead) atau terselip ke transaksi orang lain.
+ * DATABASE_URL tetap bisa dipakai untuk menimpa.
+ */
+export function appDatabaseUrl(): string | undefined {
+  const raw = process.env.DATABASE_URL ?? process.env.POSTGRES_URL_NON_POOLING
   return raw ? clean(raw) : undefined
 }
 

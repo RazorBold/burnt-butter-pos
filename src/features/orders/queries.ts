@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, count, eq, gte, ilike, like, lt, ne, or, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, gte, ilike, like, lt, ne, or, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
 import { customers, menus, menuVariants, orders, shipments } from "@/db/schema"
@@ -272,4 +272,28 @@ export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntr
     changedAt: log.changedAt,
     changedByName: log.changedByProfile?.name ?? null,
   }))
+}
+
+/** Pesanan terbaru pada rentang ini (termasuk dibatalkan), terbaru di atas. Untuk Dashboard. */
+export async function listLatestOrders(from: string, to: string, limit = 5) {
+  const rows: OrderListRow[] = await getDb()
+    .select({
+      id: orders.id,
+      orderNo: orders.orderNo,
+      createdAt: orders.createdAt,
+      customerName: customers.name,
+      senderName: orders.senderName,
+      type: orders.type,
+      deliveryDate: orders.deliveryDate,
+      shippingMethod: shipments.method,
+      total: orders.total,
+      status: orders.status,
+    })
+    .from(orders)
+    .innerJoin(customers, eq(customers.id, orders.customerId))
+    .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .where(createdBetween(from, to))
+    .orderBy(desc(orders.createdAt))
+    .limit(limit)
+  return rows
 }

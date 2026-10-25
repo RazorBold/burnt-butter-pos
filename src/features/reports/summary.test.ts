@@ -40,6 +40,9 @@ describe("buildReport", () => {
     expect(report.kpis.customers).toMatchObject({ value: 3, percent: 50 })
     expect(report.kpis.orders.series).toHaveLength(7)
     expect(report.cancelled).toBe(1)
+    // Pembanding: 2 Personal, 0 Hadiah.
+    expect(report.kpis.personal).toMatchObject({ value: 2, percent: 0 })
+    expect(report.kpis.hadiah).toMatchObject({ value: 1, percent: null })
   })
 
   it("rekap per hari Personal/Hadiah, pesanan dan pendapatan", () => {

@@ -172,6 +172,12 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Tab lain belum didesain (BELL-36), jadi belum ditampilkan supaya tidak ada tab kosong. Pilihan "Bulan Ini" ada di preset pemilih tanggal, bukan dropdown terpisah.
   - Donat metode kirim tidak punya irisan "Lainnya" karena metodenya hanya tiga (lihat BELL-37).
   - Total Pembayaran = pembayaran lunas menurut tanggal dibayar. "Pendapatan" di rekap harian = nilai pesanan menurut tanggal pesanan dibuat.
+- **Dashboard** (01-dashboard.png):
+  - Tanggal acuan (default hari ini) + periode Hari Ini / 7 Hari / 30 Hari / Bulan Ini, semuanya berakhir di tanggal acuan. Bulan Ini berupa tombol, bukan dropdown.
+  - KPI dan grafik memakai agregasi dan palet yang sama dengan Laporan. Grafik Total Pembayaran selalu 7 hari terakhir dari tanggal acuan (F-16). Rekap Produksi mengikuti tanggal kirim = tanggal acuan.
+  - KPI memakai versi desain utama (Total Pembayaran), bukan versi di balik modal ("Pesanan Selesai"); lihat BELL-37.
+  - Isi menyesuaikan role: Produksi tidak melihat kartu uang (KPI ke-4 diganti Total Porsi) dan Daftar Pesanan Terbaru. Tombol "Lihat Semua/Detail" hanya muncul bila halaman tujuannya boleh dibuka. Kasir diarahkan ke Pembayaran, Admin/Owner ke Laporan.
+  - Stok Packaging (Ringkas): maksimal 4, yang perlu restock dulu. Packaging tanpa kapasitas ditampilkan dengan status, bukan bar.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

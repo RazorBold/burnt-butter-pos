@@ -206,7 +206,7 @@ Inkonsistensi di desain:
 
 - [ ] Menu **Pengiriman** tidak ada di navbar layar Dashboard, Input Pesanan, dan Pesanan, tapi ada di tiga layar lain. Pakai navbar 9 menu di semua layar?
 - [ ] Label status "Siap Kirim" (Pesanan) vs "Siap Dikirim" (Pengiriman). Apa beda "Dalam Perjalanan" dan "Dikirim"? *Sementara (Okt 2026): Siap Kirim = status pesanan, Siap Dikirim = status pengiriman Kurir Internal. Kurir Internal yang sedang mengantar = Dalam Perjalanan; Instant yang sudah diambil ojol = Dikirim. Keduanya masuk tab Dalam Perjalanan.*
-- [ ] Dashboard di balik modal Input Pesanan punya kartu KPI berbeda (ada "Pesanan Selesai"). Versi mana yang final?
+- [ ] Dashboard di balik modal Input Pesanan punya kartu KPI berbeda (ada "Pesanan Selesai"). Versi mana yang final? *Sementara: versi desain utama (Total Pembayaran).*
 - [ ] Angka contoh tidak saling cocok (tab Pengiriman 12 + 3 + 10 ≠ 22; Pick Up 10 di Dashboard vs 2 di Pengiriman). Perlu definisi rumus tiap KPI.
 - [ ] Laporan menampilkan metode pengiriman "Lainnya" (15 pesanan). Apakah ini kurir eksternal seperti Citra Express?
 

@@ -72,6 +72,20 @@ export function buildReport(
     rangeDays.length >= SPARK_DAYS ? rangeDays : daysBetween(addDays(to, -(SPARK_DAYS - 1)), to)
   const orderDay = (order: ReportOrder) => order.day
 
+  const typeKpi = (type: OrderType): Kpi => {
+    const now = current.filter((order) => order.type === type).length
+    return {
+      value: now,
+      percent: percentChange(now, before.filter((order) => order.type === type).length),
+      series: perDayValues(
+        active.filter((order) => order.type === type),
+        orderDay,
+        () => 1,
+        sparkDays,
+      ),
+    }
+  }
+
   const kpis = {
     orders: {
       value: current.length,
@@ -99,6 +113,8 @@ export function buildReport(
         sparkDays,
       ),
     },
+    personal: typeKpi("personal"),
+    hadiah: typeKpi("hadiah"),
     customers: {
       value: distinctCustomers(current),
       percent: percentChange(distinctCustomers(current), distinctCustomers(before)),

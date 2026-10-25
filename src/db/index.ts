@@ -8,13 +8,14 @@ import { appDatabaseUrl } from "./url"
 
 function createDb() {
   const url = appDatabaseUrl()
-  if (!url) throw new Error("POSTGRES_URL_NON_POOLING / DATABASE_URL belum diisi. Lihat .env.example.")
+  if (!url) throw new Error("POSTGRES_URL / DATABASE_URL belum diisi. Lihat .env.example.")
   return drizzle(
     postgres(url, {
-      // Aman untuk mode session maupun transaction.
+      // Pooler mode transaction tidak mendukung prepared statement.
       prepare: false,
-      // Mode session membatasi jumlah koneksi; tiap instance (termasuk fungsi Vercel) cukup 3.
-      max: 3,
+      // postgres-js baru memipelinekan query bila semua koneksinya sibuk. Koneksi yang cukup
+      // membuat pipelining (yang bermasalah di mode transaction) praktis tidak terjadi.
+      max: 10,
       // Pooler menutup koneksi yang lama menganggur tanpa memberi tahu klien. Tutup duluan dari
       // sisi kita, batasi umur koneksi, dan jangan menunggu tanpa batas saat membuka koneksi.
       idle_timeout: 20,

@@ -59,7 +59,7 @@ src/
   features/<modul>/               # per modul: queries.ts, actions.ts, schemas.ts, components/
   db/
     schema.ts                     # skema Drizzle (satu sumber kebenaran)
-    index.ts                      # getDb(): klien lazy (postgres-js, pooler mode session, max 3)
+    index.ts                      # getDb(): klien lazy (postgres-js, prepare: false, max 10)
     seed.ts                       # data master dari gambar desain (klien sendiri, tanpa server-only)
   lib/
     supabase/{env,server,client,proxy}.ts
@@ -134,19 +134,20 @@ Semua env (kecuali `CRON_SECRET`) diisi otomatis oleh integrasi **Supabase di Ve
 
 | Nama | Dipakai untuk |
 | --- | --- |
-| `POSTGRES_URL` | Pooler mode transaction (port 6543). **Tidak dipakai aplikasi** (lihat catatan di bawah) |
-| `POSTGRES_URL_NON_POOLING` | Aplikasi, drizzle-kit migrate, seed, dan skrip: pooler mode session (port 5432) |
+| `POSTGRES_URL` | Aplikasi di Vercel: pooler mode transaction (port 6543), `prepare: false` |
+| `POSTGRES_URL_NON_POOLING` | drizzle-kit migrate, seed, skrip, dan aplikasi lokal (lewat `DATABASE_URL`): pooler mode session (port 5432) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Klien Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Klien Supabase (auth di browser) |
 | `SUPABASE_SECRET_KEY` | Server saja: membuat user, upload dengan hak admin |
 | `CRON_SECRET` | Production saja, ditambahkan manual. Melindungi `/api/cron/keep-alive` |
 | `DATABASE_URL`, `DIRECT_DATABASE_URL` | Opsional: menimpa dua URL di atas untuk setup di luar Vercel |
 
-**Kenapa aplikasi memakai mode session (Okt 2026).** postgres-js mengirim beberapa query berurutan lewat satu koneksi tanpa menunggu jawaban (pipelining). Di belakang Supavisor mode transaction, koneksi server bisa dilepas di tengahnya. Akibatnya ada query yang menggantung (Postgres menunggu `ClientRead` sampai statement timeout 2 menit) dan halaman tidak selesai dimuat. Ini muncul setelah halaman mulai menjalankan banyak query paralel (Dashboard, Laporan).
+**Mode pooler: transaction di Vercel, session di lokal (Okt 2026).** postgres-js mengirim beberapa query berurutan lewat satu koneksi tanpa menunggu jawaban (pipelining) bila semua koneksinya sibuk. Di Supavisor mode transaction, koneksi server bisa dilepas di tengahnya. Akibatnya query menggantung (Postgres menunggu `ClientRead` sampai statement timeout 2 menit) dan halaman tidak selesai dimuat.
 
-- Mematikan pipelining lewat `max_pipeline: 0` **tidak aman**: transaksi `sql.begin` tidak terkunci ke satu koneksi, sehingga query lain terselip ke dalam transaksi.
-- Mode session mengikat satu koneksi klien ke satu koneksi server, jadi kedua masalah itu tidak terjadi.
-- Klien dibatasi `max: 3` per instance, dengan `idle_timeout: 20` dan `max_lifetime`, karena mode session punya batas jumlah koneksi.
+- **Lokal:** satu proses melayani semua request sekaligus, jadi pipelining sering terjadi. Karena itu lokal memakai mode session (`DATABASE_URL` = URL session di `.env.local`), yang mengikat satu klien ke satu koneksi server. Terbukti dengan suite e2e penuh: 60/60 lulus.
+- **Vercel:** mode session tidak bisa dipakai, karena dibatasi 15 klien untuk seluruh aplikasi dan banyak instance fungsi langsung menghabiskannya (`EMAXCONNSESSION`). Jadi Vercel memakai mode transaction dengan `max: 10` per instance. Dengan koneksi yang cukup, pipelining praktis tidak terjadi; suite e2e produksi selalu lulus dengan mode ini.
+- `max_pipeline: 0` **jangan dipakai**: transaksi `sql.begin` jadi tidak terkunci ke satu koneksi, dan query lain terselip ke dalamnya.
+- Klien memakai `idle_timeout: 20`, `max_lifetime`, dan `connect_timeout` supaya koneksi yang ditutup pooler tidak menggantung.
 
 Lokal: `vercel env pull .env.local` (project sudah di-link lewat `.vercel/`). `.env.local` tidak di-commit.
 

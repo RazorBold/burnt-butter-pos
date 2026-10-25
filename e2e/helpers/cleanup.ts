@@ -124,6 +124,26 @@ export async function removeQaOrders(code: string) {
   }
 }
 
+/** Hapus packaging uji (nama diawali "QA Packaging ") beserta riwayat stok dan fotonya. */
+export async function removePackagingByName(name: string) {
+  if (!name.startsWith("QA Packaging "))
+    throw new Error("Hanya packaging uji (QA Packaging …) yang boleh dihapus")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql.begin(async (tx) => {
+      const rows = await tx<{ id: string }[]>`select id from packagings where name = ${name}`
+      for (const row of rows) {
+        await tx`delete from stock_movements where item_type = 'packaging' and item_id = ${row.id}`
+      }
+      await tx`delete from packagings where name = ${name}`
+    })
+  } finally {
+    await sql.end()
+  }
+}
+
 /** Hapus satu customer uji (nama diawali "QA Customer "). */
 export async function removeCustomerByName(name: string) {
   if (!name.startsWith("QA Customer "))

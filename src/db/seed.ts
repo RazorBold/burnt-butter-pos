@@ -113,16 +113,20 @@ async function main() {
       await db.insert(schema.menuVariants).values(variants).onConflictDoNothing()
     }
 
-    await db
-      .insert(schema.packagings)
-      .values([
-        { name: "Box Large", stock: 120, capacity: 200, unit: "pcs" },
-        { name: "Box Regular", stock: 80, capacity: 200, unit: "pcs" },
-        { name: "Box Dessert", stock: 30, capacity: 100, unit: "pcs" },
-        { name: "Paper Bag", stock: 200, unit: "pcs" },
-        { name: "Cup Dessert", stock: 50, unit: "pcs" },
-      ])
-      .onConflictDoNothing({ target: schema.packagings.name })
+    // Satu per satu supaya created_at berurutan (urutan tampil = urutan desain).
+    for (const packaging of [
+      // Stok minimum dipilih supaya status sama dengan desain (Box Dessert 30 = Menipis).
+      { name: "Box Large", stock: 120, capacity: 200, minStock: 50, unit: "pcs" },
+      { name: "Box Regular", stock: 80, capacity: 200, minStock: 50, unit: "pcs" },
+      { name: "Box Dessert", stock: 30, capacity: 100, minStock: 40, unit: "pcs" },
+      { name: "Paper Bag", stock: 200, minStock: 50, unit: "pcs" },
+      { name: "Cup Dessert", stock: 50, minStock: 20, unit: "pcs" },
+    ]) {
+      await db
+        .insert(schema.packagings)
+        .values(packaging)
+        .onConflictDoNothing({ target: schema.packagings.name })
+    }
 
     await db
       .insert(schema.rawMaterials)

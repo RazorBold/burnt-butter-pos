@@ -45,6 +45,9 @@ export const SUBSECTION_ACCESS = {
   "/master-data/pengaturan": ["admin"],
 } as const satisfies Record<string, readonly Role[]>
 
+/** Role yang boleh mencatat stok masuk/keluar (packaging, bahan baku). */
+export const CAN_EDIT_STOCK: readonly Role[] = ["admin", "produksi"]
+
 /** Role yang boleh menambah dan mengubah data customer (Kasir mencatat pesanan dari WA). */
 export const CAN_EDIT_CUSTOMER: readonly Role[] = ["admin", "kasir"]
 

@@ -7,10 +7,10 @@ import { getDb } from "@/db"
 import { menus, menuVariants } from "@/db/schema"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { fieldErrors } from "@/lib/form"
-import { PHOTO_BUCKET } from "@/lib/photos"
-import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { photoFromForm, removeStoredPhoto, uploadPhoto } from "@/lib/photo-storage"
+import { photoFileError } from "@/lib/photos"
 
-import { MAX_PHOTO_BYTES, menuFormFromData, menuFormSchema, PHOTO_TYPES, slugify } from "./schemas"
+import { menuFormFromData, menuFormSchema, slugify } from "./schemas"
 
 const PAGE_PATH = "/master-data/produk-menu"
 
@@ -38,12 +38,6 @@ async function uniqueSlug(name: string): Promise<string> {
   for (let i = 2; ; i++) if (!used.has(`${base}-${i}`)) return `${base}-${i}`
 }
 
-const EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-}
-
 export async function saveMenu(_prev: MenuFormState, formData: FormData): Promise<MenuFormState> {
   try {
     await requireRole(["admin"])
@@ -57,16 +51,9 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
   }
   const input = parsed.data
 
-  const photo = formData.get("photo")
-  const hasPhoto = photo instanceof File && photo.size > 0
-  if (hasPhoto) {
-    if (!PHOTO_TYPES.includes(photo.type as (typeof PHOTO_TYPES)[number])) {
-      return { errors: { photo: "Foto harus JPG, PNG, atau WebP." } }
-    }
-    if (photo.size > MAX_PHOTO_BYTES) {
-      return { errors: { photo: "Ukuran foto maksimal 4 MB." } }
-    }
-  }
+  const photo = photoFromForm(formData)
+  const photoError = photo && photoFileError(photo)
+  if (photoError) return { errors: { photo: photoError } }
 
   const db = getDb()
   const existing = input.id
@@ -83,13 +70,10 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
   const slug = existing?.slug ?? (await uniqueSlug(input.name))
 
   let photoPath = existing?.photoPath ?? null
-  if (hasPhoto) {
-    const path = `menu/${slug}-${Date.now()}.${EXTENSION[photo.type]}`
-    const { error } = await createSupabaseAdminClient()
-      .storage.from(PHOTO_BUCKET)
-      .upload(path, photo, { contentType: photo.type, cacheControl: "31536000", upsert: false })
-    if (error) return { errors: { photo: "Foto gagal di-upload. Coba lagi." } }
-    photoPath = path
+  if (photo) {
+    const uploaded = await uploadPhoto("menu", slug, photo)
+    if ("error" in uploaded) return { errors: { photo: uploaded.error } }
+    photoPath = uploaded.path
   }
 
   const prices: { size: Size; price: number }[] =
@@ -140,10 +124,7 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
   })
 
   // Foto lama di Storage dibuang setelah data tersimpan (foto bawaan /images/... dibiarkan).
-  const oldPath = existing?.photoPath
-  if (hasPhoto && oldPath && !oldPath.startsWith("/")) {
-    await createSupabaseAdminClient().storage.from(PHOTO_BUCKET).remove([oldPath])
-  }
+  if (photo) await removeStoredPhoto(existing?.photoPath)
 
   revalidatePath(PAGE_PATH)
   return { ok: true, message: input.id ? "Perubahan menu disimpan." : "Menu baru ditambahkan." }

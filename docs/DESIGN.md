@@ -138,6 +138,11 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Dialog Tandai Lunas berisi kartu radio metode bayar dan catatan opsional. Dialog yang sama dipakai untuk Ubah pembayaran.
   - "Jadikan belum bayar" ada di menu ⋮ dengan konfirmasi.
   - Panel Detail Pesanan menampilkan badge status bayar beserta tombol Tandai Lunas atau Ubah pembayaran.
+- **Stok Packaging:**
+  - **Master Data:** tabel sesuai 06-master-data.png (Foto, Nama, Stok Saat Ini, Satuan, Status). Foto kosong diganti ikon box. Status: Cukup hijau, Menipis kuning (stok ≤ minimum), Habis merah (stok 0), masing-masing berupa titik + teks (`StockBadge`). Form packaging berisi foto, nama, satuan, stok minimum, kapasitas, dan stok awal (khusus packaging baru). Stok tidak diedit langsung, harus lewat pencatatan supaya ada riwayat.
+  - **Menu navbar** (belum didesain): 4 kartu ringkasan (Jenis, Perlu Restock, Masuk/Keluar Hari Ini), lalu kartu per packaging dengan stok besar, bar stok/kapasitas berwarna status (F-19), dan tombol Masuk/Keluar/Hitung. Packaging yang perlu restock tampil lebih dulu.
+  - **Dialog pencatatan:** tombol pilihan Masuk/Keluar/Hitung ulang, jumlah, catatan, dan pratinjau "Stok jadi: 25 → 5 pcs". Untuk Hitung ulang, yang diisi adalah hasil hitung fisik, dan yang dicatat selisihnya.
+  - **Riwayat Stok:** tabel dengan perubahan +/− (hijau/merah, plus teks Masuk/Keluar untuk pembaca layar), catatan, dan siapa yang mencatat. Bisa difilter per packaging.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

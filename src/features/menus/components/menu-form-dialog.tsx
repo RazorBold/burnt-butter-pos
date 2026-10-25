@@ -1,10 +1,10 @@
 "use client"
 
-import { CircleAlert, ImageUp, LoaderCircle } from "lucide-react"
-import Image from "next/image"
+import { CircleAlert, LoaderCircle } from "lucide-react"
 import { type ReactNode, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { PhotoField } from "@/components/app/photo-field"
 import { SegmentedControl } from "@/components/app/segmented-control"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -30,14 +30,7 @@ import { saveMenu, type MenuFormState } from "@/features/menus/actions"
 import { useActionForm } from "@/hooks/use-action-form"
 import { useFieldErrors } from "@/hooks/use-field-errors"
 import type { MenuRow } from "@/features/menus/queries"
-import {
-  CATEGORY_LABEL,
-  MAX_PHOTO_BYTES,
-  MENU_CATEGORIES,
-  type MenuCategory,
-  PHOTO_TYPES,
-} from "@/features/menus/schemas"
-import { photoSrc } from "@/lib/photos"
+import { CATEGORY_LABEL, MENU_CATEGORIES, type MenuCategory } from "@/features/menus/schemas"
 
 const rupiah = new Intl.NumberFormat("id-ID")
 const formatDigits = (value: string) => {
@@ -101,10 +94,7 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
     priceSingle: priceOf(menu, "single"),
   })
   const [active, setActive] = useState(menu?.isActive ?? true)
-  const [preview, setPreview] = useState<string | null>(photoSrc(menu?.photoPath))
   const [photoError, setPhotoError] = useState<string | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
-  const fileInput = useRef<HTMLInputElement>(null)
   const handled = useRef<MenuFormState | null>(null)
   const { errors, hasErrors, markEdited, onFormChange } = useFieldErrors(state)
 
@@ -124,24 +114,6 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
     if (!sizingTouched) setSizing(next === "pasta" ? "two_sizes" : "single")
   }
 
-  function onPhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    setPhotoError(null)
-    if (!file) return
-    setFileName(file.name)
-    if (!PHOTO_TYPES.includes(file.type as (typeof PHOTO_TYPES)[number])) {
-      setPhotoError("Foto harus JPG, PNG, atau WebP.")
-      event.target.value = ""
-      return
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      setPhotoError(`Ukuran foto ${(file.size / 1024 / 1024).toFixed(1)} MB. Maksimal 4 MB.`)
-      event.target.value = ""
-      return
-    }
-    setPreview(URL.createObjectURL(file))
-  }
-
   const fieldError = (name: string) =>
     errors[name] ? (
       <p id={`${id}-${name}-error`} className="text-sm text-trend-down-fg">
@@ -156,56 +128,12 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
       <input type="hidden" name="isActive" value={String(active)} />
       <input type="hidden" name="sizing" value={sizing} />
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#dccbbb] bg-white">
-          {preview ? (
-            <Image
-              src={preview}
-              alt=""
-              fill
-              sizes="96px"
-              className="object-cover"
-              unoptimized={preview.startsWith("blob:")}
-            />
-          ) : (
-            <ImageUp className="size-7 text-text-body" aria-hidden />
-          )}
-        </div>
-        <div className="min-w-0 space-y-1.5">
-          <Label htmlFor={`${id}-photo`} className="text-text-strong">
-            Foto menu
-          </Label>
-          {/* Input file asli disembunyikan (tombol bawaannya mengikuti bahasa browser). */}
-          <input
-            ref={fileInput}
-            id={`${id}-photo`}
-            name="photo"
-            type="file"
-            accept={PHOTO_TYPES.join(",")}
-            onChange={onPhotoChange}
-            aria-describedby={`${id}-photo-help`}
-            className="sr-only"
-          />
-          <div className="flex min-w-0 items-center gap-2.5">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInput.current?.click()}
-              className="h-9 shrink-0 rounded-lg bg-white px-3 text-brand-ink"
-            >
-              <ImageUp aria-hidden />
-              {preview ? "Ganti foto" : "Pilih foto"}
-            </Button>
-            {fileName && <span className="truncate text-sm text-text-body">{fileName}</span>}
-          </div>
-          <p id={`${id}-photo-help`} className="text-[13px] text-text-body">
-            JPG, PNG, atau WebP, maksimal 4 MB.
-          </p>
-          {(photoError || errors.photo) && (
-            <p className="text-sm text-trend-down-fg">{photoError ?? errors.photo}</p>
-          )}
-        </div>
-      </div>
+      <PhotoField
+        label="Foto menu"
+        initialPath={menu?.photoPath}
+        error={errors.photo}
+        onErrorChange={setPhotoError}
+      />
 
       <div className="space-y-1.5">
         <Label htmlFor={`${id}-name`} className="text-text-strong">

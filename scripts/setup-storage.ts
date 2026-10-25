@@ -4,8 +4,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { config } from "dotenv"
 
-import { MAX_PHOTO_BYTES, PHOTO_TYPES } from "../src/features/menus/schemas"
-import { PHOTO_BUCKET } from "../src/lib/photos"
+import { MAX_PHOTO_BYTES, PHOTO_BUCKET, PHOTO_TYPES } from "../src/lib/photos"
 
 config({ path: ".env.local", quiet: true })
 

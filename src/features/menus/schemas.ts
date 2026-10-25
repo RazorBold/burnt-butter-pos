@@ -9,9 +9,6 @@ export const CATEGORY_LABEL: Record<MenuCategory, string> = {
   bundle: "Bundle",
 }
 
-export const MAX_PHOTO_BYTES = 4 * 1024 * 1024
-export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const
-
 /** "65.000", "Rp 65.000", "65000" → 65000. Kosong → undefined. */
 export function parseRupiah(input: unknown): number | undefined {
   if (typeof input !== "string") return undefined

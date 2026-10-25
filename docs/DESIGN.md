@@ -68,6 +68,17 @@ Status pengiriman ([04-pengiriman.png](design/04-pengiriman.png)): Menunggu Kuri
 | `--chart-hadiah` | `#FB8481` | Seri Hadiah, stok merah |
 | `--chart-light` | `#F3D2B4` | Seri ketiga yang terang (Pick Up kecil, area di bawah garis). Perkiraan, belum disampling. |
 
+**Palet grafik Laporan (diterapkan, Okt 2026).** Warna chart di atas disampling dari gambar desain. Saat divalidasi dengan skill dataviz (`validate_palette.js`, permukaan kartu `#FBF7F3`), warna itu gagal: chroma cokelat terlalu rendah (terbaca abu), Baru `#BF926F` vs Siap Kirim `#64A069` tidak terbedakan bagi buta warna merah-hijau (ΔE 1,0), dan metode kirim memakai gradasi cokelat untuk kategori yang tidak berurutan. Yang dipakai di `src/features/reports/colors.ts` adalah langkah lain dari keluarga warna brand yang sama, dan semuanya lolos:
+
+| Pemakaian | Warna |
+| --- | --- |
+| Personal / Hadiah | `#8C4519` / `#E4605C` |
+| Metode kirim (kategorikal) | Kurir Internal `#8C4519`, Instant `#D98A1E`, Pick Up `#4F8A55` |
+| Status pesanan (gradasi ordinal satu hue) | Baru `#D4A06F` → Diproses `#BF7D48` → Siap Kirim `#A1602F` → Dikirim `#7D401B` → Selesai `#52250B` |
+| Bar metode pembayaran | satu warna (`#8C4519`), panjang bar yang membawa nilai |
+
+Aturan pendukung: setiap grafik dengan ≥2 seri punya legenda, ada tabel tersembunyi untuk pembaca layar, celah 2px warna permukaan di antara segmen, garis 2px, dan tanpa animasi.
+
 ## Tipografi
 
 - Font UI: **Plus Jakarta Sans** (Google Fonts via `next/font`), bobot 400/500/600/700. Bentuknya paling dekat dengan desain; ganti bila ada font aslinya.
@@ -157,6 +168,10 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Pesanan yang belum selesai dimasak ikut tampil dengan status abu "Belum siap", supaya kurir dan slotnya bisa diatur lebih awal.
   - Checkbox dan menu ⋮ menyusul bersama aksi massal (BELL-19).
   - **Panel detail** memakai bingkai yang sama dengan Detail Pesanan. Peta mini berupa embed Google Maps tanpa API key, dan "Lihat Rute di Maps" membuka rute dari alamat toko (Pengaturan) ke customer.
+- **Laporan (tab Ringkasan):** tata letak mengikuti 05-laporan.png.
+  - Tab lain belum didesain (BELL-36), jadi belum ditampilkan supaya tidak ada tab kosong. Pilihan "Bulan Ini" ada di preset pemilih tanggal, bukan dropdown terpisah.
+  - Donat metode kirim tidak punya irisan "Lainnya" karena metodenya hanya tiga (lihat BELL-37).
+  - Total Pembayaran = pembayaran lunas menurut tanggal dibayar. "Pendapatan" di rekap harian = nilai pesanan menurut tanggal pesanan dibuat.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

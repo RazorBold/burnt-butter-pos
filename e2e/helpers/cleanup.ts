@@ -113,6 +113,106 @@ export async function seedQaOrders(code: string, count: number, hadiah: number) 
   return { customerName, phone }
 }
 
+/**
+ * Data laporan uji di Maret 2021 (jauh dari data asli), satu customer:
+ * - 27 Feb (periode pembanding): Personal, Kurir, Selesai, 1× Bolognese L, lunas Cash 65.000.
+ * - 1 Mar: Personal, Kurir Internal, Selesai, 2× Bolognese L = 130.000, lunas Bank.
+ * - 2 Mar: Hadiah, Instant, Dikirim, 1× Choco Bon Bon = 40.000, lunas E-Wallet.
+ * - 2 Mar: Personal, Pick Up, Baru, 1× Bolognese L = 65.000, belum bayar.
+ * - 3 Mar: Dibatalkan, 5× Bolognese L (tidak dihitung).
+ */
+export async function seedReportOrders(code: string) {
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql.begin(async (tx) => {
+      const variant = async (menu: string, size: string) => {
+        const [row] = await tx<{ id: string; price: number }[]>`
+          select v.id, v.price from menu_variants v join menus m on m.id = v.menu_id
+          where m.name = ${menu} and v.size = ${size}`
+        return row
+      }
+      const method = async (type: string) => {
+        const [row] = await tx<{ id: string }[]>`
+          select id from payment_methods where type = ${type} order by created_at limit 1`
+        return row.id
+      }
+      const bolo = await variant("Spaghetti Classico Bologna Brulee", "large")
+      const choco = await variant("Choco Bon Bon", "single")
+      const [customer] = await tx<{ id: string }[]>`
+        insert into customers (name, phone)
+        values (${`QA Customer ${code}`}, ${`0899${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`})
+        returning id`
+      const rows = [
+        {
+          day: "2021-02-27",
+          type: "personal",
+          status: "selesai",
+          ship: "kurir_internal",
+          item: bolo,
+          qty: 1,
+          pay: "cash",
+        },
+        {
+          day: "2021-03-01",
+          type: "personal",
+          status: "selesai",
+          ship: "kurir_internal",
+          item: bolo,
+          qty: 2,
+          pay: "bank",
+        },
+        {
+          day: "2021-03-02",
+          type: "hadiah",
+          status: "dikirim",
+          ship: "instant",
+          item: choco,
+          qty: 1,
+          pay: "ewallet",
+        },
+        {
+          day: "2021-03-02",
+          type: "personal",
+          status: "baru",
+          ship: "pick_up",
+          item: bolo,
+          qty: 1,
+          pay: null,
+        },
+        {
+          day: "2021-03-03",
+          type: "personal",
+          status: "dibatalkan",
+          ship: "kurir_internal",
+          item: bolo,
+          qty: 5,
+          pay: null,
+        },
+      ]
+      for (const [index, row] of rows.entries()) {
+        const total = row.item.price * row.qty
+        const createdAt = `${row.day}T10:0${index}:00+07:00`
+        const [order] = await tx<{ id: string }[]>`
+          insert into orders (order_no, customer_id, type, status, delivery_date, total, created_at)
+          values (${`QA${code}${String(index + 1).padStart(2, "0")}`}, ${customer.id}, ${row.type},
+            ${row.status}, ${row.day}, ${total}, ${createdAt})
+          returning id`
+        await tx`insert into order_items (order_id, menu_variant_id, qty, unit_price, subtotal)
+          values (${order.id}, ${row.item.id}, ${row.qty}, ${row.item.price}, ${total})`
+        await tx`insert into shipments (order_id, method) values (${order.id}, ${row.ship})`
+        if (row.pay) {
+          await tx`insert into payments (order_id, payment_method_id, amount, status, paid_at)
+            values (${order.id}, ${await method(row.pay)}, ${total}, 'lunas', ${createdAt})`
+        }
+      }
+    })
+  } finally {
+    await sql.end()
+  }
+}
+
 /** Hapus pesanan dari seedQaOrders(code) beserta customer-nya. */
 export async function removeQaOrders(code: string) {
   const url = directDatabaseUrl()

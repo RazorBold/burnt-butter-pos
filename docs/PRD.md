@@ -100,7 +100,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 ### Laporan
 
-- **F-50** Rentang tanggal + preset (Bulan Ini). Tab: Ringkasan, Penjualan, Produk, Produksi, Pengiriman, Pembayaran, Stok Packaging, Customer. Hanya Ringkasan yang didesain.
+- **F-50** Rentang tanggal + preset (Bulan Ini). Tab: Ringkasan, Penjualan, Produk, Produksi, Pengiriman, Pembayaran, Stok Packaging, Customer. Hanya Ringkasan yang didesain. Terimplementasi: tab Ringkasan, default Bulan Ini, rentang menurut tanggal pesanan dibuat (WIB), tren dibanding periode sepanjang rentang yang sama tepat sebelumnya.
 - **F-51** KPI Ringkasan: Total Pesanan, Total Produk Terjual (porsi), Total Pembayaran, Total Customer.
 - **F-52** Tren Pesanan harian, garis Personal vs Hadiah.
 - **F-53** Donat Distribusi per Metode Pengiriman (Kurir Internal, Instant, Pick Up, Lainnya) dan donat Status Pesanan.

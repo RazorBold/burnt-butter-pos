@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { removePackagingByName } from "./helpers/cleanup"
+import { expectAccessDenied } from "./helpers/access"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
@@ -121,6 +122,6 @@ test.describe("Stok Packaging", () => {
   test("Kasir tidak bisa membuka menu Stok Packaging", async ({ page }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
     await login(page, kasirEmail!, "/stok-packaging")
-    await expect(page).toHaveURL(/\/dashboard\?akses=ditolak/)
+    await expectAccessDenied(page)
   })
 })

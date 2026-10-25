@@ -21,7 +21,7 @@ import { toJakartaDateString } from "@/lib/format"
 import { normalizePhone } from "@/lib/phone"
 
 import { type DraftField, draftIssues } from "./draft"
-import { ORDER_STATUS_LABEL, ORDER_STATUSES } from "./filters"
+import { ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from "./filters"
 import { formatOrderNo } from "./order-number"
 import { orderEditSchema, orderSubmitSchema } from "./schemas"
 import { isEditable, nextStatuses, shipmentStatusFor } from "./status"
@@ -175,25 +175,27 @@ function revalidateOrders(orderNo?: string) {
   if (orderNo) revalidatePath(`/pesanan/${orderNo}`)
 }
 
+/** Langkah dapur yang boleh dilakukan tim Produksi: Baru ↔ Diproses ↔ Siap Kirim. */
+const PRODUCTION_STATUSES: readonly OrderStatus[] = ["baru", "diproses", "siap_kirim"]
+
 /**
  * Ubah status pesanan sesuai alur (nextStatuses). Status pengiriman ikut disesuaikan
  * (shipmentStatusFor) dan perubahan dicatat di order_status_logs.
+ * `limitTo`: bila diisi, status asal dan tujuan harus ada di daftar ini (dipakai Produksi).
  */
-export async function updateOrderStatus(orderId: string, target: string): Promise<ActionResult> {
-  let userId: string
-  try {
-    userId = await requireOrderEditor()
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
-    throw error
-  }
+async function changeOrderStatus(
+  orderId: string,
+  target: string,
+  userId: string,
+  limitTo?: readonly OrderStatus[],
+): Promise<ActionResult> {
   const status = ORDER_STATUSES.find((value) => value === target)
   if (!z.uuid().safeParse(orderId).success || !status) {
     return { ok: false, message: "Status tidak dikenal. Muat ulang halaman." }
   }
 
   const result = await getDb().transaction(async (tx) => {
-    // FOR UPDATE: dua kasir yang mengubah status bersamaan tidak saling menimpa diam-diam.
+    // FOR UPDATE: dua orang yang mengubah status bersamaan tidak saling menimpa diam-diam.
     const [current] = await tx
       .select({ status: orders.status, orderNo: orders.orderNo, method: shipments.method })
       .from(orders)
@@ -201,7 +203,10 @@ export async function updateOrderStatus(orderId: string, target: string): Promis
       .where(eq(orders.id, orderId))
       .for("update")
     if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
-    if (!nextStatuses(current.status, current.method).includes(status)) {
+    const allowed =
+      nextStatuses(current.status, current.method).includes(status) &&
+      (!limitTo || (limitTo.includes(current.status) && limitTo.includes(status)))
+    if (!allowed) {
       return {
         ok: false,
         message: `Pesanan ${ORDER_STATUS_LABEL[current.status]} tidak bisa diubah ke ${ORDER_STATUS_LABEL[status]}. Muat ulang halaman.`,
@@ -223,8 +228,36 @@ export async function updateOrderStatus(orderId: string, target: string): Promis
     }
   })
 
-  if (result.ok) revalidateOrders("orderNo" in result ? result.orderNo : undefined)
+  if (result.ok) {
+    revalidateOrders("orderNo" in result ? result.orderNo : undefined)
+    revalidatePath("/produksi")
+  }
   return { ok: result.ok, message: result.message }
+}
+
+/** Ubah Status dari Daftar/Detail Pesanan (Admin, Kasir). */
+export async function updateOrderStatus(orderId: string, target: string): Promise<ActionResult> {
+  try {
+    return changeOrderStatus(orderId, target, await requireOrderEditor())
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+}
+
+/** Mulai / selesai masak dari halaman Produksi (Admin, Produksi). Hanya langkah dapur. */
+export async function updateProductionStatus(
+  orderId: string,
+  target: string,
+): Promise<ActionResult> {
+  let userId: string
+  try {
+    userId = (await requireRole(["admin", "produksi"])).id
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  return changeOrderStatus(orderId, target, userId, PRODUCTION_STATUSES)
 }
 
 export type UpdateOrderResult =

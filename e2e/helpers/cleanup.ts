@@ -44,8 +44,7 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
 
 /**
  * Hapus pesanan uji (customer-nya bernama "QA Customer …") beserta item, pengiriman, log, dan
- * customer-nya. Penghitung nomor harian dimundurkan bila pesanan ini yang terakhir, supaya
- * pesanan asli tidak melompat nomornya.
+ * customer-nya. Penghitung nomor harian disesuaikan supaya pesanan asli tidak melompat nomornya.
  */
 export async function removeOrderByNo(orderNo: string) {
   const url = directDatabaseUrl()
@@ -62,10 +61,13 @@ export async function removeOrderByNo(orderNo: string) {
       await tx`delete from orders where id = ${order.id}`
       await tx`delete from customers c where c.id = ${order.customer_id}
         and not exists (select 1 from orders o where o.customer_id = c.id)`
+      // Penghitung disetel ke nomor terbesar yang masih ada, apa pun urutan penghapusannya,
+      // supaya pesanan asli berikutnya tidak melompati nomor.
       const date = `20${orderNo.slice(2, 4)}-${orderNo.slice(4, 6)}-${orderNo.slice(6, 8)}`
-      const seq = Number(orderNo.slice(8))
-      await tx`update order_counters set last_seq = last_seq - 1
-        where date = ${date} and last_seq = ${seq}`
+      await tx`update order_counters set last_seq = (
+          select coalesce(max(substring(order_no from 9)::int), 0) from orders
+          where order_no like ${`${orderNo.slice(0, 8)}%`}
+        ) where date = ${date}`
     })
   } finally {
     await sql.end()

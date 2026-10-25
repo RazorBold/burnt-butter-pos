@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { removeCustomerByName, snapshotStoreSettings } from "./helpers/cleanup"
+import { expectAccessDenied } from "./helpers/access"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
@@ -86,7 +87,7 @@ test.describe("Master Data › Customer", () => {
     await expect(nav.getByRole("link", { name: "Pengaturan" })).toHaveCount(0)
 
     await page.goto("/master-data/pengaturan")
-    await expect(page).toHaveURL(/\/dashboard\?akses=ditolak/)
+    await expectAccessDenied(page)
   })
 })
 

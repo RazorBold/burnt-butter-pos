@@ -143,6 +143,12 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - **Menu navbar** (belum didesain): 4 kartu ringkasan (Jenis, Perlu Restock, Masuk/Keluar Hari Ini), lalu kartu per packaging dengan stok besar, bar stok/kapasitas berwarna status (F-19), dan tombol Masuk/Keluar/Hitung. Packaging yang perlu restock tampil lebih dulu.
   - **Dialog pencatatan:** tombol pilihan Masuk/Keluar/Hitung ulang, jumlah, catatan, dan pratinjau "Stok jadi: 25 → 5 pcs". Untuk Hitung ulang, yang diisi adalah hasil hitung fisik, dan yang dicatat selisihnya.
   - **Riwayat Stok:** tabel dengan perubahan +/− (hijau/merah, plus teks Masuk/Keluar untuk pembaca layar), catatan, dan siapa yang mencatat. Bisa difilter per packaging.
+- **Produksi** (belum didesain):
+  - Pemilih tanggal kirim di kepala halaman: Hari ini, Besok, atau tanggal lain.
+  - 4 kartu ringkasan: Total Porsi "selesai / total", Belum Mulai, Sedang Dimasak, Selesai Masak.
+  - Rekap per Menu: kartu berisi foto, total porsi, baris per ukuran ("0 / 2 selesai"), dan bar hijau porsi yang selesai. Urutannya mengikuti template WA.
+  - Papan Pesanan: 3 kolom (Belum mulai, Sedang dimasak, Selesai masak), bertumpuk di ponsel. Kartu pesanan berisi daftar "2× Menu (Large)", request (latar kuning), badge "Hadiah + kartu" untuk packing, metode kirim, dan jam masuk.
+  - Tombol: Mulai masak / Selesai masak, plus tombol teks untuk mundur satu langkah bila salah klik.
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

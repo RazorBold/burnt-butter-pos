@@ -123,7 +123,7 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 ### Modul tanpa desain
 
 - **F-70** Pembayaran: status bayar per pesanan (Lunas / Belum bayar), dibayar lewat apa (metode dari Master Data), dan catatan. Tanpa DP dan tanpa unggah bukti transfer (keputusan pemilik toko, Okt 2026).
-- **F-71** Produksi: daftar porsi per menu per tanggal kirim, ditandai selesai masak.
+- **F-71** Produksi: rekap porsi per menu dan ukuran per tanggal kirim, serta papan pesanan Belum mulai / Sedang dimasak / Selesai masak. Mulai masak = Diproses, selesai masak = Siap Kirim. Role Produksi boleh mengubah status, tapi hanya untuk langkah dapur ini.
 - **F-72** Stok Packaging: stok masuk, keluar, dan hitung ulang (stok opname) beserta riwayatnya. **Dicatat manual dulu** (keputusan pemilik toko, Okt 2026); stok tidak terpotong otomatis oleh pesanan.
 
 ## Alur pengguna
@@ -219,6 +219,6 @@ Aturan bisnis yang belum jelas:
 - [x] Pembayaran: status saat pesanan disimpan? **Belum bayar.** Pembayaran dicatat terpisah di modul Pembayaran (tabel `payments`); status bayar dihitung dari situ. **Status bayar cukup Lunas / Belum bayar (tanpa DP)**, ditambah dibayar lewat apa (metode dari Master Data) dan catatan.
 - [ ] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa?
 - [x] Stok packaging dipotong saat pesanan dibuat, diproses, atau dikirim? Kapasitas (200, 100) disimpan di mana? **Manual dulu**: Admin/Produksi mencatat stok masuk/keluar sendiri. Kapasitas dan stok minimum diatur per packaging di Master Data.
-- [ ] Rekap Produksi dihitung per tanggal kirim atau tanggal pesan?
+- [x] Rekap Produksi dihitung per tanggal kirim atau tanggal pesan? **Per tanggal kirim.** "Selesai masak" = status pesanan Siap Kirim.
 - [ ] Aksi massal apa yang dibutuhkan dari checkbox di tabel Pesanan dan Pengiriman?
-- [ ] Bundle of 3 ("pilih 3 menu favorit"): pilihan menunya dicatat per pesanan? Ukuran apa yang termasuk, dan apakah Choco Bon Bon boleh dipilih? Ini memengaruhi Rekap Produksi dan stok packaging.
+- [x] Bundle of 3 ("pilih 3 menu favorit"): pilihan menunya dicatat per pesanan? **Tidak; cukup jumlah bundle.** Isi yang diminta ditulis di Request, dan Rekap Produksi menampilkan Bundle of 3 sebagai satu baris.

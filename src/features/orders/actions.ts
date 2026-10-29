@@ -124,6 +124,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
         .values({
           orderNo,
           customerId: customer.id,
+          customerName: draft.name.trim(),
           type: draft.type,
           deliveryDate: draft.deliveryDate,
           request: optional(draft.request),
@@ -354,6 +355,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       .update(orders)
       .set({
         customerId: customer.id,
+        customerName: draft.name.trim(),
         type: draft.type,
         deliveryDate: draft.deliveryDate,
         request: optional(draft.request),

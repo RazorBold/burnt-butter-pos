@@ -26,7 +26,6 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     where: (order, { and, eq, ne }) =>
       and(eq(order.deliveryDate, deliveryDate), ne(order.status, "dibatalkan")),
     with: {
-      customer: { columns: { name: true } },
       shipment: { columns: { method: true } },
       items: {
         columns: { qty: true },
@@ -48,7 +47,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     orderNo: row.orderNo,
     status: row.status,
     type: row.type,
-    customerName: row.customer.name,
+    customerName: row.customerName,
     senderName: row.senderName,
     shippingMethod: row.shipment?.method ?? "kurir_internal",
     request: row.request,

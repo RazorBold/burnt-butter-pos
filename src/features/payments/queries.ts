@@ -66,7 +66,7 @@ function searchCondition(q: string | undefined) {
   let digits = q.replace(/\D/g, "")
   if (digits.startsWith("62")) digits = `0${digits.slice(2)}`
   return or(
-    ilike(customers.name, `%${escaped}%`),
+    ilike(orders.customerName, `%${escaped}%`),
     ilike(orders.senderName, `%${escaped}%`),
     ilike(orders.orderNo, `%${escaped}%`),
     digits.length >= 3 ? like(customers.phone, `%${digits}%`) : undefined,
@@ -103,7 +103,7 @@ export async function listOrderPayments(filters: PaymentFilters) {
       orderId: orders.id,
       orderNo: orders.orderNo,
       createdAt: orders.createdAt,
-      customerName: customers.name,
+      customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,
       status: orders.status,

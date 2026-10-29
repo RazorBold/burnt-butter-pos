@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, count, eq, inArray, isNull, ne, or, type SQL, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { couriers, customers, orders, shipments } from "@/db/schema"
+import { couriers, orders, shipments } from "@/db/schema"
 import type { OrderStatus } from "@/features/orders/filters"
 import type { ShipmentStatus } from "@/features/orders/status"
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
@@ -86,7 +86,7 @@ export async function listShipments(filters: ShipmentFilters) {
     .select({
       orderId: orders.id,
       orderNo: orders.orderNo,
-      customerName: customers.name,
+      customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,
       orderStatus: orders.status,
@@ -99,7 +99,6 @@ export async function listShipments(filters: ShipmentFilters) {
     })
     .from(orders)
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
-    .innerJoin(customers, eq(customers.id, orders.customerId))
     .leftJoin(couriers, eq(couriers.id, shipments.courierId))
     .where(where)
     .orderBy(asc(orders.createdAt), asc(orders.orderNo))

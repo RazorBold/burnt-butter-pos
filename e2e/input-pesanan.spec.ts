@@ -197,4 +197,30 @@ test.describe("Input Pesanan › Simpan", () => {
       items: 2,
     })
   })
+
+  test("no. HP sama dengan nama berbeda: pesanan lama tetap memakai namanya", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    const stamp = Date.now()
+    const phone = randomPhone()
+    const first = `QA Customer ${stamp} Awal`
+    const second = `QA Customer ${stamp} Baru`
+    const text = (name: string) =>
+      PERSONAL_SAMPLE.replace("Siti Nurhaliza", name)
+        .replace("0812-3456-7890", phone)
+        .replace("Sabtu, 25 Oktober 2026", "besok")
+    await login(page, "/pesanan/baru")
+    const { dialog, orderNo: firstNo } = await saveFrom(page, text(first))
+    await dialog.getByRole("button", { name: "Input pesanan baru" }).click()
+    const { orderNo: secondNo } = await saveFrom(page, text(second))
+
+    // Customer (dikenali dari no. HP) memakai nama terbaru, tapi pesanan pertama tidak berubah.
+    expect(await readOrder(firstNo)).toMatchObject({ order_name: first, customer: second })
+    expect(await readOrder(secondNo)).toMatchObject({ order_name: second, customer: second })
+    await page.goto(`/pesanan?q=${stamp}`)
+    const rows = page.getByRole("table").getByRole("row")
+    await expect(rows.filter({ hasText: firstNo })).toContainText(first)
+    await expect(rows.filter({ hasText: secondNo })).toContainText(second)
+  })
 })

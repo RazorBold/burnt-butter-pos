@@ -90,7 +90,7 @@ function searchCondition(q: string | undefined) {
   let digits = q.replace(/\D/g, "")
   if (digits.startsWith("62")) digits = `0${digits.slice(2)}`
   return or(
-    ilike(customers.name, `%${escaped}%`),
+    ilike(orders.customerName, `%${escaped}%`),
     ilike(orders.senderName, `%${escaped}%`),
     ilike(orders.orderNo, `%${escaped}%`),
     digits.length >= 3 ? like(customers.phone, `%${digits}%`) : undefined,
@@ -122,7 +122,7 @@ export async function listOrders(filters: OrderFilters) {
       id: orders.id,
       orderNo: orders.orderNo,
       createdAt: orders.createdAt,
-      customerName: customers.name,
+      customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,
       deliveryDate: orders.deliveryDate,
@@ -206,7 +206,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
   const order = await getDb().query.orders.findFirst({
     where: (order, { eq }) => eq(order.orderNo, orderNo),
     with: {
-      customer: { columns: { name: true, phone: true } },
+      customer: { columns: { phone: true } },
       shipment: { with: { courier: { columns: { name: true } } } },
       createdByProfile: { columns: { name: true } },
       payments: {
@@ -242,7 +242,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     cardTo: order.cardTo,
     cardWishes: order.cardWishes,
     cardFrom: order.cardFrom,
-    customer: order.customer,
+    customer: { name: order.customerName, phone: order.customer.phone },
     payment: order.payments[0]
       ? {
           methodId: order.payments[0].paymentMethodId,
@@ -310,7 +310,7 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
       id: orders.id,
       orderNo: orders.orderNo,
       createdAt: orders.createdAt,
-      customerName: customers.name,
+      customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,
       deliveryDate: orders.deliveryDate,
@@ -319,7 +319,6 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
       status: orders.status,
     })
     .from(orders)
-    .innerJoin(customers, eq(customers.id, orders.customerId))
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
     .where(createdBetween(from, to))
     .orderBy(desc(orders.createdAt))
@@ -337,7 +336,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
         orderNo: orders.orderNo,
         createdAt: orders.createdAt,
         type: orders.type,
-        customerName: customers.name,
+        customerName: orders.customerName,
         phone: customers.phone,
         address: shipments.address,
         senderName: orders.senderName,

@@ -29,6 +29,20 @@
       "when": 1792909660036,
       "tag": "0003_payment_note",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793276901329,
+      "tag": "0004_order_customer_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793276930323,
+      "tag": "0005_order_customer_name_not_null",
+      "breakpoints": true
     }
   ]
 }

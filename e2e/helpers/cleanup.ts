@@ -13,7 +13,10 @@ export type SavedOrder = {
   type: string
   status: string
   total: number
+  /** Nama customer di data customer (terbaru untuk no. HP itu). */
   customer: string
+  /** Nama customer yang tersimpan di pesanan ini. */
+  order_name: string
   sender_name: string | null
   card_wishes: string | null
   raw_wa_text: string | null
@@ -31,7 +34,8 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
   const sql = postgres(url, { max: 1 })
   try {
     const [row] = await sql<SavedOrder[]>`
-      select o.type, o.status, o.total, c.name as customer, o.sender_name, o.card_wishes,
+      select o.type, o.status, o.total, c.name as customer, o.customer_name as order_name,
+        o.sender_name, o.card_wishes,
         o.raw_wa_text, s.method, s.status as shipment_status,
         (select count(*)::int from order_items i where i.order_id = o.id) as items,
         (select count(*)::int from order_status_logs l where l.order_id = o.id) as logs,
@@ -117,9 +121,9 @@ export async function seedQaOrders(
           method: QA_METHODS[i % QA_METHODS.length],
         }
         const [order] = await tx<{ id: string }[]>`
-          insert into orders (order_no, customer_id, type, sender_name, status, delivery_date,
-            total, created_at)
-          values (${`QA${code}${String(i + 1).padStart(2, "0")}`}, ${customer.id},
+          insert into orders (order_no, customer_id, customer_name, type, sender_name, status,
+            delivery_date, total, created_at)
+          values (${`QA${code}${String(i + 1).padStart(2, "0")}`}, ${customer.id}, ${customerName},
             ${i < count - hadiah ? "personal" : "hadiah"},
             ${i < count - hadiah ? null : `QA Pengirim ${code}`},
             ${status},
@@ -220,8 +224,10 @@ export async function seedReportOrders(code: string) {
         const total = row.item.price * row.qty
         const createdAt = `${row.day}T10:0${index}:00+07:00`
         const [order] = await tx<{ id: string }[]>`
-          insert into orders (order_no, customer_id, type, status, delivery_date, total, created_at)
-          values (${`QA${code}${String(index + 1).padStart(2, "0")}`}, ${customer.id}, ${row.type},
+          insert into orders (order_no, customer_id, customer_name, type, status, delivery_date,
+            total, created_at)
+          values (${`QA${code}${String(index + 1).padStart(2, "0")}`}, ${customer.id},
+            ${`QA Customer ${code}`}, ${row.type},
             ${row.status}, ${row.day}, ${total}, ${createdAt})
           returning id`
         await tx`insert into order_items (order_id, menu_variant_id, qty, unit_price, subtotal)

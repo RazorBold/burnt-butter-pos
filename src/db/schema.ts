@@ -127,6 +127,12 @@ export const orders = pgTable(
     customerId: uuid("customer_id")
       .notNull()
       .references(() => customers.id),
+    /**
+     * Nama customer (Hadiah: penerima) seperti diketik di pesanan ini. Disimpan per pesanan
+     * karena customer dikenali dari no. HP dan namanya bisa berbeda di pesanan berikutnya;
+     * pesanan lama tidak boleh ikut berubah nama.
+     */
+    customerName: text("customer_name").notNull(),
     type: orderType("type").notNull(),
     status: orderStatus("status").notNull().default("baru"),
     deliveryDate: date("delivery_date").notNull(),

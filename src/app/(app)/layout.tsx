@@ -3,7 +3,14 @@ import { Suspense, type ReactNode } from "react"
 import { AppNavbar } from "@/components/app/app-navbar"
 import { Wordmark } from "@/components/app/wordmark"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CAN_INPUT_ORDER, canAccessPath, SECTION_ACCESS, type Section } from "@/lib/access"
+import { listStockAlerts } from "@/features/stock-alerts/queries"
+import {
+  CAN_EDIT_STOCK,
+  CAN_INPUT_ORDER,
+  canAccessPath,
+  SECTION_ACCESS,
+  type Section,
+} from "@/lib/access"
 import { requireUser } from "@/lib/auth"
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -23,12 +30,15 @@ async function Navbar() {
   const allowedSections = (Object.keys(SECTION_ACCESS) as Section[]).filter((section) =>
     canAccessPath(user.role, section),
   )
+  // Peringatan stok hanya untuk role yang bisa restock (Admin, Produksi).
+  const stockAlerts = CAN_EDIT_STOCK.includes(user.role) ? await listStockAlerts() : null
 
   return (
     <AppNavbar
       user={{ name: user.name, email: user.email, role: user.role }}
       allowedSections={allowedSections}
       canInputOrder={CAN_INPUT_ORDER.includes(user.role)}
+      stockAlerts={stockAlerts}
     />
   )
 }

@@ -119,7 +119,13 @@ export function PackagingStockCard({
         </div>
       )}
 
-      <StockMovementDialog packaging={packaging} mode={mode} open={open} onOpenChange={setOpen} />
+      <StockMovementDialog
+        item={packaging}
+        kind="packaging"
+        mode={mode}
+        open={open}
+        onOpenChange={setOpen}
+      />
     </article>
   )
 }

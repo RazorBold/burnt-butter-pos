@@ -114,7 +114,7 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 
 - **F-60** Produk & Menu: foto, nama, deskripsi singkat, kategori (Pasta, Dessert, Bundle), ukuran (Large/Regular atau tanpa ukuran), harga per ukuran, status Aktif; cari + filter kategori.
 - **F-61** Stok Packaging: foto, nama, stok, satuan, status Cukup/Menipis.
-- **F-62** Bahan Baku: nama, satuan, stok saat ini, stok minimum, status Cukup/Menipis/Habis.
+- **F-62** Bahan Baku: nama, satuan, stok saat ini, stok minimum, status Cukup/Menipis/Habis. Rumus sama dengan packaging: Habis bila stok 0, Menipis bila stok ≤ minimum, selain itu Cukup. Stok boleh pecahan (2 angka di belakang koma, mis. 2,5 kg) dan dicatat lewat masuk/keluar/hitung ulang oleh Admin dan Produksi.
 - **F-63** Kurir & Pengiriman: nama, tipe (Kurir Internal/Eksternal), no. telp, status.
 - **F-64** Metode Pembayaran: nama, tipe (Bank, E-Wallet, Cash), status.
 - **F-65** User / Staff: nama, role, status.
@@ -217,7 +217,7 @@ Aturan bisnis yang belum jelas:
 - [x] Pesanan Hadiah: siapa yang dicatat sebagai customer, penerima (nomornya ada di template) atau pengirim (nomor WA chat, tidak ada di template)? **Penerima.** Nama pengirim dan kartu ucapan disimpan di pesanan.
 - [x] Bundle of 3: isinya bebas pilih 3 menu atau tetap? Template hanya meminta jumlah bundle. **Cukup jumlah**: satu item Rp 180.000; permintaan isi ditulis di Request.
 - [x] Pembayaran: status saat pesanan disimpan? **Belum bayar.** Pembayaran dicatat terpisah di modul Pembayaran (tabel `payments`); status bayar dihitung dari situ. **Status bayar cukup Lunas / Belum bayar (tanpa DP)**, ditambah dibayar lewat apa (metode dari Master Data) dan catatan.
-- [ ] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa?
+- [x] Ambang status bahan baku: Keju 8/10 = Menipis tapi Saus 6/10 = Habis. Rumusnya apa? **Habis bila 0, Menipis bila ≤ minimum, selain itu Cukup (Saus 6/10 = Menipis).**
 - [x] Stok packaging dipotong saat pesanan dibuat, diproses, atau dikirim? Kapasitas (200, 100) disimpan di mana? **Manual dulu**: Admin/Produksi mencatat stok masuk/keluar sendiri. Kapasitas dan stok minimum diatur per packaging di Master Data.
 - [x] Rekap Produksi dihitung per tanggal kirim atau tanggal pesan? **Per tanggal kirim.** "Selesai masak" = status pesanan Siap Kirim.
 - [x] Aksi massal apa yang dibutuhkan dari checkbox di tabel Pesanan dan Pengiriman? **Pesanan: ubah status, tandai lunas, batalkan, unduh CSV. Pengiriman: atur kurir & jadwal, tandai dikirim.**

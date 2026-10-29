@@ -33,7 +33,8 @@ export function PackagingRowActions({ packaging }: { packaging: PackagingRow }) 
         </DropdownMenuItem>
       </ActiveToggleMenu>
       <StockMovementDialog
-        packaging={packaging}
+        item={packaging}
+        kind="packaging"
         mode="masuk"
         open={movementOpen}
         onOpenChange={setMovementOpen}

@@ -378,3 +378,21 @@ export async function removeMenuByName(name: string) {
     await sql.end()
   }
 }
+
+/** Hapus bahan baku uji (nama diawali "QA Bahan ") beserta riwayat stoknya. */
+export async function removeRawMaterialByName(name: string) {
+  if (!name.startsWith("QA Bahan ")) throw new Error("Hanya bahan baku uji (QA Bahan …)")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql.begin(async (tx) => {
+      // stock_movements.item_id tidak punya foreign key (dipakai packaging dan bahan baku).
+      await tx`delete from stock_movements where item_type = 'raw_material'
+        and item_id in (select id from raw_materials where name = ${name})`
+      await tx`delete from raw_materials where name = ${name}`
+    })
+  } finally {
+    await sql.end()
+  }
+}

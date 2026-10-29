@@ -12,6 +12,13 @@ export function formatRupiah(amount: number): string {
   return `${sign}Rp ${rupiah.format(Math.abs(amount))}`
 }
 
+const jumlah = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 })
+
+/** Jumlah stok: 1200 → "1.200", 2.5 → "2,5". */
+export function formatJumlah(value: number): string {
+  return jumlah.format(value)
+}
+
 function inJakarta(date: Date | string): TZDate {
   return new TZDate(typeof date === "string" ? new Date(date) : date, TIME_ZONE)
 }

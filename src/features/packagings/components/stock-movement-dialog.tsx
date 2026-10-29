@@ -21,33 +21,51 @@ import {
   MOVEMENT_MODE_LABEL,
   MOVEMENT_MODES,
   type MovementMode,
+  parseQty,
   planMovement,
 } from "@/features/packagings/stock"
+import { recordRawMaterialMovement } from "@/features/raw-materials/actions"
+import { formatJumlah } from "@/lib/format"
 
 const MODE_OPTIONS = MOVEMENT_MODES.map((value) => ({
   value,
   label: value === "masuk" ? "Masuk" : value === "keluar" ? "Keluar" : "Hitung ulang",
 }))
 
-const NOTE_PLACEHOLDER: Record<MovementMode, string> = {
-  masuk: "Mis. beli dari supplier, 2 dus",
-  keluar: "Mis. rusak, dipakai untuk sampel",
-  hitung: "Mis. stok opname akhir bulan",
+const NOTE_PLACEHOLDER: Record<StockKind, Record<MovementMode, string>> = {
+  packaging: {
+    masuk: "Mis. beli dari supplier, 2 dus",
+    keluar: "Mis. rusak, dipakai untuk sampel",
+    hitung: "Mis. stok opname akhir bulan",
+  },
+  raw_material: {
+    masuk: "Mis. belanja pasar pagi",
+    keluar: "Mis. dipakai produksi hari ini",
+    hitung: "Mis. ditimbang ulang akhir hari",
+  },
 }
 
-/** Dialog catat stok masuk / keluar / hitung ulang untuk satu packaging. Dibuka terkontrol. */
+export type StockKind = "packaging" | "raw_material"
+
+/**
+ * Dialog catat stok masuk / keluar / hitung ulang untuk satu packaging (bilangan bulat) atau
+ * bahan baku (boleh 2 angka di belakang koma). Dibuka terkontrol.
+ */
 export function StockMovementDialog({
-  packaging,
+  item,
+  kind,
   mode: initialMode,
   open,
   onOpenChange,
 }: {
-  packaging: { id: string; name: string; stock: number; unit: string }
+  item: { id: string; name: string; stock: number; unit: string }
+  kind: StockKind
   mode: MovementMode
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
   const id = useId()
+  const decimals = kind === "raw_material" ? 2 : 0
   const [mode, setMode] = useState<MovementMode>(initialMode)
   const [qty, setQty] = useState("")
   const [note, setNote] = useState("")
@@ -67,11 +85,12 @@ export function StockMovementDialog({
     }
   }
 
-  const number = qty === "" ? null : Number(qty)
-  const plan = number === null ? null : planMovement(mode, number, packaging.stock, packaging.unit)
+  const amount = (value: number) => `${formatJumlah(value)} ${item.unit}`
+  const number = parseQty(qty)
+  const plan = number === null ? null : planMovement(mode, number, item.stock, item.unit, decimals)
 
   function save() {
-    if (!plan) {
+    if (!plan || number === null) {
       setError(mode === "hitung" ? "Isi hasil hitung stok." : "Isi jumlahnya.")
       return
     }
@@ -80,12 +99,10 @@ export function StockMovementDialog({
       return
     }
     startTransition(async () => {
-      const result = await recordStockMovement({
-        packagingId: packaging.id,
-        mode,
-        qty: number,
-        note,
-      })
+      const result =
+        kind === "raw_material"
+          ? await recordRawMaterialMovement({ rawMaterialId: item.id, mode, qty: number, note })
+          : await recordStockMovement({ packagingId: item.id, mode, qty: number, note })
       if (result.ok) {
         toast.success(result.message)
         onOpenChange(false)
@@ -100,10 +117,10 @@ export function StockMovementDialog({
       <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
         <DialogHeader className="text-left">
           <DialogTitle className="text-2xl font-bold text-brand-ink">
-            {MOVEMENT_MODE_LABEL[mode]}: {packaging.name}
+            {MOVEMENT_MODE_LABEL[mode]}: {item.name}
           </DialogTitle>
           <DialogDescription className="text-text-body">
-            Stok tercatat sekarang {packaging.stock} {packaging.unit}.
+            Stok tercatat sekarang {amount(item.stock)}.
           </DialogDescription>
         </DialogHeader>
 
@@ -119,19 +136,18 @@ export function StockMovementDialog({
           />
           <div className="space-y-1.5">
             <Label htmlFor={`${id}-qty`} className="text-text-strong">
-              {mode === "hitung"
-                ? `Hasil hitung (${packaging.unit})`
-                : `Jumlah (${packaging.unit})`}
+              {mode === "hitung" ? `Hasil hitung (${item.unit})` : `Jumlah (${item.unit})`}
             </Label>
             <Input
               id={`${id}-qty`}
-              inputMode="numeric"
+              inputMode={decimals ? "decimal" : "numeric"}
               value={qty}
               onChange={(event) => {
-                setQty(event.target.value.replace(/\D/g, "").slice(0, 7))
+                const allowed = decimals ? /[^\d.,]/g : /\D/g
+                setQty(event.target.value.replace(allowed, "").slice(0, 10))
                 setError(undefined)
               }}
-              placeholder={mode === "hitung" ? String(packaging.stock) : "0"}
+              placeholder={mode === "hitung" ? formatJumlah(item.stock) : "0"}
               aria-describedby={`${id}-preview`}
               className="h-11 w-40 rounded-lg bg-white text-lg font-semibold tabular-nums"
             />
@@ -141,12 +157,16 @@ export function StockMovementDialog({
               aria-live="polite"
             >
               {plan?.ok
-                ? `Stok jadi: ${packaging.stock} → ${plan.nextStock} ${packaging.unit}${
-                    mode === "hitung" ? ` (${plan.direction === "in" ? "+" : "−"}${plan.qty})` : ""
+                ? `Stok jadi: ${formatJumlah(item.stock)} → ${amount(plan.nextStock)}${
+                    mode === "hitung"
+                      ? ` (${plan.direction === "in" ? "+" : "−"}${formatJumlah(plan.qty)})`
+                      : ""
                   }`
                 : mode === "hitung"
                   ? "Isi jumlah hasil hitung fisik; selisihnya yang dicatat."
-                  : " "}
+                  : decimals
+                    ? "Boleh pakai koma, mis. 2,5."
+                    : " "}
             </p>
           </div>
           <div className="space-y-1.5">
@@ -157,7 +177,7 @@ export function StockMovementDialog({
               id={`${id}-note`}
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder={NOTE_PLACEHOLDER[mode]}
+              placeholder={NOTE_PLACEHOLDER[kind][mode]}
               rows={2}
               maxLength={200}
               className="rounded-lg bg-white"

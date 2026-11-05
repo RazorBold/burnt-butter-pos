@@ -44,6 +44,7 @@ export type OrderPaymentRow = {
   total: number
   paymentMethodId: string | null
   payment: PaymentInfo | null
+  orderNote: string | null
 }
 
 export type PaymentSummary = {
@@ -114,6 +115,7 @@ export async function listOrderPayments(filters: PaymentFilters) {
       status: orders.status,
       deliveryDate: orders.deliveryDate,
       total: orders.total,
+      orderNote: orders.note,
       paymentMethodId: payments.paymentMethodId,
       methodName: paymentMethods.name,
       note: payments.note,

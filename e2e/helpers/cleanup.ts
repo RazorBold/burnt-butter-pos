@@ -29,6 +29,7 @@ export type SavedOrder = {
   marketplace_order_no: string | null
   expedition: string | null
   tracking_no: string | null
+  note: string | null
 }
 
 /** Ringkasan pesanan tersimpan, untuk memastikan isi database sesuai form. */
@@ -41,7 +42,7 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
       select o.type, o.status, o.total, c.name as customer, o.customer_name as order_name,
         o.sender_name, o.card_wishes,
         o.raw_wa_text, s.method, s.status as shipment_status, o.channel, o.marketplace_order_no,
-        s.expedition, s.tracking_no,
+        s.expedition, s.tracking_no, o.note,
         (select count(*)::int from order_items i where i.order_id = o.id) as items,
         (select count(*)::int from order_status_logs l where l.order_id = o.id) as logs,
         (select count(*)::int from payments p where p.order_id = o.id) as payments

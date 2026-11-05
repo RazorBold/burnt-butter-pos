@@ -85,6 +85,7 @@ export type OrderListRow = {
   channel: OrderChannel
   marketplaceOrderNo: string | null
   trackingNo: string | null
+  note: string | null
 }
 
 /** Cari nama customer, nama pengirim hadiah, no. pesanan, atau no. HP (bila berisi angka). */
@@ -137,6 +138,7 @@ export async function listOrders(filters: OrderFilters) {
       total: orders.total,
       status: orders.status,
       paid: isNotNull(payments.id).mapWith(Boolean),
+      note: orders.note,
       channel: orders.channel,
       marketplaceOrderNo: orders.marketplaceOrderNo,
       trackingNo: shipments.trackingNo,
@@ -186,6 +188,7 @@ export type OrderDetail = {
   cardFrom: string | null
   channel: OrderChannel
   marketplaceOrderNo: string | null
+  note: string | null
   customer: { name: string; phone: string | null }
   /** Kosong = belum bayar. */
   payment: { methodId: string; methodName: string; note: string | null; paidAt: Date | null } | null
@@ -258,6 +261,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     cardFrom: order.cardFrom,
     channel: order.channel,
     marketplaceOrderNo: order.marketplaceOrderNo,
+    note: order.note,
     customer: { name: order.customerName, phone: order.customer.phone },
     payment: order.payments[0]
       ? {
@@ -336,6 +340,7 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
         shippingMethod: shipments.method,
         total: orders.total,
         status: orders.status,
+        note: orders.note,
       })
       .from(orders)
       .innerJoin(shipments, eq(shipments.orderId, orders.id))
@@ -363,6 +368,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
         method: shipments.method,
         status: orders.status,
         paidWith: paymentMethods.name,
+        note: orders.note,
         channel: orders.channel,
         marketplaceOrderNo: orders.marketplaceOrderNo,
         expedition: shipments.expedition,

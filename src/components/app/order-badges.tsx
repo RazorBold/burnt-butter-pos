@@ -1,4 +1,4 @@
-import { Check, Clock, MessageCircle, ShoppingBag, Tag, X } from "lucide-react"
+import { Check, Clock, MessageCircle, ShoppingBag, StickyNote, Tag, X } from "lucide-react"
 
 import { ORDER_CHANNEL_LABEL, type OrderChannel } from "@/features/orders/constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
@@ -103,6 +103,25 @@ export function ChannelBadge({
     <span className={cn(BADGE, CHANNEL_STYLE[channel], className)}>
       <Icon aria-hidden className="size-3.5 shrink-0" />
       {ORDER_CHANNEL_LABEL[channel]}
+    </span>
+  )
+}
+
+/** Catatan pesanan satu baris di bawah nama customer. Teks lengkap di tooltip dan panel detail. */
+export function OrderNoteLine({ note, className }: { note: string | null; className?: string }) {
+  if (!note) return null
+  return (
+    <span
+      className={cn(
+        "mt-0.5 flex max-w-[280px] items-center gap-1 text-[13px] text-status-diproses-fg",
+        className,
+      )}
+    >
+      <StickyNote aria-hidden className="size-3.5 shrink-0" />
+      <span className="sr-only">Catatan: </span>
+      <span className="truncate" title={note}>
+        {note}
+      </span>
     </span>
   )
 }

@@ -1,6 +1,14 @@
 "use client"
 
-import { ChefHat, CircleCheck, Gift, LoaderCircle, MessageSquareText, Undo2 } from "lucide-react"
+import {
+  ChefHat,
+  CircleCheck,
+  Gift,
+  LoaderCircle,
+  MessageSquareText,
+  StickyNote,
+  Undo2,
+} from "lucide-react"
 import { useTransition } from "react"
 import { toast } from "sonner"
 
@@ -93,6 +101,13 @@ export function ProductionOrderCard({
         <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-status-diproses/60 px-2.5 py-2 text-[13px] text-status-diproses-fg">
           <MessageSquareText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           <span className="break-words">{order.request}</span>
+        </p>
+      )}
+
+      {order.note && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-status-diproses/60 px-2.5 py-2 text-[13px] text-status-diproses-fg">
+          <StickyNote className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <span className="break-words">Catatan: {order.note}</span>
         </p>
       )}
 

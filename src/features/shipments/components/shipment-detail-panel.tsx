@@ -4,6 +4,7 @@ import {
   MapPin,
   Phone,
   SquareArrowOutUpRight,
+  StickyNote,
   UserRound,
 } from "lucide-react"
 import Link from "next/link"
@@ -138,6 +139,7 @@ export async function ShipmentDetailPanel({
           </li>
           <li className="-mt-1.5 pl-[26px] text-[13px] text-text-body">{methodNote}</li>
           {order.request && <InfoRow icon={ClipboardList}>Request: {order.request}</InfoRow>}
+          {order.note && <InfoRow icon={StickyNote}>Catatan: {order.note}</InfoRow>}
         </ul>
 
         {isExpedition ? null : maps ? (

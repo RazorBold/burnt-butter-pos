@@ -7,6 +7,7 @@ import { OrderStatusBadge, PaymentBadge } from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
 import { ORDER_CHANNEL_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
+import { OrderNoteButton } from "@/features/orders/components/order-note-dialog"
 import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
 import { getOrderDetail, type OrderDetail } from "@/features/orders/queries"
@@ -144,7 +145,10 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         <h3 id="order-customer" className="font-semibold text-brand-ink">
           {isHadiah ? "Data Penerima" : "Data Customer"}
         </h3>
-        {isEditable(order.status) && <EditOrderDialog order={order} />}
+        <div className="flex flex-wrap justify-end gap-2">
+          <OrderNoteButton orderId={order.id} orderNo={order.orderNo} note={order.note} />
+          {isEditable(order.status) && <EditOrderDialog order={order} />}
+        </div>
       </div>
       <dl className="text-sm">
         <Row label="Sumber">
@@ -162,6 +166,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
           <Row label="Resi">{order.shipment.trackingNo ?? "Belum diisi"}</Row>
         )}
         <Row label="Request">{order.request ?? "-"}</Row>
+        <Row label="Catatan">{order.note ?? "-"}</Row>
         {isHadiah && (
           <>
             <Row label="Pengirim">{order.senderName ?? "-"}</Row>

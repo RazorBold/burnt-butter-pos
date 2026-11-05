@@ -27,6 +27,7 @@ export type OrderExportRow = {
   marketplaceOrderNo: string | null
   expedition: string | null
   trackingNo: string | null
+  note: string | null
 }
 
 const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
@@ -61,6 +62,7 @@ const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ["No. Marketplace", (row) => row.marketplaceOrderNo ?? ""],
   ["Kurir Ekspedisi", (row) => row.expedition ?? ""],
   ["Resi", (row) => row.trackingNo ?? ""],
+  ["Catatan", (row) => row.note ?? ""],
 ]
 
 /**

@@ -15,6 +15,7 @@ export type ProductionOrder = {
   senderName: string | null
   shippingMethod: ShippingMethod
   request: string | null
+  note: string | null
   hasCard: boolean
   createdAt: Date
   items: ProductionItem[]
@@ -51,6 +52,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     senderName: row.senderName,
     shippingMethod: row.shipment?.method ?? "kurir_internal",
     request: row.request,
+    note: row.note,
     hasCard: Boolean(row.cardTo || row.cardWishes || row.cardFrom),
     createdAt: row.createdAt,
     items: row.items.map((item) => ({

@@ -63,7 +63,7 @@ export function OrderFilters({ from, to, today }: { from: string; to: string; to
         pending && "opacity-80",
       )}
     >
-      <div className="relative sm:col-span-2 lg:w-[340px]">
+      <div className="relative sm:col-span-2 lg:w-[300px]">
         <Search
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-body"
           aria-hidden
@@ -72,7 +72,7 @@ export function OrderFilters({ from, to, today }: { from: string; to: string; to
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari nama, no. pesanan, resi, atau no. telp…"
+          placeholder="Cari nama, no. pesanan, resi, telp…"
           aria-label="Cari nama, no. pesanan, atau no. telp"
           className="h-10 rounded-lg bg-white pl-9"
         />

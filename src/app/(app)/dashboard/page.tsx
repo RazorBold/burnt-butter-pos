@@ -16,7 +16,7 @@ import { type ReactNode, Suspense } from "react"
 
 import { AccessDeniedToast } from "@/components/app/access-denied-toast"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
+import { OrderNoteLine, OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { STOCK_BAR_COLOR } from "@/components/app/stock-badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -212,7 +212,10 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                             ? formatJam(order.createdAt)
                             : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
                         </td>
-                        <td className="px-2 py-3 text-text-strong">{order.customerName}</td>
+                        <td className="px-2 py-3 text-text-strong">
+                          {order.customerName}
+                          <OrderNoteLine note={order.note} className="max-w-[150px]" />
+                        </td>
                         <td className="px-2 py-3">
                           <TypeBadge type={order.type} />
                         </td>

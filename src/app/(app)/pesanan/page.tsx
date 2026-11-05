@@ -4,7 +4,12 @@ import Link from "next/link"
 import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { ChannelBadge, OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
+import {
+  ChannelBadge,
+  OrderNoteLine,
+  OrderStatusBadge,
+  TypeBadge,
+} from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { SelectAllHead } from "@/components/app/row-selection"
 import { TablePagination } from "@/components/app/table-pagination"
@@ -191,6 +196,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                 paid: order.paid,
                 total: order.total,
                 trackingNo: order.trackingNo,
+                note: order.note,
               }))}
               methods={paymentMethods}
             >
@@ -236,6 +242,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                               dari {order.senderName}
                             </span>
                           )}
+                          <OrderNoteLine note={order.note} />
                         </TableCell>
                         <TableCell>
                           <ChannelBadge channel={order.channel} />

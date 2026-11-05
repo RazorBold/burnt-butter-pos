@@ -375,6 +375,37 @@ export async function exportOrdersCsv(orderIds: unknown): Promise<ExportOrdersRe
   return { ok: true, csv: ordersToCsv(rows), count: rows.length }
 }
 
+const orderNoteSchema = z.string().trim().max(300, "Catatan terlalu panjang (maks. 300 karakter).")
+
+/** Catatan pesanan, mis. add-on pembeli (Admin, Kasir). Kosong = catatan dihapus. */
+export async function updateOrderNote(orderId: unknown, note: unknown): Promise<ActionResult> {
+  try {
+    await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const id = z.uuid().safeParse(orderId)
+  const text = orderNoteSchema.safeParse(note)
+  if (!id.success) return { ok: false, message: "Pesanan tidak dikenal. Muat ulang halaman." }
+  if (!text.success) {
+    return { ok: false, message: text.error.issues[0]?.message ?? "Catatan belum benar." }
+  }
+
+  const [order] = await getDb()
+    .update(orders)
+    .set({ note: text.data || null })
+    .where(eq(orders.id, id.data))
+    .returning({ orderNo: orders.orderNo })
+  if (!order) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+
+  revalidateOrders([order.orderNo])
+  return {
+    ok: true,
+    message: text.data ? `Catatan ${order.orderNo} disimpan.` : `Catatan ${order.orderNo} dihapus.`,
+  }
+}
+
 export type UpdateOrderResult =
   | { ok: true; message: string }
   | { ok: false; message: string; errors?: Partial<Record<DraftField, string>> }

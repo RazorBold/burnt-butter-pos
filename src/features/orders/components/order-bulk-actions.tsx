@@ -8,6 +8,7 @@ import {
   ExternalLink,
   LoaderCircle,
   RefreshCw,
+  StickyNote,
   Wallet,
 } from "lucide-react"
 import Link from "next/link"
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { exportOrdersCsv, updateOrderStatuses } from "@/features/orders/actions"
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/features/orders/filters"
+import { OrderNoteDialog } from "@/features/orders/components/order-note-dialog"
 import { nextStatuses, statusSkipReason } from "@/features/orders/status"
 import { MarkManyPaidDialog } from "@/features/payments/components/mark-paid-dialog"
 import type { ActivePaymentMethod } from "@/features/payments/queries"
@@ -55,6 +57,7 @@ export type OrderActionRow = {
   paid: boolean
   total: number
   trackingNo: string | null
+  note: string | null
 }
 
 /** Tujuan di menu "Ubah status" massal. Dibatalkan punya tombol sendiri dengan konfirmasi. */
@@ -72,13 +75,14 @@ const canChange = (row: OrderActionRow, target: OrderStatus) =>
   ) === null
 const canPay = (row: OrderActionRow) => !row.paid && row.status !== "dibatalkan"
 
-type OpenDialog = { kind: "paid" | "cancel"; rows: OrderActionRow[] } | null
+type DialogKind = "paid" | "cancel" | "note"
+type OpenDialog = { kind: DialogKind; rows: OrderActionRow[] } | null
 
 type OrderActions = {
   rowById: Map<string, OrderActionRow>
   pending: boolean
   changeStatus: (rows: OrderActionRow[], target: OrderStatus) => void
-  openDialog: (kind: "paid" | "cancel", rows: OrderActionRow[]) => void
+  openDialog: (kind: DialogKind, rows: OrderActionRow[]) => void
 }
 
 const ActionsContext = createContext<OrderActions | null>(null)
@@ -164,6 +168,15 @@ function OrderActionsInner({
           orders={dialog.rows}
           methods={methods}
           onDone={clear}
+        />
+      )}
+      {dialog?.kind === "note" && (
+        <OrderNoteDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          orderId={dialog.rows[0].id}
+          orderNo={dialog.rows[0].orderNo}
+          note={dialog.rows[0].note}
         />
       )}
       {dialog?.kind === "cancel" && (
@@ -354,6 +367,10 @@ export function OrderRowMenu({ id }: { id: string }) {
             <ExternalLink aria-hidden />
             Detail lengkap
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="h-10" onSelect={() => openDialog("note", [row])}>
+          <StickyNote aria-hidden />
+          {row.note ? "Ubah catatan" : "Tambah catatan"}
         </DropdownMenuItem>
         {steps.length > 0 && <DropdownMenuSeparator />}
         {steps.map((status) => (

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { PaymentBadge } from "@/components/app/order-badges"
+import { OrderNoteLine, PaymentBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { TablePagination } from "@/components/app/table-pagination"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -156,6 +156,7 @@ async function PaymentList({ searchParams }: { searchParams: SearchParams }) {
                             dari {row.senderName}
                           </span>
                         )}
+                        <OrderNoteLine note={row.orderNote} />
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {formatTanggalPendek(row.deliveryDate)}

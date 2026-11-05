@@ -152,6 +152,8 @@ export const orders = pgTable(
     status: orderStatus("status").notNull().default("baru"),
     deliveryDate: date("delivery_date").notNull(),
     request: text("request"),
+    /** Catatan staf setelah pesanan masuk, mis. add-on pembeli. Tidak mengubah total. */
+    note: text("note"),
     /** Rupiah. WhatsApp: jumlah subtotal order_items. Marketplace: diisi sesuai marketplace. */
     total: integer("total").notNull(),
     /** Teks WA asli yang ditempel saat Input Pesanan. */

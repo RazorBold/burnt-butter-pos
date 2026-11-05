@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
+import { OrderNoteLine } from "@/components/app/order-badges"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { SelectAllHead } from "@/components/app/row-selection"
 import { ShipmentStatusBadge, ShippingMethodLabel } from "@/components/app/shipment-badges"
@@ -216,6 +217,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                               dari {row.senderName}
                             </span>
                           )}
+                          <OrderNoteLine note={row.note} />
                         </TableCell>
                         <TableCell>
                           <ShippingMethodLabel method={row.method} />

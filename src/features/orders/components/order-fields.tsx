@@ -98,6 +98,7 @@ export function ShippingMethodPicker({
               )}
             >
               <input
+                suppressHydrationWarning
                 type="radio"
                 name="shippingMethod"
                 value={method}

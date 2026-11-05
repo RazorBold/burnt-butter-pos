@@ -98,7 +98,7 @@ Angka uang memakai `tabular-nums` dengan format `Rp 4.780.000`.
 ## Layout & bentuk
 
 - Frame desain: desktop 1536 × 1024. Konten penuh lebar dengan padding sisi ±32 px.
-- Navbar: tinggi ±76 px. Logo di kiri, menu di tengah, lalu tombol **+ Input Pesanan**, notifikasi, dan profil di kanan. Menu aktif = pill `--bg-nav-active` + garis bawah `--brand`.
+- Navbar: tinggi ±76 px. Logo di kiri, menu di tengah, lalu tombol **+ Input Pesanan**, notifikasi, dan profil di kanan. Urutan menu: Dashboard, Pesanan, Pembayaran, Produksi, Pengiriman, Laporan, Stok Packaging, Master Data (Stok Packaging dipindah ke kiri Master Data atas permintaan pemilik toko). Menu aktif = pill `--bg-nav-active` + garis bawah `--brand`.
 - Kartu: radius ±16 px, border tipis `--border-subtle`, bayangan sangat halus atau tanpa bayangan. Jarak antar kartu ±16 px.
 - Tombol, input, badge: radius ±8 px. Badge berbentuk pill.
 - Baris tabel ±48 px dengan garis pemisah tipis; baris terpilih diberi latar `--bg-nav-active`.

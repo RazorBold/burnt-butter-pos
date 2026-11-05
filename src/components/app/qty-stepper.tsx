@@ -27,6 +27,7 @@ export function QtyStepper({
       )}
     >
       <button
+        suppressHydrationWarning
         type="button"
         aria-label={`Kurangi ${label}`}
         disabled={value <= 0}
@@ -36,6 +37,7 @@ export function QtyStepper({
         <Minus className="size-4" aria-hidden />
       </button>
       <input
+        suppressHydrationWarning
         type="text"
         inputMode="numeric"
         aria-label={`Jumlah ${label}`}
@@ -49,6 +51,7 @@ export function QtyStepper({
         className="h-9 w-9 bg-transparent text-center font-semibold text-text-strong tabular-nums outline-none placeholder:font-normal placeholder:text-text-body/60"
       />
       <button
+        suppressHydrationWarning
         type="button"
         aria-label={`Tambah ${label}`}
         disabled={value >= max}

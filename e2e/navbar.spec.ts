@@ -16,7 +16,16 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
 
   if (isDesktop) {
     const nav = page.getByRole("navigation", { name: "Menu utama" })
-    await expect(nav.getByRole("link")).toHaveCount(8)
+    await expect(nav.getByRole("link")).toHaveText([
+      "Dashboard",
+      "Pesanan",
+      "Pembayaran",
+      "Produksi",
+      "Pengiriman",
+      "Laporan",
+      "Stok Packaging",
+      "Master Data",
+    ])
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
       "aria-current",
       "page",

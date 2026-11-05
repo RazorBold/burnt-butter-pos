@@ -54,6 +54,8 @@ function Button({
 
   return (
     <Comp
+      // Ekstensi browser menyisipkan atribut (mis. fdprocessedid) sebelum React hydrate.
+      suppressHydrationWarning
       data-slot="button"
       data-variant={variant}
       data-size={size}

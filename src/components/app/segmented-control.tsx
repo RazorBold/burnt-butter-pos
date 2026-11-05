@@ -42,6 +42,7 @@ export function SegmentedControl<T extends string>({
         const checked = option.value === value
         return (
           <button
+            suppressHydrationWarning
             key={option.value}
             ref={(element) => {
               refs.current[index] = element

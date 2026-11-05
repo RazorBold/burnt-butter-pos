@@ -194,6 +194,7 @@ function StaffForm({
                 )}
               >
                 <input
+                  suppressHydrationWarning
                   type="radio"
                   name="role-choice"
                   value={value}

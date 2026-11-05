@@ -349,6 +349,7 @@ function CourierForm({
       )}
     >
       <input
+        suppressHydrationWarning
         type="radio"
         name={name}
         value={value}

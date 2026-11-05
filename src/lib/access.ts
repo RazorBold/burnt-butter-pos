@@ -26,10 +26,10 @@ export const SECTION_ACCESS = {
   "/dashboard": ALL,
   "/pesanan": ["admin", "kasir"],
   "/pembayaran": ["admin", "kasir"],
-  "/stok-packaging": ["admin", "produksi"],
   "/produksi": ["admin", "produksi"],
   "/pengiriman": ["admin", "kasir"],
   "/laporan": ["admin", "owner"],
+  "/stok-packaging": ["admin", "produksi"],
   "/master-data": ALL,
 } as const satisfies Record<string, readonly Role[]>
 

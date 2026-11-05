@@ -29,6 +29,7 @@ export function PeriodPicker({
         </span>
         {/* Input tanggal asli menutupi seluruh kotak supaya pemilih bawaan browser terbuka. */}
         <input
+          suppressHydrationWarning
           type="date"
           aria-label="Tanggal acuan"
           value={anchor}
@@ -49,6 +50,7 @@ export function PeriodPicker({
           const selected = value === period
           return (
             <button
+              suppressHydrationWarning
               key={value}
               type="button"
               aria-pressed={selected}

@@ -247,6 +247,7 @@ function ProfileMenu({ user }: { user: NavbarUser }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
+          suppressHydrationWarning
           type="button"
           className={cn(
             "flex h-11 items-center gap-2.5 rounded-full border border-border bg-white/70 p-1 text-sm font-medium text-text-strong transition-colors hover:bg-white sm:h-12 sm:pr-3",

@@ -81,6 +81,7 @@ function MarkPaidForm({
                   )}
                 >
                   <input
+                    suppressHydrationWarning
                     type="radio"
                     name={`${id}-method`}
                     value={method.id}

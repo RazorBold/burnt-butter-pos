@@ -88,6 +88,7 @@ export function DateRangePicker({
             {PRESETS.map((preset) => (
               <li key={preset.label}>
                 <button
+                  suppressHydrationWarning
                   type="button"
                   onClick={() => apply(preset.range(toJakartaDateString(new Date())))}
                   className="h-9 w-full rounded-md px-3 text-left text-sm text-text-strong outline-none hover:bg-nav-active focus-visible:ring-3 focus-visible:ring-ring/50"

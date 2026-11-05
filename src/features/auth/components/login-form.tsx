@@ -17,7 +17,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string }) {
 
   return (
     <form action={action} className="mt-6 space-y-4" noValidate>
-      <input type="hidden" name="next" value={next} />
+      <input suppressHydrationWarning type="hidden" name="next" value={next} />
 
       {notice && !state.error && (
         <p
@@ -64,6 +64,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string }) {
             className={`${fieldClass} pr-11`}
           />
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => setShowPassword((value) => !value)}
             aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}

@@ -19,6 +19,7 @@ export function DeliveryDatePicker({ date, today }: { date: string; today: strin
 
   const chip = (value: string, label: string) => (
     <button
+      suppressHydrationWarning
       type="button"
       onClick={() => go(value)}
       aria-pressed={date === value}

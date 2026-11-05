@@ -70,6 +70,7 @@ export function ShipmentFilters({
           const selected = tab === value
           return (
             <button
+              suppressHydrationWarning
               key={value}
               type="button"
               aria-pressed={selected}

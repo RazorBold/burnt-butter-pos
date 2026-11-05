@@ -76,6 +76,7 @@ export function PhotoField({
         </Label>
         {/* Input file asli disembunyikan (tombol bawaannya mengikuti bahasa browser). */}
         <input
+          suppressHydrationWarning
           ref={fileInput}
           id={`${id}-photo`}
           name={name}

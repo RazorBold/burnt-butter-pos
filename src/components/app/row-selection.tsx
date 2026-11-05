@@ -63,6 +63,7 @@ export function RowSelectionProvider({ ids, children }: { ids: string[]; childre
 function TableCheckbox({ className, ...props }: ComponentProps<typeof CheckboxPrimitive.Root>) {
   return (
     <CheckboxPrimitive.Root
+      suppressHydrationWarning
       className={cn(
         "peer grid size-[18px] shrink-0 cursor-pointer place-content-center rounded-[5px] border border-text-body/70 bg-white text-white transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=checked]:border-brand data-[state=checked]:bg-brand data-[state=indeterminate]:border-brand data-[state=indeterminate]:bg-brand",
         className,

@@ -6,17 +6,18 @@ import {
   Package,
   PackageCheck,
   Store,
+  StickyNote,
   Truck,
   Wallet,
 } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { type ReactNode, Suspense } from "react"
+import { Fragment, type ReactNode, Suspense } from "react"
 
 import { AccessDeniedToast } from "@/components/app/access-denied-toast"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { OrderNoteLine, OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
+import { OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { STOCK_BAR_COLOR } from "@/components/app/stock-badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -198,34 +199,55 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                   </thead>
                   <tbody>
                     {latest.map((order) => (
-                      <tr key={order.id} className="border-b border-border last:border-0">
-                        <td className="py-3 pr-2 pl-5 tabular-nums">
-                          <Link
-                            href={`/pesanan?pesanan=${order.orderNo}`}
-                            className="font-medium text-text-strong hover:underline"
-                          >
-                            {order.orderNo}
-                          </Link>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap tabular-nums">
-                          {period === "hari"
-                            ? formatJam(order.createdAt)
-                            : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
-                        </td>
-                        <td className="px-2 py-3 text-text-strong">
-                          {order.customerName}
-                          <OrderNoteLine note={order.note} className="max-w-[150px]" />
-                        </td>
-                        <td className="px-2 py-3">
-                          <TypeBadge type={order.type} />
-                        </td>
-                        <td className="px-2 py-3 text-right whitespace-nowrap tabular-nums">
-                          {formatRupiah(order.total)}
-                        </td>
-                        <td className="py-3 pr-5 pl-2">
-                          <OrderStatusBadge status={order.status} />
-                        </td>
-                      </tr>
+                      <Fragment key={order.id}>
+                        <tr
+                          className={cn(
+                            "border-b border-border last:border-0",
+                            order.note && "border-b-0",
+                          )}
+                        >
+                          <td className="py-3 pr-2 pl-5 tabular-nums">
+                            <Link
+                              href={`/pesanan?pesanan=${order.orderNo}`}
+                              className="font-medium text-text-strong hover:underline"
+                            >
+                              {order.orderNo}
+                            </Link>
+                          </td>
+                          <td className="px-2 py-3 whitespace-nowrap tabular-nums">
+                            {period === "hari"
+                              ? formatJam(order.createdAt)
+                              : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
+                          </td>
+                          <td className="px-2 py-3 text-text-strong">{order.customerName}</td>
+                          <td className="px-2 py-3">
+                            <TypeBadge type={order.type} />
+                          </td>
+                          <td className="px-2 py-3 text-right whitespace-nowrap tabular-nums">
+                            {formatRupiah(order.total)}
+                          </td>
+                          <td className="py-3 pr-5 pl-2">
+                            <OrderStatusBadge status={order.status} />
+                          </td>
+                        </tr>
+                        {/* Baris sendiri supaya catatan terbaca penuh tanpa melebarkan kolom. */}
+                        {order.note && (
+                          <tr className="border-b border-border last:border-0">
+                            <td
+                              colSpan={6}
+                              className="px-5 pb-3 text-[13px] text-status-diproses-fg"
+                            >
+                              <span className="flex items-start gap-1.5">
+                                <StickyNote className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                                <span className="break-words">
+                                  <span className="sr-only">Catatan {order.orderNo}: </span>
+                                  {order.note}
+                                </span>
+                              </span>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

@@ -50,7 +50,7 @@ test.describe("Catatan pesanan", () => {
 
     // Menu lain.
     await page.goto("/dashboard")
-    await expect(page.getByRole("row", { name: new RegExp(orderNo) })).toContainText(note)
+    await expect(page.getByRole("row", { name: `Catatan ${orderNo}: ${note}` })).toBeVisible()
     await page.screenshot({ path: "test-results/catatan-dashboard-desktop.png", fullPage: true })
     await page.goto(`/pembayaran?q=${code}`)
     await expect(page.getByRole("row", { name: new RegExp(orderNo) })).toContainText(note)

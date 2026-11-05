@@ -14,7 +14,7 @@ const randomPhone = () => `0899${String(Math.floor(Math.random() * 1e8)).padStar
 
 /** Tanggal kirim uji jauh ke depan supaya pesanan asli tidak ikut dihitung. */
 function testDate() {
-  const date = new Date(Date.now() + (320 + (Math.floor(Date.now() / 1000) % 100)) * 86_400_000)
+  const date = new Date(Date.now() + (2000 + (Math.floor(Date.now() / 1000) % 100)) * 86_400_000)
   const pad = (value: number) => String(value).padStart(2, "0")
   return {
     iso: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,

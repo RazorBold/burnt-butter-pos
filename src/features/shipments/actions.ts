@@ -10,7 +10,7 @@ import { changeStatuses } from "@/features/orders/status-change"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { BULK_LIMIT, type BulkResult, type BulkSkip, summarizeBulk } from "@/lib/bulk"
 
-import { SLOT_LABEL, SLOTS } from "./logic"
+import { canSetTrackingLink, normalizeTrackingUrl, SLOT_LABEL, SLOTS } from "./logic"
 
 /** Pengiriman diatur Kasir dan Admin (PRD: peran Kasir). */
 async function requireShipper(): Promise<string | BulkResult> {
@@ -156,4 +156,41 @@ export async function saveTracking(input: unknown): Promise<BulkResult> {
   revalidatePath("/pesanan")
   revalidatePath(`/pesanan/${current.orderNo}`)
   return { ok: true, message: `Resi ${current.orderNo} disimpan: ${expedition} ${trackingNo}.` }
+}
+
+const trackingLinkSchema = z.object({ orderId: z.uuid(), url: z.string().max(500) })
+
+/** Link lacak perjalanan makanan (Admin, Kasir). Kosong = link dihapus. */
+export async function saveTrackingLink(input: unknown): Promise<BulkResult> {
+  const userId = await requireShipper()
+  if (typeof userId !== "string") return userId
+  const parsed = trackingLinkSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Link terlalu panjang atau tidak terbaca." }
+  const { orderId, url } = parsed.data
+  const trackingUrl = url.trim() ? normalizeTrackingUrl(url) : null
+  if (url.trim() && !trackingUrl) {
+    return { ok: false, message: "Link belum benar. Contoh: https://gojek.com/track/abc" }
+  }
+
+  const db = getDb()
+  const [current] = await db
+    .select({ orderNo: orders.orderNo, status: orders.status, method: shipments.method })
+    .from(orders)
+    .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .where(eq(orders.id, orderId))
+  if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+  if (!canSetTrackingLink(current.method, current.status)) {
+    return { ok: false, message: `${current.orderNo} tidak bisa diberi link lacak.` }
+  }
+
+  await db.update(shipments).set({ trackingUrl }).where(eq(shipments.orderId, orderId))
+  revalidatePath("/pengiriman")
+  revalidatePath("/pesanan")
+  revalidatePath(`/pesanan/${current.orderNo}`)
+  return {
+    ok: true,
+    message: trackingUrl
+      ? `Link lacak ${current.orderNo} disimpan.`
+      : `Link lacak ${current.orderNo} dihapus.`,
+  }
 }

@@ -241,6 +241,8 @@ export const shipments = pgTable(
     /** Hanya untuk ekspedisi: nama kurir marketplace (SPX, J&T, ...) dan nomor resi. */
     expedition: text("expedition"),
     trackingNo: text("tracking_no"),
+    /** Link lacak perjalanan makanan (ojol, ekspedisi, atau kurir). Hanya http/https. */
+    trackingUrl: text("tracking_url"),
     /**
      * Kosong sampai pesanan Siap Kirim, lalu mengikuti metode: Kurir Internal → siap_dikirim,
      * Ekspedisi → siap_dikirim, Instant → menunggu_kurir, Pick Up → siap_diambil

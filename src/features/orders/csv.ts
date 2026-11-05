@@ -28,6 +28,7 @@ export type OrderExportRow = {
   expedition: string | null
   trackingNo: string | null
   note: string | null
+  trackingUrl: string | null
 }
 
 const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
@@ -63,6 +64,7 @@ const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ["Kurir Ekspedisi", (row) => row.expedition ?? ""],
   ["Resi", (row) => row.trackingNo ?? ""],
   ["Catatan", (row) => row.note ?? ""],
+  ["Link Lacak", (row) => row.trackingUrl ?? ""],
 ]
 
 /**

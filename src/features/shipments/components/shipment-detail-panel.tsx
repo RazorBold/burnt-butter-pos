@@ -10,7 +10,11 @@ import {
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { ShipmentStatusBadge, ShippingMethodLabel } from "@/components/app/shipment-badges"
+import {
+  ShipmentStatusBadge,
+  ShippingMethodLabel,
+  TrackingLink,
+} from "@/components/app/shipment-badges"
 import { Button } from "@/components/ui/button"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
 import { OrderItems } from "@/features/orders/components/order-detail-panel"
@@ -140,6 +144,11 @@ export async function ShipmentDetailPanel({
           <li className="-mt-1.5 pl-[26px] text-[13px] text-text-body">{methodNote}</li>
           {order.request && <InfoRow icon={ClipboardList}>Request: {order.request}</InfoRow>}
           {order.note && <InfoRow icon={StickyNote}>Catatan: {order.note}</InfoRow>}
+          {shipment.trackingUrl && (
+            <li className="pl-[26px]">
+              <TrackingLink url={shipment.trackingUrl} orderNo={order.orderNo} />
+            </li>
+          )}
         </ul>
 
         {isExpedition ? null : maps ? (

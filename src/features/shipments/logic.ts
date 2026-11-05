@@ -133,3 +133,28 @@ export function parseShipmentFilters(params: Params, today: string): ShipmentFil
     page: Number.isInteger(page) && page > 0 ? page : 1,
   }
 }
+
+/** Link lacak berlaku untuk pesanan yang diantar dan belum selesai atau dibatalkan. */
+export function canSetTrackingLink(method: ShippingMethod, orderStatus: OrderStatus): boolean {
+  return method !== "pick_up" && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
+}
+
+/**
+ * Rapikan link lacak: tanpa skema dianggap https. Selain http/https ditolak (null), supaya
+ * link seperti javascript: tidak bisa dijalankan saat diklik.
+ */
+export function normalizeTrackingUrl(input: string): string | null {
+  const value = input.trim()
+  if (!value || /\s/.test(value)) return null
+  const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(value)
+  // "gosend.link:8080/a" tetap dianggap host, tapi "javascript:alert(1)" adalah skema.
+  const looksLikeHost = /^[^/:]+\.[^/:]+:\d+(\/|$)/.test(value)
+  try {
+    const url = new URL(hasScheme && !looksLikeHost ? value : `https://${value}`)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+    if (!url.hostname.includes(".")) return null
+    return url.href
+  } catch {
+    return null
+  }
+}

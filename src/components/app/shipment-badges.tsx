@@ -1,4 +1,4 @@
-import { Bike, Check, Clock, PackageCheck, Store, Tag, Truck } from "lucide-react"
+import { Bike, Check, Clock, MapPinned, PackageCheck, Store, Tag, Truck } from "lucide-react"
 
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { SHIPMENT_STATE_LABEL, type ShipmentState } from "@/features/shipments/logic"
@@ -62,5 +62,21 @@ export function ShippingMethodLabel({ method }: { method: ShippingMethod }) {
       <Icon className="size-[18px] shrink-0 text-[#c0392b]" aria-hidden />
       {SHIPPING_METHOD_LABEL[method]}
     </span>
+  )
+}
+
+/** Link lacak perjalanan makanan, dibuka di tab baru. */
+export function TrackingLink({ url, orderNo }: { url: string; orderNo: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Lacak pengiriman ${orderNo} (tab baru)`}
+      className="inline-flex items-center gap-1.5 rounded-sm font-medium whitespace-nowrap text-brand-ink underline underline-offset-2 outline-none hover:text-brand focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <MapPinned className="size-4 shrink-0" aria-hidden />
+      Lacak
+    </a>
   )
 }

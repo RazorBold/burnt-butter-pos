@@ -5,6 +5,7 @@ import {
   EllipsisVertical,
   ExternalLink,
   LoaderCircle,
+  Link2,
   PackageSearch,
   Truck,
 } from "lucide-react"
@@ -18,6 +19,7 @@ import {
   RowSelectionProvider,
   useRowSelection,
 } from "@/components/app/row-selection"
+import { TrackingLink } from "@/components/app/shipment-badges"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -30,8 +32,16 @@ import { updateOrderStatus } from "@/features/orders/actions"
 import type { OrderStatus } from "@/features/orders/filters"
 import { statusSkipReason } from "@/features/orders/status"
 import { markShipmentsSent } from "@/features/shipments/actions"
-import { CourierDialog, TrackingDialog } from "@/features/shipments/components/shipment-actions"
-import { type DeliverySlot, nextShipmentAction } from "@/features/shipments/logic"
+import {
+  CourierDialog,
+  TrackingDialog,
+  TrackingLinkDialog,
+} from "@/features/shipments/components/shipment-actions"
+import {
+  canSetTrackingLink,
+  type DeliverySlot,
+  nextShipmentAction,
+} from "@/features/shipments/logic"
 import type { CourierOption } from "@/features/shipments/queries"
 import type { BulkResult } from "@/lib/bulk"
 import type { ShippingMethod } from "@/lib/wa-parser"
@@ -46,6 +56,7 @@ export type ShipmentActionRow = {
   slot: DeliverySlot | null
   expedition: string | null
   trackingNo: string | null
+  trackingUrl: string | null
 }
 
 const canAssign = (row: ShipmentActionRow) =>
@@ -71,6 +82,7 @@ type ShipmentActions = {
   advance: (row: ShipmentActionRow, target: OrderStatus) => void
   openCourier: (rows: ShipmentActionRow[]) => void
   openTracking: (row: ShipmentActionRow) => void
+  openLink: (row: ShipmentActionRow) => void
 }
 
 const ActionsContext = createContext<ShipmentActions | null>(null)
@@ -123,6 +135,8 @@ function ShipmentActionsInner({
   const [courierOpen, setCourierOpen] = useState(false)
   const [trackingRow, setTrackingRow] = useState<ShipmentActionRow>()
   const [trackingOpen, setTrackingOpen] = useState(false)
+  const [linkRow, setLinkRow] = useState<ShipmentActionRow>()
+  const [linkOpen, setLinkOpen] = useState(false)
   const rowById = new Map(rows.map((row) => [row.id, row]))
 
   const actions: ShipmentActions = {
@@ -146,6 +160,10 @@ function ShipmentActionsInner({
     openTracking: (row) => {
       setTrackingRow(row)
       setTrackingOpen(true)
+    },
+    openLink: (row) => {
+      setLinkRow(row)
+      setLinkOpen(true)
     },
   }
   const single = courierRows.length === 1 ? courierRows[0] : undefined
@@ -172,6 +190,15 @@ function ShipmentActionsInner({
           orderNo={trackingRow.orderNo}
           expedition={trackingRow.expedition}
           trackingNo={trackingRow.trackingNo}
+        />
+      )}
+      {linkRow && (
+        <TrackingLinkDialog
+          open={linkOpen}
+          onOpenChange={setLinkOpen}
+          orderId={linkRow.id}
+          orderNo={linkRow.orderNo}
+          trackingUrl={linkRow.trackingUrl}
         />
       )}
     </ActionsContext>
@@ -214,17 +241,85 @@ function ShipmentBulkBar({ rows }: { rows: ShipmentActionRow[] }) {
   )
 }
 
-/** Menu ⋮ di ujung baris: langkah pengiriman berikutnya dan ubah kurir/jadwal. */
-export function ShipmentRowMenu({ id }: { id: string }) {
-  const { rowById, pending, send, advance, openCourier, openTracking } = useShipmentActions()
-  const row = rowById.get(id)
-  if (!row) return null
-  const next = nextShipmentAction({
+function nextActionOf(row: ShipmentActionRow) {
+  return nextShipmentAction({
     method: row.method,
     orderStatus: row.orderStatus,
     hasCourier: row.courierId !== null,
     hasTracking: row.trackingNo !== null,
   })
+}
+
+/**
+ * Langkah berikutnya langsung di baris, supaya pengiriman bisa diselesaikan dari daftar ini.
+ * Bila terhalang kurir atau resi, tombolnya membuka isian yang kurang. Belum dimasak = kosong.
+ */
+export function ShipmentRowAction({ id }: { id: string }) {
+  const { rowById, pending, send, advance, openCourier, openTracking } = useShipmentActions()
+  const row = rowById.get(id)
+  if (!row) return null
+  const next = nextActionOf(row)
+  const stepClass = "h-9 rounded-lg px-3 whitespace-nowrap"
+
+  if (next?.kind === "advance") {
+    return (
+      <Button
+        size="sm"
+        disabled={pending}
+        aria-label={`${next.label} ${row.orderNo}`}
+        onClick={() => (next.target === "dikirim" ? send([row]) : advance(row, next.target))}
+        className={stepClass}
+      >
+        {next.label}
+      </Button>
+    )
+  }
+  if (next?.kind !== "blocked" || row.orderStatus !== "siap_kirim") return null
+  const isExpedition = row.method === "ekspedisi"
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      aria-label={`${isExpedition ? "Isi resi" : "Atur kurir"} ${row.orderNo}`}
+      onClick={() => (isExpedition ? openTracking(row) : openCourier([row]))}
+      className={`${stepClass} bg-white`}
+    >
+      {isExpedition ? "Isi resi" : "Atur kurir"}
+    </Button>
+  )
+}
+
+/** Kolom Lacak: link perjalanan makanan, atau tombol tambah setelah pesanan berangkat. */
+export function ShipmentTrackingCell({ id }: { id: string }) {
+  const { rowById, pending, openLink } = useShipmentActions()
+  const row = rowById.get(id)
+  if (!row) return null
+  if (row.trackingUrl) return <TrackingLink url={row.trackingUrl} orderNo={row.orderNo} />
+  if (row.orderStatus !== "dikirim" || !canSetTrackingLink(row.method, row.orderStatus)) return "-"
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pending}
+      aria-label={`Tambah link lacak ${row.orderNo}`}
+      onClick={() => openLink(row)}
+      className="h-8 rounded-lg bg-white px-2.5 whitespace-nowrap"
+    >
+      <Link2 aria-hidden />
+      Tambah link
+    </Button>
+  )
+}
+
+/** Menu ⋮ di ujung baris: langkah pengiriman berikutnya dan ubah kurir/jadwal. */
+export function ShipmentRowMenu({ id }: { id: string }) {
+  const { rowById, pending, send, advance, openCourier, openTracking, openLink } =
+    useShipmentActions()
+  const row = rowById.get(id)
+  if (!row) return null
+  const next = nextActionOf(row)
+  const canLink = canSetTrackingLink(row.method, row.orderStatus)
   const canTrack =
     row.method === "ekspedisi" && row.orderStatus !== "selesai" && row.orderStatus !== "dibatalkan"
   const step = next?.kind === "advance" ? next : null
@@ -249,7 +344,7 @@ export function ShipmentRowMenu({ id }: { id: string }) {
             Lihat pesanan
           </Link>
         </DropdownMenuItem>
-        {(step || canAssign(row) || canTrack) && <DropdownMenuSeparator />}
+        {(step || canAssign(row) || canTrack || canLink) && <DropdownMenuSeparator />}
         {step && (
           <DropdownMenuItem
             className="h-10"
@@ -257,6 +352,12 @@ export function ShipmentRowMenu({ id }: { id: string }) {
           >
             <Truck aria-hidden />
             {step.label}
+          </DropdownMenuItem>
+        )}
+        {canLink && (
+          <DropdownMenuItem className="h-10" onSelect={() => openLink(row)}>
+            <Link2 aria-hidden />
+            {row.trackingUrl ? "Ubah link lacak" : "Tambah link lacak"}
           </DropdownMenuItem>
         )}
         {canTrack && (

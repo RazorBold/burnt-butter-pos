@@ -17,7 +17,7 @@ import {
 import { updateOrderStatus } from "@/features/orders/actions"
 import type { OrderStatus } from "@/features/orders/filters"
 import { EXPEDITION_SUGGESTIONS } from "@/features/orders/constants"
-import { assignCourier, saveTracking } from "@/features/shipments/actions"
+import { assignCourier, saveTracking, saveTrackingLink } from "@/features/shipments/actions"
 import {
   type DeliverySlot,
   nextShipmentAction,
@@ -136,6 +136,107 @@ export function ShipmentActions({
             />
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** Dialog link lacak perjalanan makanan. Dikosongkan = link dihapus. */
+export function TrackingLinkDialog({
+  open,
+  onOpenChange,
+  orderId,
+  orderNo,
+  trackingUrl,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  orderId: string
+  orderNo: string
+  trackingUrl: string | null
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-2xl font-bold text-brand-ink">
+            Link lacak {orderNo}
+          </DialogTitle>
+          <DialogDescription className="text-text-body">
+            Tempel link dari ojol, ekspedisi, atau kurir. Link tampil di daftar Pengiriman dan
+            Pesanan.
+          </DialogDescription>
+        </DialogHeader>
+        <TrackingLinkForm
+          orderId={orderId}
+          initial={trackingUrl ?? ""}
+          onSuccess={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function TrackingLinkForm({
+  orderId,
+  initial,
+  onSuccess,
+}: {
+  orderId: string
+  initial: string
+  onSuccess: () => void
+}) {
+  const id = useId()
+  const [url, setUrl] = useState(initial)
+  const [error, setError] = useState<string>()
+  const [pending, startTransition] = useTransition()
+
+  function save() {
+    startTransition(async () => {
+      const result = await saveTrackingLink({ orderId, url })
+      if (result.ok) {
+        toast.success(result.message)
+        onSuccess()
+      } else {
+        setError(result.message)
+      }
+    })
+  }
+
+  return (
+    <div className="mt-6 space-y-5">
+      <div className="space-y-1.5">
+        <Label htmlFor={`${id}-url`} className="text-text-strong">
+          Link lacak
+        </Label>
+        <Input
+          id={`${id}-url`}
+          type="url"
+          inputMode="url"
+          value={url}
+          onChange={(event) => {
+            setUrl(event.target.value)
+            setError(undefined)
+          }}
+          placeholder="https://…"
+          maxLength={500}
+          className="h-11 rounded-lg bg-white"
+        />
+      </div>
+      {error && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-trend-down px-3 py-2.5 text-sm text-trend-down-fg"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end">
+        <Button onClick={save} disabled={pending} className="h-11 rounded-lg px-6">
+          {pending && <LoaderCircle className="animate-spin" aria-hidden />}
+          {pending ? "Menyimpan…" : "Simpan link"}
+        </Button>
       </div>
     </div>
   )

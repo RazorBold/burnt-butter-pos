@@ -11,6 +11,7 @@ import {
   TypeBadge,
 } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
+import { TrackingLink } from "@/components/app/shipment-badges"
 import { SelectAllHead } from "@/components/app/row-selection"
 import { TablePagination } from "@/components/app/table-pagination"
 import { Button } from "@/components/ui/button"
@@ -253,7 +254,14 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         <TableCell className="tabular-nums">
                           {formatTanggalPendek(order.deliveryDate)}
                         </TableCell>
-                        <TableCell>{SHIPPING_METHOD_LABEL[order.shippingMethod]}</TableCell>
+                        <TableCell>
+                          {SHIPPING_METHOD_LABEL[order.shippingMethod]}
+                          {order.trackingUrl && (
+                            <span className="mt-0.5 block text-[13px]">
+                              <TrackingLink url={order.trackingUrl} orderNo={order.orderNo} />
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatRupiah(order.total)}
                         </TableCell>

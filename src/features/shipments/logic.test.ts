@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-import { nextShipmentAction, parseShipmentFilters, stateOf, tabOf } from "./logic"
+import {
+  canSetTrackingLink,
+  nextShipmentAction,
+  normalizeTrackingUrl,
+  parseShipmentFilters,
+  stateOf,
+  tabOf,
+} from "./logic"
 
 describe("tabOf", () => {
   it("Perlu Dikirim, Dalam Perjalanan, Selesai", () => {
@@ -88,5 +95,43 @@ describe("nextShipmentAction Ekspedisi", () => {
       kind: "advance",
       target: "dikirim",
     })
+  })
+})
+
+describe("normalizeTrackingUrl", () => {
+  it("menerima http/https dan melengkapi https", () => {
+    expect(normalizeTrackingUrl(" https://gojek.com/track/abc ")).toBe(
+      "https://gojek.com/track/abc",
+    )
+    expect(normalizeTrackingUrl("http://spx.co.id/a?b=1")).toBe("http://spx.co.id/a?b=1")
+    expect(normalizeTrackingUrl("spx.co.id/track/123")).toBe("https://spx.co.id/track/123")
+    expect(normalizeTrackingUrl("track.example.com:8080/a")).toBe(
+      "https://track.example.com:8080/a",
+    )
+  })
+
+  it("menolak skema lain dan teks yang bukan link", () => {
+    for (const bad of [
+      "javascript:alert(1)",
+      "JAVASCRIPT:alert(1)",
+      "data:text/html,hi",
+      "ftp://a.com/x",
+      "file:///etc/passwd",
+      "bukan link",
+      "abc",
+      "",
+    ]) {
+      expect(normalizeTrackingUrl(bad)).toBeNull()
+    }
+  })
+})
+
+describe("canSetTrackingLink", () => {
+  it("bukan untuk Pick Up atau pesanan yang sudah berakhir", () => {
+    expect(canSetTrackingLink("instant", "dikirim")).toBe(true)
+    expect(canSetTrackingLink("ekspedisi", "siap_kirim")).toBe(true)
+    expect(canSetTrackingLink("pick_up", "siap_kirim")).toBe(false)
+    expect(canSetTrackingLink("instant", "selesai")).toBe(false)
+    expect(canSetTrackingLink("kurir_internal", "dibatalkan")).toBe(false)
   })
 })

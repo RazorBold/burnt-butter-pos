@@ -21,7 +21,9 @@ import {
 import { OrderRow } from "@/features/orders/components/order-row"
 import {
   ShipmentActionsProvider,
+  ShipmentRowAction,
   ShipmentRowMenu,
+  ShipmentTrackingCell,
 } from "@/features/shipments/components/shipment-bulk-actions"
 import { ShipmentDetailPanel } from "@/features/shipments/components/shipment-detail-panel"
 import { ShipmentFilters } from "@/features/shipments/components/shipment-filters"
@@ -179,11 +181,12 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                 slot: row.slot,
                 expedition: row.expedition,
                 trackingNo: row.trackingNo,
+                trackingUrl: row.trackingUrl,
               }))}
               couriers={couriers}
             >
               <div className="overflow-x-auto">
-                <Table className="min-w-[960px]">
+                <Table className="min-w-[1200px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <SelectAllHead label="Pilih semua pesanan di halaman ini" />
@@ -193,8 +196,9 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                       <TableHead>Alamat</TableHead>
                       <TableHead>Kurir</TableHead>
                       <TableHead>Estimasi</TableHead>
+                      <TableHead>Lacak</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-14 pr-4">
+                      <TableHead className="pr-4 text-right">
                         <span className="sr-only">Aksi</span>
                       </TableHead>
                     </TableRow>
@@ -239,10 +243,16 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                           {row.slot ? SLOT_LABEL[row.slot] : "-"}
                         </TableCell>
                         <TableCell>
+                          <ShipmentTrackingCell id={row.orderId} />
+                        </TableCell>
+                        <TableCell>
                           <ShipmentStatusBadge state={stateOf(row.status)} />
                         </TableCell>
-                        <TableCell className="pr-4 text-right">
-                          <ShipmentRowMenu id={row.orderId} />
+                        <TableCell className="pr-4">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <ShipmentRowAction id={row.orderId} />
+                            <ShipmentRowMenu id={row.orderId} />
+                          </div>
                         </TableCell>
                       </OrderRow>
                     ))}

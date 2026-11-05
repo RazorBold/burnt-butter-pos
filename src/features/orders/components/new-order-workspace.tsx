@@ -9,6 +9,7 @@ import {
   WandSparkles,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { type ReactNode, useCallback, useEffect, useId, useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -25,7 +26,15 @@ import { createOrder } from "@/features/orders/actions"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { type CatalogVariant, matchParsedItems, orderTotal } from "@/features/orders/catalog"
-import { WA_DRAFT_EVENT, WA_DRAFT_KEY } from "@/features/orders/constants"
+import {
+  EXPEDITION_SUGGESTIONS,
+  isMarketplace,
+  ORDER_CHANNEL_LABEL,
+  ORDER_CHANNELS,
+  type OrderChannel,
+  WA_DRAFT_EVENT,
+  WA_DRAFT_KEY,
+} from "@/features/orders/constants"
 import { FlagNote, Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
 import { OrderMenuPicker } from "@/features/orders/components/order-menu-picker"
 import {
@@ -34,6 +43,7 @@ import {
   draftIssues,
   EMPTY_DRAFT,
   type OrderDraft,
+  parseRupiahInput,
 } from "@/features/orders/draft"
 import { formatHariTanggal, formatRupiah, toJakartaDateString } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -43,6 +53,11 @@ const TYPE_OPTIONS = [
   { value: "personal", label: "Personal" },
   { value: "hadiah", label: "Hadiah" },
 ] as const satisfies readonly { value: OrderType; label: string }[]
+
+const CHANNEL_OPTIONS = ORDER_CHANNELS.map((value) => ({
+  value,
+  label: ORDER_CHANNEL_LABEL[value],
+}))
 
 type ParseSummary = { filled: number; checked: number; items: number; unmatched: ParsedItem[] }
 
@@ -64,13 +79,27 @@ function readStoredText(): string | null {
 }
 
 /**
- * Halaman Input Pesanan: pesan WA di kiri, form hasil Isi Otomatis di kanan.
- * Pesan dari modal navbar dibawa lewat sessionStorage (WA_DRAFT_KEY).
+ * Halaman Input Pesanan. WhatsApp: pesan di kiri, form hasil Isi Otomatis di kanan; pesan dari
+ * modal navbar dibawa lewat sessionStorage (WA_DRAFT_KEY). Shopee/Tokopedia: form manual dengan
+ * no. pesanan, total, kurir, dan resi (?sumber=).
  */
-export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
+export function NewOrderWorkspace({
+  catalog,
+  initialChannel,
+}: {
+  catalog: CatalogVariant[]
+  initialChannel: OrderChannel
+}) {
+  const router = useRouter()
   const [today] = useState(() => toJakartaDateString(new Date()))
   const [waText, setWaText] = useState("")
-  const [draft, setDraft] = useState<OrderDraft>(EMPTY_DRAFT)
+  const [draft, setDraft] = useState<OrderDraft>({ ...EMPTY_DRAFT, channel: initialChannel })
+  // Sumber dari URL bisa berubah saat halaman sudah terbuka (mis. dipilih dari modal navbar).
+  const [urlChannel, setUrlChannel] = useState(initialChannel)
+  if (initialChannel !== urlChannel) {
+    setUrlChannel(initialChannel)
+    setDraft((current) => ({ ...current, channel: initialChannel }))
+  }
   // Isian yang tidak terbaca dari pesan WA; tanda hilang begitu kasir mengubahnya.
   const [flagged, setFlagged] = useState<Set<DraftField>>(new Set())
   const [summary, setSummary] = useState<ParseSummary | null>(null)
@@ -131,9 +160,18 @@ export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
     }
   }
 
+  /** Pindah sumber: isian yang sama (nama, alamat, menu) tetap ada. */
+  function chooseChannel(channel: OrderChannel) {
+    setDraft((current) => ({ ...current, channel }))
+    setFlagged(new Set())
+    router.replace(channel === "whatsapp" ? "/pesanan/baru" : `/pesanan/baru?sumber=${channel}`, {
+      scroll: false,
+    })
+  }
+
   function reset() {
     setWaText("")
-    setDraft(EMPTY_DRAFT)
+    setDraft({ ...EMPTY_DRAFT, channel: draft.channel })
     setFlagged(new Set())
     setSummary(null)
   }
@@ -162,10 +200,18 @@ export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
 
   const issues = draftIssues(draft, today)
   const { items, total } = orderTotal(catalog, draft.quantities)
-  const isHadiah = draft.type === "hadiah"
+  const marketplace = isMarketplace(draft.channel)
+  const channelLabel = ORDER_CHANNEL_LABEL[draft.channel]
+  const isHadiah = !marketplace && draft.type === "hadiah"
+  const shownTotal = marketplace ? (parseRupiahInput(draft.marketplaceTotal) ?? 0) : total
   const fieldLabel: Record<DraftField, string> = {
+    channel: "Sumber",
+    marketplaceOrderNo: `No. pesanan ${channelLabel}`,
+    expedition: "Kurir",
+    trackingNo: "Nomor resi",
+    marketplaceTotal: "Total pembayaran",
     type: "Tipe",
-    name: isHadiah ? "Nama penerima" : "Nama",
+    name: marketplace ? "Nama pembeli" : isHadiah ? "Nama penerima" : "Nama",
     phone: "No. telp",
     address: "Alamat",
     deliveryDate: "Tanggal kirim",
@@ -187,306 +233,412 @@ export function NewOrderWorkspace({ catalog }: { catalog: CatalogVariant[] }) {
     flagged.has(field) ? (issues[field] ?? "Tidak terbaca dari pesan WA.") : undefined
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] xl:gap-8">
-      {/* Pesan WhatsApp */}
-      <section
-        aria-labelledby="wa-panel-title"
-        className="rounded-2xl border border-border bg-card p-5 sm:p-6 lg:sticky lg:top-24"
+    <div className="space-y-6">
+      <SegmentedControl
+        label="Sumber pesanan"
+        options={CHANNEL_OPTIONS}
+        value={draft.channel}
+        onChange={chooseChannel}
+      />
+      <div
+        className={cn(
+          "grid items-start gap-6 xl:gap-8",
+          !marketplace && "lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]",
+        )}
       >
-        <div className="flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#25d366] text-white">
-            <MessageCircle className="size-5" aria-hidden />
-          </span>
-          <div>
-            <h2 id="wa-panel-title" className="font-semibold text-text-strong">
-              Pesan WhatsApp
-            </h2>
-            <p className="text-sm text-text-body">
-              Tempel pesan customer, lalu Isi Otomatis. Pesan asli disimpan bersama pesanan.
-            </p>
-          </div>
-        </div>
-        <label htmlFor="wa-message" className="sr-only">
-          Pesan WhatsApp
-        </label>
-        <Textarea
-          id="wa-message"
-          value={waText}
-          onChange={(event) => setWaText(event.target.value)}
-          placeholder="Tempel pesan pesanan dari WhatsApp di sini…"
-          className="mt-4 max-h-[50dvh] min-h-[220px] resize-y rounded-xl bg-white p-3.5 text-sm leading-relaxed lg:h-[min(52dvh,520px)]"
-        />
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button
-            type="button"
-            onClick={() => fillFrom(waText)}
-            disabled={!waText.trim()}
-            className="h-11 rounded-lg px-5"
+        {/* Pesan WhatsApp */}
+        {!marketplace && (
+          <section
+            aria-labelledby="wa-panel-title"
+            className="rounded-2xl border border-border bg-card p-5 sm:p-6 lg:sticky lg:top-24"
           >
-            <WandSparkles aria-hidden />
-            Isi Otomatis
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={reset}
-            disabled={!waText && !summary}
-            className="h-11 rounded-lg bg-white px-5"
-          >
-            <RotateCcw aria-hidden />
-            Reset
-          </Button>
-        </div>
-        <div aria-live="polite">
-          {summary && (
-            <div className="mt-4 rounded-lg bg-nav-active/70 px-3.5 py-3 text-sm text-text-strong">
-              <p>
-                Terbaca {summary.filled} dari {summary.checked} isian wajib dan {summary.items}{" "}
-                menu.
-                {flagged.size > 0 && " Isian bertanda kuning perlu dicek."}
-              </p>
-              {summary.unmatched.length > 0 && (
-                <p className="mt-1.5 text-trend-down-fg">
-                  Menu tidak dikenali:{" "}
-                  {summary.unmatched.map((item) => `${item.name} (${item.qty})`).join(", ")}. Pilih
-                  manual di daftar menu.
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#25d366] text-white">
+                <MessageCircle className="size-5" aria-hidden />
+              </span>
+              <div>
+                <h2 id="wa-panel-title" className="font-semibold text-text-strong">
+                  Pesan WhatsApp
+                </h2>
+                <p className="text-sm text-text-body">
+                  Tempel pesan customer, lalu Isi Otomatis. Pesan asli disimpan bersama pesanan.
                 </p>
+              </div>
+            </div>
+            <label htmlFor="wa-message" className="sr-only">
+              Pesan WhatsApp
+            </label>
+            <Textarea
+              id="wa-message"
+              value={waText}
+              onChange={(event) => setWaText(event.target.value)}
+              placeholder="Tempel pesan pesanan dari WhatsApp di sini…"
+              className="mt-4 max-h-[50dvh] min-h-[220px] resize-y rounded-xl bg-white p-3.5 text-sm leading-relaxed lg:h-[min(52dvh,520px)]"
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={() => fillFrom(waText)}
+                disabled={!waText.trim()}
+                className="h-11 rounded-lg px-5"
+              >
+                <WandSparkles aria-hidden />
+                Isi Otomatis
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={reset}
+                disabled={!waText && !summary}
+                className="h-11 rounded-lg bg-white px-5"
+              >
+                <RotateCcw aria-hidden />
+                Reset
+              </Button>
+            </div>
+            <div aria-live="polite">
+              {summary && (
+                <div className="mt-4 rounded-lg bg-nav-active/70 px-3.5 py-3 text-sm text-text-strong">
+                  <p>
+                    Terbaca {summary.filled} dari {summary.checked} isian wajib dan {summary.items}{" "}
+                    menu.
+                    {flagged.size > 0 && " Isian bertanda kuning perlu dicek."}
+                  </p>
+                  {summary.unmatched.length > 0 && (
+                    <p className="mt-1.5 text-trend-down-fg">
+                      Menu tidak dikenali:{" "}
+                      {summary.unmatched.map((item) => `${item.name} (${item.qty})`).join(", ")}.
+                      Pilih manual di daftar menu.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </section>
+          </section>
+        )}
 
-      {/* Form pesanan */}
-      <section
-        aria-labelledby="order-form-title"
-        className="rounded-2xl border border-border bg-card"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
-          <h2 id="order-form-title" className="text-lg font-bold text-brand-ink">
-            Data pesanan
-          </h2>
-          <SegmentedControl
-            label="Tipe pesanan"
-            options={TYPE_OPTIONS}
-            value={draft.type}
-            onChange={(value) => update("type", value)}
-          />
-        </div>
-
-        <div className="divide-y divide-border">
-          <FormGroup title={isHadiah ? "Penerima" : "Customer"}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="name" label={fieldLabel.name} flag={flagFor("name")}>
-                <Input
-                  value={draft.name}
-                  onChange={(event) => update("name", event.target.value)}
-                  placeholder={isHadiah ? "Nama penerima hadiah" : "Nama lengkap customer"}
-                  maxLength={80}
-                />
-              </Field>
-              <Field id="phone" label="No. telp" flag={flagFor("phone")}>
-                <Input
-                  value={draft.phone}
-                  onChange={(event) => update("phone", event.target.value)}
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="0812 3456 7890"
-                  className="tabular-nums"
-                />
-              </Field>
-            </div>
-            <Field
-              id="address"
-              label="Alamat lengkap"
-              optional={draft.shippingMethod === "pick_up"}
-              flag={flagFor("address")}
-            >
-              <Textarea
-                value={draft.address}
-                onChange={(event) => update("address", event.target.value)}
-                placeholder="Jalan, nomor, patokan, kelurahan, kota"
-                rows={3}
-                maxLength={300}
+        {/* Form pesanan */}
+        <section
+          aria-labelledby="order-form-title"
+          className={cn("rounded-2xl border border-border bg-card", marketplace && "max-w-[860px]")}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+            <h2 id="order-form-title" className="text-lg font-bold text-brand-ink">
+              {marketplace ? `Data pesanan ${channelLabel}` : "Data pesanan"}
+            </h2>
+            {!marketplace && (
+              <SegmentedControl
+                label="Tipe pesanan"
+                options={TYPE_OPTIONS}
+                value={draft.type}
+                onChange={(value) => update("type", value)}
               />
-            </Field>
-            <Field
-              id="deliveryDate"
-              label="Tanggal kirim"
-              flag={flagFor("deliveryDate")}
-              hint={draft.deliveryDate ? formatHariTanggal(draft.deliveryDate) : undefined}
-            >
-              <Input
-                type="date"
-                value={draft.deliveryDate}
-                min={today}
-                onChange={(event) => update("deliveryDate", event.target.value)}
-                className="w-full sm:w-[220px]"
-              />
-            </Field>
-          </FormGroup>
+            )}
+          </div>
 
-          {isHadiah && (
-            <FormGroup title="Pengirim dan kartu ucapan">
-              <Field id="senderName" label="Nama pengirim" flag={flagFor("senderName")}>
-                <Input
-                  value={draft.senderName}
-                  onChange={(event) => update("senderName", event.target.value)}
-                  placeholder="Nama yang memesan hadiah"
-                  maxLength={80}
-                  className="sm:max-w-[calc(50%-0.5rem)]"
-                />
-              </Field>
+          <div className="divide-y divide-border">
+            {marketplace && (
+              <FormGroup title="Pesanan">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    id="marketplaceOrderNo"
+                    label={fieldLabel.marketplaceOrderNo}
+                    flag={flagFor("marketplaceOrderNo")}
+                    hint="Salin dari Seller Center, untuk mencegah input ganda."
+                  >
+                    <Input
+                      value={draft.marketplaceOrderNo}
+                      onChange={(event) => update("marketplaceOrderNo", event.target.value)}
+                      maxLength={60}
+                      className="tabular-nums"
+                    />
+                  </Field>
+                  <Field
+                    id="marketplaceTotal"
+                    label="Total pembayaran"
+                    flag={flagFor("marketplaceTotal")}
+                    hint="Sesuai yang tertera di marketplace, termasuk voucher atau diskon."
+                  >
+                    <Input
+                      value={draft.marketplaceTotal}
+                      onChange={(event) => {
+                        const amount = parseRupiahInput(event.target.value)
+                        update(
+                          "marketplaceTotal",
+                          amount === null ? "" : formatRupiah(amount).replace("Rp ", ""),
+                        )
+                      }}
+                      inputMode="numeric"
+                      placeholder="210.000"
+                      className="tabular-nums"
+                    />
+                  </Field>
+                </div>
+              </FormGroup>
+            )}
+
+            <FormGroup title={marketplace ? "Pembeli" : isHadiah ? "Penerima" : "Customer"}>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="cardTo" label="To" optional>
+                <Field id="name" label={fieldLabel.name} flag={flagFor("name")}>
                   <Input
-                    value={draft.cardTo}
-                    onChange={(event) => update("cardTo", event.target.value)}
-                    maxLength={60}
+                    value={draft.name}
+                    onChange={(event) => update("name", event.target.value)}
+                    placeholder={
+                      marketplace
+                        ? "Nama pembeli di marketplace"
+                        : isHadiah
+                          ? "Nama penerima hadiah"
+                          : "Nama lengkap customer"
+                    }
+                    maxLength={80}
                   />
                 </Field>
-                <Field id="cardFrom" label="From" optional>
+                <Field
+                  id="phone"
+                  label="No. telp"
+                  optional={marketplace}
+                  flag={flagFor("phone")}
+                  hint={marketplace ? "Kosongkan bila disamarkan marketplace." : undefined}
+                >
                   <Input
-                    value={draft.cardFrom}
-                    onChange={(event) => update("cardFrom", event.target.value)}
-                    maxLength={60}
+                    value={draft.phone}
+                    onChange={(event) => update("phone", event.target.value)}
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="0812 3456 7890"
+                    className="tabular-nums"
                   />
                 </Field>
               </div>
-              <Field id="cardWishes" label="Wishes" optional>
+              <Field
+                id="address"
+                label="Alamat lengkap"
+                optional={marketplace || draft.shippingMethod === "pick_up"}
+                flag={flagFor("address")}
+              >
                 <Textarea
-                  value={draft.cardWishes}
-                  onChange={(event) => update("cardWishes", event.target.value)}
-                  placeholder="Ucapan yang ditulis di kartu"
+                  value={draft.address}
+                  onChange={(event) => update("address", event.target.value)}
+                  placeholder="Jalan, nomor, patokan, kelurahan, kota"
                   rows={3}
                   maxLength={300}
                 />
               </Field>
-            </FormGroup>
-          )}
-
-          <FormGroup title="Pengiriman">
-            <ShippingMethodPicker
-              value={draft.shippingMethod}
-              onChange={(method) => update("shippingMethod", method)}
-              flag={flagFor("shippingMethod")}
-            />
-            <Field id="request" label="Request" optional>
-              <Textarea
-                value={draft.request}
-                onChange={(event) => update("request", event.target.value)}
-                placeholder="Mis. saus dipisah, tanpa sendok"
-                rows={2}
-                maxLength={300}
-              />
-            </Field>
-          </FormGroup>
-
-          <FormGroup title="Menu">
-            <div id="field-items" className="scroll-mt-28">
-              {flagFor("items") && <FlagNote id="items-flag">{flagFor("items")}</FlagNote>}
-              <div className={cn(flagFor("items") && "mt-2")}>
-                <OrderMenuPicker
-                  catalog={catalog}
-                  quantities={draft.quantities}
-                  onChange={setQty}
+              <Field
+                id="deliveryDate"
+                label="Tanggal kirim"
+                flag={flagFor("deliveryDate")}
+                hint={draft.deliveryDate ? formatHariTanggal(draft.deliveryDate) : undefined}
+              >
+                <Input
+                  type="date"
+                  value={draft.deliveryDate}
+                  min={today}
+                  onChange={(event) => update("deliveryDate", event.target.value)}
+                  className="w-full sm:w-[220px]"
                 />
-              </div>
-            </div>
-          </FormGroup>
-        </div>
+              </Field>
+            </FormGroup>
 
-        {/* Ringkasan: selalu terlihat di bawah layar saat form digulir. */}
-        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-b-2xl border-t border-border bg-card/95 px-5 py-4 backdrop-blur sm:px-6">
-          <div className="min-w-0">
-            <p className="text-sm text-text-body">
-              Total <span className="tabular-nums">{items}</span> porsi
-            </p>
-            <p className="text-2xl font-bold text-brand-ink tabular-nums" data-testid="order-total">
-              {formatRupiah(total)}
-            </p>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
-            {pending.length > 0 ? (
-              <p className="flex min-w-0 items-start gap-1.5 text-sm text-text-body">
-                <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#b7791f]" aria-hidden />
-                <span>
-                  Belum lengkap:{" "}
-                  {pending.map(({ field, label }, index) => (
-                    <span key={field}>
-                      {index > 0 && ", "}
-                      <a
-                        href={`#field-${field}`}
-                        className="font-medium text-text-strong underline underline-offset-2"
-                      >
-                        {label}
-                      </a>
-                    </span>
-                  ))}
-                </span>
-              </p>
-            ) : (
-              <p className="text-sm font-medium text-status-selesai-fg">Data pesanan lengkap.</p>
+            {isHadiah && (
+              <FormGroup title="Pengirim dan kartu ucapan">
+                <Field id="senderName" label="Nama pengirim" flag={flagFor("senderName")}>
+                  <Input
+                    value={draft.senderName}
+                    onChange={(event) => update("senderName", event.target.value)}
+                    placeholder="Nama yang memesan hadiah"
+                    maxLength={80}
+                    className="sm:max-w-[calc(50%-0.5rem)]"
+                  />
+                </Field>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field id="cardTo" label="To" optional>
+                    <Input
+                      value={draft.cardTo}
+                      onChange={(event) => update("cardTo", event.target.value)}
+                      maxLength={60}
+                    />
+                  </Field>
+                  <Field id="cardFrom" label="From" optional>
+                    <Input
+                      value={draft.cardFrom}
+                      onChange={(event) => update("cardFrom", event.target.value)}
+                      maxLength={60}
+                    />
+                  </Field>
+                </div>
+                <Field id="cardWishes" label="Wishes" optional>
+                  <Textarea
+                    value={draft.cardWishes}
+                    onChange={(event) => update("cardWishes", event.target.value)}
+                    placeholder="Ucapan yang ditulis di kartu"
+                    rows={3}
+                    maxLength={300}
+                  />
+                </Field>
+              </FormGroup>
             )}
-            <Button
-              type="button"
-              onClick={save}
-              disabled={saving || pending.length > 0}
-              className="h-11 rounded-lg px-6"
-            >
-              {saving && <LoaderCircle className="animate-spin" aria-hidden />}
-              {saving ? "Menyimpan…" : "Simpan pesanan"}
-            </Button>
-          </div>
-        </div>
-      </section>
 
-      <Dialog open={Boolean(saved)} onOpenChange={(open) => !open && closeSaved()}>
-        <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
-          <DialogHeader className="items-start text-left">
-            <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-status-selesai text-status-selesai-fg">
-              <CircleCheck className="size-6" aria-hidden />
-            </span>
-            <DialogTitle className="text-2xl font-bold text-brand-ink">
-              Pesanan tersimpan
-            </DialogTitle>
-            <DialogDescription className="text-text-body">
-              Status Baru, belum bayar. Pembayaran dicatat di menu Pembayaran.
-            </DialogDescription>
-          </DialogHeader>
-          {saved && (
-            <dl className="mt-5 divide-y divide-border rounded-lg border border-border bg-white">
-              <div className="flex justify-between gap-4 px-4 py-3">
-                <dt className="text-text-body">No. pesanan</dt>
-                <dd
-                  className="font-semibold text-brand-ink tabular-nums"
-                  data-testid="saved-order-no"
-                >
-                  {saved.orderNo}
-                </dd>
+            <FormGroup title="Pengiriman">
+              {marketplace ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field id="expedition" label="Kurir" flag={flagFor("expedition")}>
+                    <Input
+                      list="expedition-options"
+                      value={draft.expedition}
+                      onChange={(event) => update("expedition", event.target.value)}
+                      placeholder="Mis. SPX Express"
+                      maxLength={40}
+                    />
+                  </Field>
+                  <datalist id="expedition-options">
+                    {EXPEDITION_SUGGESTIONS.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  <Field
+                    id="trackingNo"
+                    label="Nomor resi"
+                    optional
+                    hint="Boleh menyusul di menu Pengiriman. Wajib sebelum Tandai Dikirim."
+                  >
+                    <Input
+                      value={draft.trackingNo}
+                      onChange={(event) => update("trackingNo", event.target.value)}
+                      maxLength={60}
+                      className="tabular-nums"
+                    />
+                  </Field>
+                </div>
+              ) : (
+                <ShippingMethodPicker
+                  value={draft.shippingMethod}
+                  onChange={(method) => update("shippingMethod", method)}
+                  flag={flagFor("shippingMethod")}
+                />
+              )}
+              <Field id="request" label="Request" optional>
+                <Textarea
+                  value={draft.request}
+                  onChange={(event) => update("request", event.target.value)}
+                  placeholder="Mis. saus dipisah, tanpa sendok"
+                  rows={2}
+                  maxLength={300}
+                />
+              </Field>
+            </FormGroup>
+
+            <FormGroup title="Menu">
+              <div id="field-items" className="scroll-mt-28">
+                {flagFor("items") && <FlagNote id="items-flag">{flagFor("items")}</FlagNote>}
+                <div className={cn(flagFor("items") && "mt-2")}>
+                  <OrderMenuPicker
+                    catalog={catalog}
+                    quantities={draft.quantities}
+                    onChange={setQty}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between gap-4 px-4 py-3">
-                <dt className="text-text-body">Customer</dt>
-                <dd className="text-right font-medium text-text-strong">{saved.customerName}</dd>
-              </div>
-              <div className="flex justify-between gap-4 px-4 py-3">
-                <dt className="text-text-body">Total</dt>
-                <dd className="font-medium text-text-strong tabular-nums">
-                  {formatRupiah(saved.total)}
-                </dd>
-              </div>
-            </dl>
-          )}
-          <div className="mt-6 flex flex-wrap justify-end gap-2">
-            <Button asChild variant="outline" className="h-11 rounded-lg bg-white px-5">
-              <Link href="/pesanan">Lihat daftar pesanan</Link>
-            </Button>
-            <Button onClick={closeSaved} className="h-11 rounded-lg px-5">
-              Input pesanan baru
-            </Button>
+            </FormGroup>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Ringkasan: selalu terlihat di bawah layar saat form digulir. */}
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-b-2xl border-t border-border bg-card/95 px-5 py-4 backdrop-blur sm:px-6">
+            <div className="min-w-0">
+              <p className="text-sm text-text-body">
+                Total <span className="tabular-nums">{items}</span> porsi
+              </p>
+              <p
+                className="text-2xl font-bold text-brand-ink tabular-nums"
+                data-testid="order-total"
+              >
+                {formatRupiah(shownTotal)}
+              </p>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+              {pending.length > 0 ? (
+                <p className="flex min-w-0 items-start gap-1.5 text-sm text-text-body">
+                  <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#b7791f]" aria-hidden />
+                  <span>
+                    Belum lengkap:{" "}
+                    {pending.map(({ field, label }, index) => (
+                      <span key={field}>
+                        {index > 0 && ", "}
+                        <a
+                          href={`#field-${field}`}
+                          className="font-medium text-text-strong underline underline-offset-2"
+                        >
+                          {label}
+                        </a>
+                      </span>
+                    ))}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-status-selesai-fg">Data pesanan lengkap.</p>
+              )}
+              <Button
+                type="button"
+                onClick={save}
+                disabled={saving || pending.length > 0}
+                className="h-11 rounded-lg px-6"
+              >
+                {saving && <LoaderCircle className="animate-spin" aria-hidden />}
+                {saving ? "Menyimpan…" : "Simpan pesanan"}
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <Dialog open={Boolean(saved)} onOpenChange={(open) => !open && closeSaved()}>
+          <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
+            <DialogHeader className="items-start text-left">
+              <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-status-selesai text-status-selesai-fg">
+                <CircleCheck className="size-6" aria-hidden />
+              </span>
+              <DialogTitle className="text-2xl font-bold text-brand-ink">
+                Pesanan tersimpan
+              </DialogTitle>
+              <DialogDescription className="text-text-body">
+                {marketplace
+                  ? `Status Baru, sudah Lunas via ${channelLabel}. Isi resi di menu Pengiriman.`
+                  : "Status Baru, belum bayar. Pembayaran dicatat di menu Pembayaran."}
+              </DialogDescription>
+            </DialogHeader>
+            {saved && (
+              <dl className="mt-5 divide-y divide-border rounded-lg border border-border bg-white">
+                <div className="flex justify-between gap-4 px-4 py-3">
+                  <dt className="text-text-body">No. pesanan</dt>
+                  <dd
+                    className="font-semibold text-brand-ink tabular-nums"
+                    data-testid="saved-order-no"
+                  >
+                    {saved.orderNo}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4 px-4 py-3">
+                  <dt className="text-text-body">Customer</dt>
+                  <dd className="text-right font-medium text-text-strong">{saved.customerName}</dd>
+                </div>
+                <div className="flex justify-between gap-4 px-4 py-3">
+                  <dt className="text-text-body">Total</dt>
+                  <dd className="font-medium text-text-strong tabular-nums">
+                    {formatRupiah(saved.total)}
+                  </dd>
+                </div>
+              </dl>
+            )}
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <Button asChild variant="outline" className="h-11 rounded-lg bg-white px-5">
+                <Link href="/pesanan">Lihat daftar pesanan</Link>
+              </Button>
+              <Button onClick={closeSaved} className="h-11 rounded-lg px-5">
+                Input pesanan baru
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

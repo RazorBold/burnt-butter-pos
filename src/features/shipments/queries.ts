@@ -23,6 +23,8 @@ export type ShipmentRow = {
   address: string | null
   courierId: string | null
   courierName: string | null
+  expedition: string | null
+  trackingNo: string | null
   slot: DeliverySlot | null
   status: ShipmentStatus | null
 }
@@ -94,6 +96,8 @@ export async function listShipments(filters: ShipmentFilters) {
       address: shipments.address,
       courierId: shipments.courierId,
       courierName: couriers.name,
+      expedition: shipments.expedition,
+      trackingNo: shipments.trackingNo,
       slot: shipments.slot,
       status: shipments.status,
     })
@@ -117,6 +121,9 @@ export async function getShipmentSummary(date: string) {
         sql<number>`count(*) filter (where ${shipments.method} = 'kurir_internal')`.mapWith(Number),
       instant: sql<number>`count(*) filter (where ${shipments.method} = 'instant')`.mapWith(Number),
       pickUp: sql<number>`count(*) filter (where ${shipments.method} = 'pick_up')`.mapWith(Number),
+      ekspedisi: sql<number>`count(*) filter (where ${shipments.method} = 'ekspedisi')`.mapWith(
+        Number,
+      ),
       selesai: sql<number>`count(*) filter (where ${tabCondition("selesai")})`.mapWith(Number),
     })
     .from(orders)

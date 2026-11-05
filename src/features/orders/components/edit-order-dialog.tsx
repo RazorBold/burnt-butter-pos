@@ -17,10 +17,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { updateOrderDetails } from "@/features/orders/actions"
+import { isMarketplace, ORDER_CHANNEL_LABEL } from "@/features/orders/constants"
 import { Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
-import { type DraftField, draftIssues, type OrderDraft } from "@/features/orders/draft"
+import {
+  type DraftField,
+  draftIssues,
+  type OrderDraft,
+  parseRupiahInput,
+} from "@/features/orders/draft"
 import type { OrderDetail } from "@/features/orders/queries"
-import { formatHariTanggal, toJakartaDateString } from "@/lib/format"
+import { formatHariTanggal, formatRupiah, toJakartaDateString } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
 
 type EditDraft = Omit<OrderDraft, "quantities">
@@ -32,9 +38,14 @@ const TYPE_OPTIONS = [
 
 function draftOf(order: OrderDetail): EditDraft {
   return {
+    channel: order.channel,
+    marketplaceOrderNo: order.marketplaceOrderNo ?? "",
+    expedition: order.shipment.expedition ?? "",
+    trackingNo: order.shipment.trackingNo ?? "",
+    marketplaceTotal: formatRupiah(order.total).replace("Rp ", ""),
     type: order.type,
     name: order.customer.name,
-    phone: formatPhone(order.customer.phone),
+    phone: order.customer.phone ? formatPhone(order.customer.phone) : "",
     address: order.shipment.address ?? "",
     deliveryDate: order.deliveryDate,
     senderName: order.senderName ?? "",
@@ -52,7 +63,8 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
   const [draft, setDraft] = useState<EditDraft>(() => draftOf(order))
   const [errors, setErrors] = useState<Partial<Record<DraftField, string>>>({})
   const [pending, startTransition] = useTransition()
-  const isHadiah = draft.type === "hadiah"
+  const marketplace = isMarketplace(order.channel)
+  const isHadiah = !marketplace && draft.type === "hadiah"
 
   function update<K extends keyof EditDraft>(key: K, value: EditDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -71,6 +83,8 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
       toJakartaDateString(new Date()),
     )
     if (draft.deliveryDate === order.deliveryDate) delete issues.deliveryDate
+    // Kurir dan resi diubah lewat Isi Resi di Pengiriman.
+    delete issues.expedition
     if (Object.keys(issues).length > 0) {
       setErrors(issues)
       return
@@ -110,27 +124,67 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
             Ubah data {order.orderNo}
           </DialogTitle>
           <DialogDescription className="text-text-body">
-            Menu dan jumlahnya tidak diubah di sini. No. HP baru menautkan pesanan ke customer
-            dengan nomor itu.
+            {marketplace
+              ? "Menu, kurir, dan resi tidak diubah di sini."
+              : "Menu dan jumlahnya tidak diubah di sini. No. HP baru menautkan pesanan ke customer dengan nomor itu."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-6 space-y-5">
-          <SegmentedControl
-            label="Tipe pesanan"
-            options={TYPE_OPTIONS}
-            value={draft.type}
-            onChange={(value) => update("type", value)}
-          />
+          {marketplace ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                id="edit-marketplaceOrderNo"
+                label={`No. pesanan ${ORDER_CHANNEL_LABEL[order.channel]}`}
+                flag={errors.marketplaceOrderNo}
+              >
+                <Input
+                  value={draft.marketplaceOrderNo}
+                  onChange={(event) => update("marketplaceOrderNo", event.target.value)}
+                  maxLength={60}
+                  className="tabular-nums"
+                />
+              </Field>
+              <Field
+                id="edit-marketplaceTotal"
+                label="Total pembayaran"
+                flag={errors.marketplaceTotal}
+              >
+                <Input
+                  value={draft.marketplaceTotal}
+                  onChange={(event) => {
+                    const amount = parseRupiahInput(event.target.value)
+                    update(
+                      "marketplaceTotal",
+                      amount === null ? "" : formatRupiah(amount).replace("Rp ", ""),
+                    )
+                  }}
+                  inputMode="numeric"
+                  className="tabular-nums"
+                />
+              </Field>
+            </div>
+          ) : (
+            <SegmentedControl
+              label="Tipe pesanan"
+              options={TYPE_OPTIONS}
+              value={draft.type}
+              onChange={(value) => update("type", value)}
+            />
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="edit-name" label={isHadiah ? "Nama penerima" : "Nama"} flag={errors.name}>
+            <Field
+              id="edit-name"
+              label={marketplace ? "Nama pembeli" : isHadiah ? "Nama penerima" : "Nama"}
+              flag={errors.name}
+            >
               <Input
                 value={draft.name}
                 onChange={(event) => update("name", event.target.value)}
                 maxLength={80}
               />
             </Field>
-            <Field id="edit-phone" label="No. telp" flag={errors.phone}>
+            <Field id="edit-phone" label="No. telp" optional={marketplace} flag={errors.phone}>
               <Input
                 value={draft.phone}
                 onChange={(event) => update("phone", event.target.value)}
@@ -143,7 +197,7 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
           <Field
             id="edit-address"
             label="Alamat lengkap"
-            optional={draft.shippingMethod === "pick_up"}
+            optional={marketplace || draft.shippingMethod === "pick_up"}
             flag={errors.address}
           >
             <Textarea
@@ -201,12 +255,14 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
               </Field>
             </>
           )}
-          <ShippingMethodPicker
-            compact
-            value={draft.shippingMethod}
-            onChange={(method) => update("shippingMethod", method)}
-            flag={errors.shippingMethod}
-          />
+          {!marketplace && (
+            <ShippingMethodPicker
+              compact
+              value={draft.shippingMethod}
+              onChange={(method) => update("shippingMethod", method)}
+              flag={errors.shippingMethod}
+            />
+          )}
           <Field id="edit-request" label="Request" optional>
             <Textarea
               value={draft.request}

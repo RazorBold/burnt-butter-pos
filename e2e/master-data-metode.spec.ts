@@ -22,13 +22,15 @@ test.describe("Master Data › Metode Pembayaran", () => {
   test("daftar metode sesuai desain", async ({ page }, info) => {
     await login(page, admin.email!, admin.password!, "/master-data/metode-pembayaran")
     const table = page.getByRole("table")
-    await expect(table.getByRole("row")).toHaveText([
-      /Nama Metode/,
+    // Metode lain bisa bertambah, mis. "Shopee" yang dibuat saat pesanan Shopee pertama disimpan.
+    for (const text of [
       /Transfer Bank\s*Bank/,
       /DANA\s*E-Wallet/,
       /OVO\s*E-Wallet/,
       /Cash\s*Cash/,
-    ])
+    ]) {
+      await expect(table.getByRole("row").filter({ hasText: text })).toBeVisible()
+    }
     await page.screenshot({ path: `test-results/metode-${info.project.name}.png`, fullPage: true })
   })
 

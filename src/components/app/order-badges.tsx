@@ -1,5 +1,6 @@
-import { Check, Clock, Tag, X } from "lucide-react"
+import { Check, Clock, MessageCircle, ShoppingBag, Tag, X } from "lucide-react"
 
+import { ORDER_CHANNEL_LABEL, type OrderChannel } from "@/features/orders/constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
 import { cn } from "@/lib/utils"
 import type { OrderType } from "@/lib/wa-parser"
@@ -79,6 +80,29 @@ export function PaymentBadge({ paid, className }: { paid: boolean; className?: s
         <Clock aria-hidden className="size-3.5 shrink-0" />
       )}
       {paid ? "Lunas" : "Belum bayar"}
+    </span>
+  )
+}
+
+const CHANNEL_STYLE: Record<OrderChannel, string> = {
+  whatsapp: "bg-status-dikirim text-status-dikirim-fg",
+  shopee: "bg-status-diproses text-status-diproses-fg",
+  tokopedia: "bg-status-siap text-status-siap-fg",
+}
+
+/** Asal pesanan: WhatsApp, Shopee, atau Tokopedia. Teks selalu tampil, warna hanya pembantu. */
+export function ChannelBadge({
+  channel,
+  className,
+}: {
+  channel: OrderChannel
+  className?: string
+}) {
+  const Icon = channel === "whatsapp" ? MessageCircle : ShoppingBag
+  return (
+    <span className={cn(BADGE, CHANNEL_STYLE[channel], className)}>
+      <Icon aria-hidden className="size-3.5 shrink-0" />
+      {ORDER_CHANNEL_LABEL[channel]}
     </span>
   )
 }

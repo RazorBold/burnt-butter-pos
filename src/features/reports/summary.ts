@@ -20,7 +20,7 @@ export type ReportPayment = {
   /** Tanggal lunas (WIB). */
   day: string
   amount: number
-  methodType: "bank" | "ewallet" | "cash"
+  methodType: "bank" | "ewallet" | "cash" | "marketplace"
 }
 
 export type Kpi = { value: number; percent: number | null; series: number[] }
@@ -151,7 +151,10 @@ export function buildReport(
   return {
     kpis,
     perDay,
-    shipping: count(["kurir_internal", "instant", "pick_up"] as const, (order) => order.method),
+    shipping: count(
+      ["kurir_internal", "instant", "pick_up", "ekspedisi"] as const,
+      (order) => order.method,
+    ),
     status: count(
       ["baru", "diproses", "siap_kirim", "dikirim", "selesai"] as const,
       (order) => order.status,
@@ -159,7 +162,7 @@ export function buildReport(
     cancelled: orders.filter(
       (order) => order.status === "dibatalkan" && inRange(order.day, from, to),
     ).length,
-    paymentMethods: (["bank", "ewallet", "cash"] as const).map((type) => {
+    paymentMethods: (["bank", "ewallet", "cash", "marketplace"] as const).map((type) => {
       const amount = sum(
         paidNow.filter((payment) => payment.methodType === type),
         (payment) => payment.amount,

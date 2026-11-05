@@ -9,7 +9,7 @@
 import { normalizePhone } from "@/lib/phone"
 
 export type OrderType = "personal" | "hadiah"
-export type ShippingMethod = "kurir_internal" | "instant" | "pick_up"
+export type ShippingMethod = "kurir_internal" | "instant" | "pick_up" | "ekspedisi"
 export type ParsedSize = "large" | "regular" | "single"
 
 export type ParsedItem = { name: string; size: ParsedSize; qty: number }

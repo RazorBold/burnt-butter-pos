@@ -1,12 +1,13 @@
 import { z } from "zod"
 
-export const PAYMENT_METHOD_TYPES = ["bank", "ewallet", "cash"] as const
+export const PAYMENT_METHOD_TYPES = ["bank", "ewallet", "cash", "marketplace"] as const
 export type PaymentMethodType = (typeof PAYMENT_METHOD_TYPES)[number]
 
 export const PAYMENT_METHOD_TYPE_LABEL: Record<PaymentMethodType, string> = {
   bank: "Bank",
   ewallet: "E-Wallet",
   cash: "Cash",
+  marketplace: "Marketplace",
 }
 
 export const paymentMethodFormSchema = z.object({

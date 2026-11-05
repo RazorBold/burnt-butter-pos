@@ -3,7 +3,7 @@
 
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 
-import { SHIPPING_METHODS } from "./constants"
+import { ORDER_CHANNELS, type OrderChannel, SHIPPING_METHODS } from "./constants"
 
 export const ORDER_STATUSES = [
   "baru",
@@ -37,6 +37,7 @@ export type OrderFilters = {
   type?: OrderType
   status?: OrderStatus
   method?: ShippingMethod
+  channel?: OrderChannel
   page: number
 }
 
@@ -88,6 +89,7 @@ export function parseOrderFilters(params: Params, today: string): OrderFilters {
     type: pick(["personal", "hadiah"] as const, one("tipe")),
     status: pick(ORDER_STATUSES, one("status")),
     method: pick(SHIPPING_METHODS, one("kirim")),
+    channel: pick(ORDER_CHANNELS, one("sumber")),
     page: Number.isInteger(page) && page > 0 ? page : 1,
   }
 }
@@ -111,5 +113,6 @@ export function filterParams(
     tipe: filters.type,
     status: filters.status,
     kirim: filters.method,
+    sumber: filters.channel,
   }
 }

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
+import { ChannelBadge, OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { SelectAllHead } from "@/components/app/row-selection"
 import { TablePagination } from "@/components/app/table-pagination"
@@ -131,7 +131,9 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
   ])
   const listParams = { ...filterParams(filters, today), hal: page > 1 ? String(page) : undefined }
   const singleDay = filters.from === filters.to
-  const filtered = Boolean(filters.q || filters.type || filters.status || filters.method)
+  const filtered = Boolean(
+    filters.q || filters.type || filters.status || filters.method || filters.channel,
+  )
   const rangeText = singleDay
     ? filters.from === today
       ? "hari ini"
@@ -188,17 +190,19 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                 method: order.shippingMethod,
                 paid: order.paid,
                 total: order.total,
+                trackingNo: order.trackingNo,
               }))}
               methods={paymentMethods}
             >
               <div className="overflow-x-auto">
-                <Table className="min-w-[960px]">
+                <Table className="min-w-[1060px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <SelectAllHead label="Pilih semua pesanan di halaman ini" />
                       <TableHead className="pl-3">No. Pesanan</TableHead>
                       <TableHead>Waktu</TableHead>
                       <TableHead>Nama Customer</TableHead>
+                      <TableHead>Sumber</TableHead>
                       <TableHead>Tipe</TableHead>
                       <TableHead>Tgl Kirim</TableHead>
                       <TableHead>Pengiriman</TableHead>
@@ -232,6 +236,9 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                               dari {order.senderName}
                             </span>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <ChannelBadge channel={order.channel} />
                         </TableCell>
                         <TableCell>
                           <TypeBadge type={order.type} />

@@ -12,7 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { SHIPPING_METHOD_LABEL, SHIPPING_METHODS } from "@/features/orders/constants"
+import {
+  ORDER_CHANNEL_LABEL,
+  SHIPPING_METHOD_LABEL,
+  SHIPPING_METHODS,
+} from "@/features/orders/constants"
 import { ORDER_STATUS_LABEL, ORDER_STATUSES, ORDER_TYPE_LABEL } from "@/features/orders/filters"
 import { useDebouncedQuery, useUrlFilters } from "@/hooks/use-url-filters"
 import { cn } from "@/lib/utils"
@@ -26,7 +30,7 @@ const ALL = "semua"
 export function OrderFilters({ from, to, today }: { from: string; to: string; today: string }) {
   const { current, update, pending } = useUrlFilters()
   const [query, setQuery] = useDebouncedQuery(current, update)
-  const hasFilters = ["q", "dari", "sampai", "tipe", "status", "kirim"].some((key) =>
+  const hasFilters = ["q", "dari", "sampai", "tipe", "status", "kirim", "sumber"].some((key) =>
     current.has(key),
   )
 
@@ -68,7 +72,7 @@ export function OrderFilters({ from, to, today }: { from: string; to: string; to
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari nama, no. pesanan, atau no. telp…"
+          placeholder="Cari nama, no. pesanan, resi, atau no. telp…"
           aria-label="Cari nama, no. pesanan, atau no. telp"
           className="h-10 rounded-lg bg-white pl-9"
         />
@@ -94,13 +98,22 @@ export function OrderFilters({ from, to, today }: { from: string; to: string; to
         "Semua Pengiriman",
         SHIPPING_METHODS.map((method) => [method, SHIPPING_METHOD_LABEL[method]]),
       )}
+      {select("sumber", "Semua Sumber", Object.entries(ORDER_CHANNEL_LABEL) as [string, string][])}
       <Button
         type="button"
         variant="outline"
         disabled={!hasFilters}
         onClick={() => {
           setQuery("")
-          update({ q: null, dari: null, sampai: null, tipe: null, status: null, kirim: null })
+          update({
+            q: null,
+            dari: null,
+            sampai: null,
+            tipe: null,
+            status: null,
+            kirim: null,
+            sumber: null,
+          })
         }}
         className="h-10 rounded-lg bg-white px-5 lg:ml-auto"
       >

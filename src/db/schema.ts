@@ -25,6 +25,7 @@ export const userRole = pgEnum("user_role", ["admin", "kasir", "produksi", "owne
 export const menuCategory = pgEnum("menu_category", ["pasta", "dessert", "bundle"])
 export const menuSize = pgEnum("menu_size", ["large", "regular", "single"])
 export const orderType = pgEnum("order_type", ["personal", "hadiah"])
+export const orderChannel = pgEnum("order_channel", ["whatsapp", "shopee", "tokopedia"])
 export const orderStatus = pgEnum("order_status", [
   "baru",
   "diproses",
@@ -33,7 +34,12 @@ export const orderStatus = pgEnum("order_status", [
   "selesai",
   "dibatalkan",
 ])
-export const shippingMethod = pgEnum("shipping_method", ["kurir_internal", "instant", "pick_up"])
+export const shippingMethod = pgEnum("shipping_method", [
+  "kurir_internal",
+  "instant",
+  "pick_up",
+  "ekspedisi",
+])
 export const shipmentStatus = pgEnum("shipment_status", [
   "menunggu_kurir",
   "siap_dikirim",
@@ -44,7 +50,12 @@ export const shipmentStatus = pgEnum("shipment_status", [
 ])
 export const deliverySlot = pgEnum("delivery_slot", ["09-12", "13-17"])
 export const courierType = pgEnum("courier_type", ["internal", "eksternal"])
-export const paymentMethodType = pgEnum("payment_method_type", ["bank", "ewallet", "cash"])
+export const paymentMethodType = pgEnum("payment_method_type", [
+  "bank",
+  "ewallet",
+  "cash",
+  "marketplace",
+])
 export const paymentStatus = pgEnum("payment_status", ["menunggu", "lunas", "ditolak"])
 export const stockItemType = pgEnum("stock_item_type", ["packaging", "raw_material"])
 export const stockDirection = pgEnum("stock_direction", ["in", "out"])
@@ -79,8 +90,8 @@ export const customers = pgTable(
   {
     id: id(),
     name: text("name").notNull(),
-    /** Dinormalisasi ke format 08xxxxxxxxxx. */
-    phone: text("phone").notNull(),
+    /** Dinormalisasi ke format 08xxxxxxxxxx. Kosong bila disamarkan marketplace. */
+    phone: text("phone"),
     address: text("address"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -133,11 +144,15 @@ export const orders = pgTable(
      * pesanan lama tidak boleh ikut berubah nama.
      */
     customerName: text("customer_name").notNull(),
+    /** Asal pesanan: template WhatsApp atau form marketplace. */
+    channel: orderChannel("channel").notNull().default("whatsapp"),
+    /** No. pesanan di Shopee/Tokopedia; unik per marketplace supaya tidak terinput dua kali. */
+    marketplaceOrderNo: text("marketplace_order_no"),
     type: orderType("type").notNull(),
     status: orderStatus("status").notNull().default("baru"),
     deliveryDate: date("delivery_date").notNull(),
     request: text("request"),
-    /** Rupiah, jumlah subtotal order_items. */
+    /** Rupiah. WhatsApp: jumlah subtotal order_items. Marketplace: diisi sesuai marketplace. */
     total: integer("total").notNull(),
     /** Teks WA asli yang ditempel saat Input Pesanan. */
     rawWaText: text("raw_wa_text"),
@@ -151,6 +166,7 @@ export const orders = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
+    uniqueIndex("orders_marketplace_no_idx").on(t.channel, t.marketplaceOrderNo),
     index("orders_created_at_idx").on(t.createdAt),
     index("orders_delivery_date_idx").on(t.deliveryDate),
     index("orders_status_idx").on(t.status),
@@ -220,9 +236,13 @@ export const shipments = pgTable(
     courierId: uuid("courier_id").references(() => couriers.id),
     /** Hanya untuk kurir_internal. */
     slot: deliverySlot("slot"),
+    /** Hanya untuk ekspedisi: nama kurir marketplace (SPX, J&T, ...) dan nomor resi. */
+    expedition: text("expedition"),
+    trackingNo: text("tracking_no"),
     /**
      * Kosong sampai pesanan Siap Kirim, lalu mengikuti metode: Kurir Internal → siap_dikirim,
-     * Instant → menunggu_kurir, Pick Up → siap_diambil (src/features/orders/status.ts).
+     * Ekspedisi → siap_dikirim, Instant → menunggu_kurir, Pick Up → siap_diambil
+     * (src/features/orders/status.ts).
      */
     status: shipmentStatus("status"),
     address: text("address"),

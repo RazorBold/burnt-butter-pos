@@ -92,3 +92,13 @@ describe("statusSkipReason", () => {
     expect(statusSkipReason(order("siap_kirim"), "dikirim", rules)).toBe("status Siap Kirim")
   })
 })
+
+describe("Ekspedisi", () => {
+  it("status kirim mengikuti alur kurir; Dikirim wajib resi", () => {
+    expect(shipmentStatusFor("siap_kirim", "ekspedisi")).toBe("siap_dikirim")
+    expect(shipmentStatusFor("dikirim", "ekspedisi")).toBe("dalam_perjalanan")
+    const order = { status: "siap_kirim", method: "ekspedisi", hasCourier: false } as const
+    expect(statusSkipReason({ ...order, hasTracking: false }, "dikirim")).toBe("belum ada resi")
+    expect(statusSkipReason({ ...order, hasTracking: true }, "dikirim")).toBeNull()
+  })
+})

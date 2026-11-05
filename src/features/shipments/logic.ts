@@ -60,10 +60,12 @@ export function nextShipmentAction({
   method,
   orderStatus,
   hasCourier,
+  hasTracking = false,
 }: {
   method: ShippingMethod
   orderStatus: OrderStatus
   hasCourier: boolean
+  hasTracking?: boolean
 }): ShipmentAction {
   switch (orderStatus) {
     case "baru":
@@ -81,6 +83,13 @@ export function nextShipmentAction({
           kind: "blocked",
           label: "Tandai Dikirim",
           reason: "Pilih kurir dulu lewat Ubah Kurir / Jadwal.",
+        }
+      }
+      if (method === "ekspedisi" && !hasTracking) {
+        return {
+          kind: "blocked",
+          label: "Tandai Dikirim",
+          reason: "Isi nomor resi dulu lewat Isi Resi.",
         }
       }
       return { kind: "advance", target: "dikirim", label: "Tandai Dikirim" }
@@ -104,7 +113,7 @@ type Params = Record<string, string | string[] | undefined>
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const METHODS = ["kurir_internal", "instant", "pick_up"] as const
+const METHODS = ["kurir_internal", "instant", "pick_up", "ekspedisi"] as const
 
 /** Filter dari URL (?tanggal=&tab=&metode=&kurir=&status=&hal=). Tanpa tanggal = hari ini. */
 export function parseShipmentFilters(params: Params, today: string): ShipmentFilters {

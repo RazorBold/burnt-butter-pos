@@ -5,6 +5,7 @@ import {
   FileText,
   Landmark,
   Package,
+  ShoppingBag,
   UsersRound,
   Wallet,
 } from "lucide-react"
@@ -39,7 +40,12 @@ export const metadata: Metadata = { title: "Laporan" }
 
 const PATH = "/laporan"
 const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
-const PAYMENT_ICON = { bank: Landmark, ewallet: Wallet, cash: Banknote } as const
+const PAYMENT_ICON = {
+  bank: Landmark,
+  ewallet: Wallet,
+  cash: Banknote,
+  marketplace: ShoppingBag,
+} as const
 
 type SearchParams = PageProps<"/laporan">["searchParams"]
 

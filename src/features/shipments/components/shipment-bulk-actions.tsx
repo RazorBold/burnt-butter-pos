@@ -1,6 +1,13 @@
 "use client"
 
-import { CalendarClock, EllipsisVertical, ExternalLink, LoaderCircle, Truck } from "lucide-react"
+import {
+  CalendarClock,
+  EllipsisVertical,
+  ExternalLink,
+  LoaderCircle,
+  PackageSearch,
+  Truck,
+} from "lucide-react"
 import Link from "next/link"
 import { createContext, type ReactNode, useContext, useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -23,7 +30,7 @@ import { updateOrderStatus } from "@/features/orders/actions"
 import type { OrderStatus } from "@/features/orders/filters"
 import { statusSkipReason } from "@/features/orders/status"
 import { markShipmentsSent } from "@/features/shipments/actions"
-import { CourierDialog } from "@/features/shipments/components/shipment-actions"
+import { CourierDialog, TrackingDialog } from "@/features/shipments/components/shipment-actions"
 import { type DeliverySlot, nextShipmentAction } from "@/features/shipments/logic"
 import type { CourierOption } from "@/features/shipments/queries"
 import type { BulkResult } from "@/lib/bulk"
@@ -37,6 +44,8 @@ export type ShipmentActionRow = {
   method: ShippingMethod
   courierId: string | null
   slot: DeliverySlot | null
+  expedition: string | null
+  trackingNo: string | null
 }
 
 const canAssign = (row: ShipmentActionRow) =>
@@ -45,7 +54,12 @@ const canAssign = (row: ShipmentActionRow) =>
   row.orderStatus !== "dibatalkan"
 const canSend = (row: ShipmentActionRow) =>
   statusSkipReason(
-    { status: row.orderStatus, method: row.method, hasCourier: row.courierId !== null },
+    {
+      status: row.orderStatus,
+      method: row.method,
+      hasCourier: row.courierId !== null,
+      hasTracking: row.trackingNo !== null,
+    },
     "dikirim",
     { requireCourier: true },
   ) === null
@@ -56,6 +70,7 @@ type ShipmentActions = {
   send: (rows: ShipmentActionRow[]) => void
   advance: (row: ShipmentActionRow, target: OrderStatus) => void
   openCourier: (rows: ShipmentActionRow[]) => void
+  openTracking: (row: ShipmentActionRow) => void
 }
 
 const ActionsContext = createContext<ShipmentActions | null>(null)
@@ -106,6 +121,8 @@ function ShipmentActionsInner({
   const [pending, startTransition] = useTransition()
   const [courierRows, setCourierRows] = useState<ShipmentActionRow[]>([])
   const [courierOpen, setCourierOpen] = useState(false)
+  const [trackingRow, setTrackingRow] = useState<ShipmentActionRow>()
+  const [trackingOpen, setTrackingOpen] = useState(false)
   const rowById = new Map(rows.map((row) => [row.id, row]))
 
   const actions: ShipmentActions = {
@@ -126,6 +143,10 @@ function ShipmentActionsInner({
       setCourierRows(targets)
       setCourierOpen(true)
     },
+    openTracking: (row) => {
+      setTrackingRow(row)
+      setTrackingOpen(true)
+    },
   }
   const single = courierRows.length === 1 ? courierRows[0] : undefined
 
@@ -141,6 +162,16 @@ function ShipmentActionsInner({
           initial={single && { courierId: single.courierId, slot: single.slot }}
           couriers={couriers.filter((courier) => courier.type === "internal")}
           onDone={clear}
+        />
+      )}
+      {trackingRow && (
+        <TrackingDialog
+          open={trackingOpen}
+          onOpenChange={setTrackingOpen}
+          orderId={trackingRow.id}
+          orderNo={trackingRow.orderNo}
+          expedition={trackingRow.expedition}
+          trackingNo={trackingRow.trackingNo}
         />
       )}
     </ActionsContext>
@@ -172,7 +203,7 @@ function ShipmentBulkBar({ rows }: { rows: ShipmentActionRow[] }) {
         onClick={() => send(sendable)}
         unavailable={
           sendable.length === 0
-            ? "Yang bisa ditandai dikirim hanya pesanan Siap Kirim: Instant, atau Kurir Internal yang sudah ada kurirnya."
+            ? "Yang bisa ditandai dikirim hanya pesanan Siap Kirim: Instant, Kurir Internal yang sudah ada kurirnya, atau Ekspedisi yang sudah ada resinya."
             : undefined
         }
       >
@@ -185,14 +216,17 @@ function ShipmentBulkBar({ rows }: { rows: ShipmentActionRow[] }) {
 
 /** Menu ⋮ di ujung baris: langkah pengiriman berikutnya dan ubah kurir/jadwal. */
 export function ShipmentRowMenu({ id }: { id: string }) {
-  const { rowById, pending, send, advance, openCourier } = useShipmentActions()
+  const { rowById, pending, send, advance, openCourier, openTracking } = useShipmentActions()
   const row = rowById.get(id)
   if (!row) return null
   const next = nextShipmentAction({
     method: row.method,
     orderStatus: row.orderStatus,
     hasCourier: row.courierId !== null,
+    hasTracking: row.trackingNo !== null,
   })
+  const canTrack =
+    row.method === "ekspedisi" && row.orderStatus !== "selesai" && row.orderStatus !== "dibatalkan"
   const step = next?.kind === "advance" ? next : null
 
   return (
@@ -215,7 +249,7 @@ export function ShipmentRowMenu({ id }: { id: string }) {
             Lihat pesanan
           </Link>
         </DropdownMenuItem>
-        {(step || canAssign(row)) && <DropdownMenuSeparator />}
+        {(step || canAssign(row) || canTrack) && <DropdownMenuSeparator />}
         {step && (
           <DropdownMenuItem
             className="h-10"
@@ -223,6 +257,12 @@ export function ShipmentRowMenu({ id }: { id: string }) {
           >
             <Truck aria-hidden />
             {step.label}
+          </DropdownMenuItem>
+        )}
+        {canTrack && (
+          <DropdownMenuItem className="h-10" onSelect={() => openTracking(row)}>
+            <PackageSearch aria-hidden />
+            {row.trackingNo ? "Ubah resi" : "Isi resi"}
           </DropdownMenuItem>
         )}
         {canAssign(row) && (

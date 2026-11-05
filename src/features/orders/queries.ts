@@ -31,6 +31,7 @@ import {
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 import type { CatalogVariant } from "./catalog"
+import type { OrderChannel } from "./constants"
 import type { OrderExportRow } from "./csv"
 import { addDays, type OrderFilters, type OrderStatus } from "./filters"
 import type { DailyOrderStats } from "./kpis"
@@ -81,6 +82,9 @@ export type OrderListRow = {
   status: OrderStatus
   /** Sudah ada pembayaran Lunas. */
   paid: boolean
+  channel: OrderChannel
+  marketplaceOrderNo: string | null
+  trackingNo: string | null
 }
 
 /** Cari nama customer, nama pengirim hadiah, no. pesanan, atau no. HP (bila berisi angka). */
@@ -93,6 +97,8 @@ function searchCondition(q: string | undefined) {
     ilike(orders.customerName, `%${escaped}%`),
     ilike(orders.senderName, `%${escaped}%`),
     ilike(orders.orderNo, `%${escaped}%`),
+    ilike(orders.marketplaceOrderNo, `%${escaped}%`),
+    ilike(shipments.trackingNo, `%${escaped}%`),
     digits.length >= 3 ? like(customers.phone, `%${digits}%`) : undefined,
   )
 }
@@ -105,6 +111,7 @@ export async function listOrders(filters: OrderFilters) {
     filters.type ? eq(orders.type, filters.type) : undefined,
     filters.status ? eq(orders.status, filters.status) : undefined,
     filters.method ? eq(shipments.method, filters.method) : undefined,
+    filters.channel ? eq(orders.channel, filters.channel) : undefined,
     searchCondition(filters.q),
   )
 
@@ -130,6 +137,9 @@ export async function listOrders(filters: OrderFilters) {
       total: orders.total,
       status: orders.status,
       paid: isNotNull(payments.id).mapWith(Boolean),
+      channel: orders.channel,
+      marketplaceOrderNo: orders.marketplaceOrderNo,
+      trackingNo: shipments.trackingNo,
     })
     .from(orders)
     .innerJoin(customers, eq(customers.id, orders.customerId))
@@ -174,7 +184,9 @@ export type OrderDetail = {
   cardTo: string | null
   cardWishes: string | null
   cardFrom: string | null
-  customer: { name: string; phone: string }
+  channel: OrderChannel
+  marketplaceOrderNo: string | null
+  customer: { name: string; phone: string | null }
   /** Kosong = belum bayar. */
   payment: { methodId: string; methodName: string; note: string | null; paidAt: Date | null } | null
   shipment: {
@@ -184,6 +196,8 @@ export type OrderDetail = {
     courierId: string | null
     courierName: string | null
     slot: "09-12" | "13-17" | null
+    expedition: string | null
+    trackingNo: string | null
   }
   items: {
     id: string
@@ -242,6 +256,8 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     cardTo: order.cardTo,
     cardWishes: order.cardWishes,
     cardFrom: order.cardFrom,
+    channel: order.channel,
+    marketplaceOrderNo: order.marketplaceOrderNo,
     customer: { name: order.customerName, phone: order.customer.phone },
     payment: order.payments[0]
       ? {
@@ -258,6 +274,8 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       courierId: order.shipment.courierId,
       courierName: order.shipment.courier?.name ?? null,
       slot: order.shipment.slot,
+      expedition: order.shipment.expedition,
+      trackingNo: order.shipment.trackingNo,
     },
     items: [...order.items]
       .sort(
@@ -305,24 +323,25 @@ export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntr
 
 /** Pesanan terbaru pada rentang ini (termasuk dibatalkan), terbaru di atas. Untuk Dashboard. */
 export async function listLatestOrders(from: string, to: string, limit = 5) {
-  const rows: Omit<OrderListRow, "paid">[] = await getDb()
-    .select({
-      id: orders.id,
-      orderNo: orders.orderNo,
-      createdAt: orders.createdAt,
-      customerName: orders.customerName,
-      senderName: orders.senderName,
-      type: orders.type,
-      deliveryDate: orders.deliveryDate,
-      shippingMethod: shipments.method,
-      total: orders.total,
-      status: orders.status,
-    })
-    .from(orders)
-    .innerJoin(shipments, eq(shipments.orderId, orders.id))
-    .where(createdBetween(from, to))
-    .orderBy(desc(orders.createdAt))
-    .limit(limit)
+  const rows: Omit<OrderListRow, "paid" | "channel" | "marketplaceOrderNo" | "trackingNo">[] =
+    await getDb()
+      .select({
+        id: orders.id,
+        orderNo: orders.orderNo,
+        createdAt: orders.createdAt,
+        customerName: orders.customerName,
+        senderName: orders.senderName,
+        type: orders.type,
+        deliveryDate: orders.deliveryDate,
+        shippingMethod: shipments.method,
+        total: orders.total,
+        status: orders.status,
+      })
+      .from(orders)
+      .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .where(createdBetween(from, to))
+      .orderBy(desc(orders.createdAt))
+      .limit(limit)
   return rows
 }
 
@@ -344,6 +363,10 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
         method: shipments.method,
         status: orders.status,
         paidWith: paymentMethods.name,
+        channel: orders.channel,
+        marketplaceOrderNo: orders.marketplaceOrderNo,
+        expedition: shipments.expedition,
+        trackingNo: shipments.trackingNo,
         request: orders.request,
         total: orders.total,
       })

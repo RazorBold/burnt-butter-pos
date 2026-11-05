@@ -1,5 +1,5 @@
 // Palet laporan, divalidasi dengan dataviz/validate_palette.js terhadap permukaan kartu #fbf7f3:
-// Personal/Hadiah dan metode kirim lolos semua cek kategorikal; status memakai gradasi ordinal
+// Personal/Hadiah dan metode kirim (termasuk Ekspedisi) lolos semua cek kategorikal; status memakai gradasi ordinal
 // satu hue (Baru terang → Selesai gelap). Warna desain asli (#7c4627 dll.) gagal chroma & CVD.
 // Modul biasa (bukan "use client") supaya nilainya bisa dibaca Server Component juga.
 export const REPORT_COLORS = {
@@ -8,6 +8,7 @@ export const REPORT_COLORS = {
   kurir_internal: "#8c4519",
   instant: "#d98a1e",
   pick_up: "#4f8a55",
+  ekspedisi: "#2f6f9f",
   baru: "#d4a06f",
   diproses: "#bf7d48",
   siap_kirim: "#a1602f",

@@ -43,13 +43,10 @@ export function shipmentStatusFor(
 ): ShipmentStatus | null {
   switch (status) {
     case "siap_kirim":
-      return method === "kurir_internal"
-        ? "siap_dikirim"
-        : method === "instant"
-          ? "menunggu_kurir"
-          : "siap_diambil"
+      if (method === "instant") return "menunggu_kurir"
+      return method === "pick_up" ? "siap_diambil" : "siap_dikirim"
     case "dikirim":
-      return method === "kurir_internal" ? "dalam_perjalanan" : "dikirim"
+      return method === "instant" ? "dikirim" : "dalam_perjalanan"
     case "selesai":
       return "selesai"
     default:
@@ -69,7 +66,13 @@ export type StatusRules = {
  * massal; `null` bila boleh.
  */
 export function statusSkipReason(
-  order: { status: OrderStatus; method: ShippingMethod; hasCourier: boolean },
+  order: {
+    status: OrderStatus
+    method: ShippingMethod
+    hasCourier: boolean
+    /** Ekspedisi baru boleh Dikirim setelah resi diisi; `false` = belum ada resi. */
+    hasTracking?: boolean
+  },
   target: OrderStatus,
   rules: StatusRules = {},
 ): string | null {
@@ -78,6 +81,9 @@ export function statusSkipReason(
     nextStatuses(order.status, order.method).includes(target) &&
     (!rules.limitTo || (rules.limitTo.includes(order.status) && rules.limitTo.includes(target)))
   if (!allowed) return `status ${ORDER_STATUS_LABEL[order.status]}`
+  if (target === "dikirim" && order.method === "ekspedisi" && order.hasTracking === false) {
+    return "belum ada resi"
+  }
   if (
     rules.requireCourier &&
     target === "dikirim" &&

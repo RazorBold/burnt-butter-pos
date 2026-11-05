@@ -1,4 +1,4 @@
-import { Bike, CircleCheck, Store, Truck, UserRound } from "lucide-react"
+import { Bike, CircleCheck, PackageCheck, Store, Truck, UserRound } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import { Suspense } from "react"
@@ -110,11 +110,12 @@ async function Summary({ searchParams }: { searchParams: SearchParams }) {
   const day = filters.date === today ? " Hari Ini" : ""
 
   return (
-    <div className="relative mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+    <div className="relative mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
       <KpiCard icon={Truck} label={`Perlu Dikirim${day}`} value={String(summary.perlu)} />
       <KpiCard icon={UserRound} label="Kurir Internal" value={String(summary.kurirInternal)} />
       <KpiCard icon={Bike} label="Instant" value={String(summary.instant)} />
       <KpiCard icon={Store} label="Pick Up" value={String(summary.pickUp)} />
+      <KpiCard icon={PackageCheck} label="Ekspedisi" value={String(summary.ekspedisi)} />
       <KpiCard icon={CircleCheck} label={`Selesai Dikirim${day}`} value={String(summary.selesai)} />
     </div>
   )
@@ -175,6 +176,8 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                 method: row.method,
                 courierId: row.courierId,
                 slot: row.slot,
+                expedition: row.expedition,
+                trackingNo: row.trackingNo,
               }))}
               couriers={couriers}
             >
@@ -222,7 +225,14 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                             {row.method === "pick_up" ? "-" : (row.address ?? "-")}
                           </span>
                         </TableCell>
-                        <TableCell>{row.courierName ?? "-"}</TableCell>
+                        <TableCell>
+                          {row.courierName ?? row.expedition ?? "-"}
+                          {row.method === "ekspedisi" && (
+                            <span className="block text-[13px] text-text-body tabular-nums">
+                              {row.trackingNo ? `Resi ${row.trackingNo}` : "Resi belum diisi"}
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="whitespace-nowrap tabular-nums">
                           {row.slot ? SLOT_LABEL[row.slot] : "-"}
                         </TableCell>
@@ -264,8 +274,8 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
 
 function SummarySkeleton() {
   return (
-    <div aria-hidden className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-      {Array.from({ length: 5 }, (_, index) => (
+    <div aria-hidden className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+      {Array.from({ length: 6 }, (_, index) => (
         <KpiCardSkeleton key={index} />
       ))}
     </div>

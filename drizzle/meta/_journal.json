@@ -43,6 +43,13 @@
       "when": 1793276930323,
       "tag": "0005_order_customer_name_not_null",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793799285679,
+      "tag": "0006_order_channels",
+      "breakpoints": true
     }
   ]
 }

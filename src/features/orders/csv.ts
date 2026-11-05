@@ -4,7 +4,7 @@ import { formatJam, toJakartaDateString } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 
-import { SHIPPING_METHOD_LABEL } from "./constants"
+import { ORDER_CHANNEL_LABEL, type OrderChannel, SHIPPING_METHOD_LABEL } from "./constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "./filters"
 
 export type OrderExportRow = {
@@ -12,7 +12,7 @@ export type OrderExportRow = {
   createdAt: Date
   type: OrderType
   customerName: string
-  phone: string
+  phone: string | null
   address: string | null
   senderName: string | null
   deliveryDate: string
@@ -23,6 +23,10 @@ export type OrderExportRow = {
   items: { menuName: string; size: "large" | "regular" | "single"; qty: number }[]
   request: string | null
   total: number
+  channel: OrderChannel
+  marketplaceOrderNo: string | null
+  expedition: string | null
+  trackingNo: string | null
 }
 
 const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
@@ -33,7 +37,7 @@ const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ["Tipe", (row) => ORDER_TYPE_LABEL[row.type]],
   ["Nama Customer", (row) => row.customerName],
   // Dengan spasi supaya Excel membacanya sebagai teks dan tidak membuang angka 0 di depan.
-  ["No. HP", (row) => formatPhone(row.phone)],
+  ["No. HP", (row) => (row.phone ? formatPhone(row.phone) : "")],
   ["Alamat", (row) => row.address ?? ""],
   ["Pengirim Hadiah", (row) => row.senderName ?? ""],
   ["Tanggal Kirim", (row) => row.deliveryDate],
@@ -53,6 +57,10 @@ const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ],
   ["Request", (row) => row.request ?? ""],
   ["Total (Rp)", (row) => row.total],
+  ["Sumber", (row) => ORDER_CHANNEL_LABEL[row.channel]],
+  ["No. Marketplace", (row) => row.marketplaceOrderNo ?? ""],
+  ["Kurir Ekspedisi", (row) => row.expedition ?? ""],
+  ["Resi", (row) => row.trackingNo ?? ""],
 ]
 
 /**

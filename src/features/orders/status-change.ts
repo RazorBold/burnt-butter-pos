@@ -41,6 +41,7 @@ export async function changeStatuses(
         status: orders.status,
         method: shipments.method,
         courierId: shipments.courierId,
+        trackingNo: shipments.trackingNo,
       })
       .from(orders)
       .innerJoin(shipments, eq(shipments.orderId, orders.id))
@@ -52,7 +53,12 @@ export async function changeStatuses(
     const skipped: (BulkSkip & { from: OrderStatus })[] = []
     for (const row of rows) {
       const reason = statusSkipReason(
-        { status: row.status, method: row.method, hasCourier: row.courierId !== null },
+        {
+          status: row.status,
+          method: row.method,
+          hasCourier: row.courierId !== null,
+          hasTracking: row.trackingNo !== null,
+        },
         target,
         rules,
       )

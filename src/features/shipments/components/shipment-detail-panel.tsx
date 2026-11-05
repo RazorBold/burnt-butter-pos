@@ -78,7 +78,10 @@ export async function ShipmentDetailPanel({
         : "Pengiriman jam 09.00–17.00, tidak dapat request jam. Slot dan kurir belum diatur."
       : shipment.method === "instant"
         ? "Dipesankan ojek online (GoSend, GrabExpress)."
-        : "Customer mengambil sendiri di toko."
+        : shipment.method === "ekspedisi"
+          ? `${shipment.expedition ?? "Kurir belum diisi"}, ${shipment.trackingNo ? `resi ${shipment.trackingNo}` : "resi belum diisi"}`
+          : "Customer mengambil sendiri di toko."
+  const isExpedition = shipment.method === "ekspedisi"
 
   return (
     <DetailPanelFrame closeHref={closeHref} title="Detail Pengiriman">
@@ -111,17 +114,22 @@ export async function ShipmentDetailPanel({
               <span className="text-text-body"> (hadiah dari {order.senderName})</span>
             )}
           </InfoRow>
-          <InfoRow icon={Phone}>
-            <a
-              href={`tel:${order.customer.phone}`}
-              className="tabular-nums underline-offset-2 hover:underline"
-            >
-              {formatPhone(order.customer.phone)}
-            </a>
-          </InfoRow>
+          {order.customer.phone && (
+            <InfoRow icon={Phone}>
+              <a
+                href={`tel:${order.customer.phone}`}
+                className="tabular-nums underline-offset-2 hover:underline"
+              >
+                {formatPhone(order.customer.phone)}
+              </a>
+            </InfoRow>
+          )}
           <InfoRow icon={MapPin}>
             <span className="whitespace-pre-line">
-              {isPickUp ? "Diambil di toko" : (shipment.address ?? "Alamat belum diisi")}
+              {isPickUp
+                ? "Diambil di toko"
+                : (shipment.address ??
+                  (isExpedition ? "Alamat ada di label marketplace" : "Alamat belum diisi"))}
             </span>
           </InfoRow>
           <InfoRow icon={CalendarDays}>{formatTanggal(order.deliveryDate)}</InfoRow>
@@ -132,7 +140,7 @@ export async function ShipmentDetailPanel({
           {order.request && <InfoRow icon={ClipboardList}>Request: {order.request}</InfoRow>}
         </ul>
 
-        {maps ? (
+        {isExpedition ? null : maps ? (
           <div className="mt-4 overflow-hidden rounded-xl border border-border">
             <iframe
               title={`Peta ${isPickUp ? "lokasi toko" : "alamat pengiriman"}`}
@@ -158,7 +166,7 @@ export async function ShipmentDetailPanel({
               : "Alamat belum diisi, jadi rute belum bisa ditampilkan."}
           </p>
         )}
-        {maps && !isPickUp && !store.pickupAddress && (
+        {maps && !isPickUp && !isExpedition && !store.pickupAddress && (
           <p className="mt-2 text-[13px] text-text-body">
             Isi alamat toko di Master Data › Pengaturan supaya rute dihitung dari toko.
           </p>
@@ -175,6 +183,8 @@ export async function ShipmentDetailPanel({
           method={shipment.method}
           courierId={shipment.courierId}
           slot={shipment.slot}
+          expedition={shipment.expedition}
+          trackingNo={shipment.trackingNo}
           couriers={couriers}
         />
       </div>

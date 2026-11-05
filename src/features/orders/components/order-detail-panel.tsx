@@ -5,7 +5,7 @@ import type { ReactNode } from "react"
 
 import { OrderStatusBadge, PaymentBadge } from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
-import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
+import { ORDER_CHANNEL_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
 import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
@@ -129,7 +129,9 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
   const shipping =
     order.shipment.method === "kurir_internal"
       ? `Kurir Internal Burnt Butter${order.shipment.courierName ? ` (${order.shipment.courierName})` : ""}`
-      : SHIPPING_METHOD_LABEL[order.shipment.method]
+      : order.shipment.method === "ekspedisi"
+        ? `Ekspedisi${order.shipment.expedition ? ` (${order.shipment.expedition})` : ""}`
+        : SHIPPING_METHOD_LABEL[order.shipment.method]
   const card = [
     order.cardTo && `To: ${order.cardTo}`,
     order.cardWishes,
@@ -145,6 +147,10 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         {isEditable(order.status) && <EditOrderDialog order={order} />}
       </div>
       <dl className="text-sm">
+        <Row label="Sumber">
+          {ORDER_CHANNEL_LABEL[order.channel]}
+          {order.marketplaceOrderNo && ` (${order.marketplaceOrderNo})`}
+        </Row>
         <Row label={isHadiah ? "Nama Penerima" : "Nama Lengkap"}>{order.customer.name}</Row>
         <Row label="No. Telp">
           <span className="tabular-nums">{formatPhone(order.customer.phone)}</span>
@@ -152,6 +158,9 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         <Row label="Alamat">{order.shipment.address ?? "-"}</Row>
         <Row label="Tanggal Kirim">{formatTanggal(order.deliveryDate)}</Row>
         <Row label="Pengiriman">{shipping}</Row>
+        {order.shipment.method === "ekspedisi" && (
+          <Row label="Resi">{order.shipment.trackingNo ?? "Belum diisi"}</Row>
+        )}
         <Row label="Request">{order.request ?? "-"}</Row>
         {isHadiah && (
           <>

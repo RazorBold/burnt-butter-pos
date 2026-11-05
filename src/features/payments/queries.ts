@@ -51,7 +51,11 @@ export type PaymentSummary = {
   paid: { count: number; value: number }
 }
 
-export type ActivePaymentMethod = { id: string; name: string; type: "bank" | "ewallet" | "cash" }
+export type ActivePaymentMethod = {
+  id: string
+  name: string
+  type: "bank" | "ewallet" | "cash" | "marketplace"
+}
 
 function createdBetween(from: string, to: string) {
   return and(
@@ -69,6 +73,7 @@ function searchCondition(q: string | undefined) {
     ilike(orders.customerName, `%${escaped}%`),
     ilike(orders.senderName, `%${escaped}%`),
     ilike(orders.orderNo, `%${escaped}%`),
+    ilike(orders.marketplaceOrderNo, `%${escaped}%`),
     digits.length >= 3 ? like(customers.phone, `%${digits}%`) : undefined,
   )
 }

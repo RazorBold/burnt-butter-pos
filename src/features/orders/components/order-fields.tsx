@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import {
   SHIPPING_METHOD_LABEL,
   SHIPPING_METHOD_NOTE,
-  SHIPPING_METHODS,
+  WA_SHIPPING_METHODS,
 } from "@/features/orders/constants"
 import { cn } from "@/lib/utils"
 import type { ShippingMethod } from "@/lib/wa-parser"
@@ -86,7 +86,7 @@ export function ShippingMethodPicker({
         aria-describedby={flag ? "shippingMethod-flag" : undefined}
         className="grid gap-2 sm:grid-cols-3"
       >
-        {SHIPPING_METHODS.map((method) => {
+        {WA_SHIPPING_METHODS.map((method) => {
           const checked = value === method
           return (
             <label

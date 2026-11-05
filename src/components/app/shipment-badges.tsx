@@ -1,4 +1,4 @@
-import { Bike, Check, Clock, Store, Tag, Truck } from "lucide-react"
+import { Bike, Check, Clock, PackageCheck, Store, Tag, Truck } from "lucide-react"
 
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { SHIPMENT_STATE_LABEL, type ShipmentState } from "@/features/shipments/logic"
@@ -47,7 +47,12 @@ export function ShipmentStatusBadge({
   )
 }
 
-const METHOD_ICON = { kurir_internal: Truck, instant: Bike, pick_up: Store } as const
+const METHOD_ICON = {
+  kurir_internal: Truck,
+  instant: Bike,
+  pick_up: Store,
+  ekspedisi: PackageCheck,
+} as const
 
 /** Ikon + nama metode kirim, seperti kolom Metode di desain. */
 export function ShippingMethodLabel({ method }: { method: ShippingMethod }) {

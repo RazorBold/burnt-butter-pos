@@ -1,4 +1,14 @@
-import { ArrowRight, Bike, FileText, Gift, Package, Store, Truck, Wallet } from "lucide-react"
+import {
+  ArrowRight,
+  Bike,
+  FileText,
+  Gift,
+  Package,
+  PackageCheck,
+  Store,
+  Truck,
+  Wallet,
+} from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
@@ -31,7 +41,12 @@ import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = { title: "Dashboard" }
 
-const METHOD_ICON = { pick_up: Store, instant: Bike, kurir_internal: Truck } as const
+const METHOD_ICON = {
+  pick_up: Store,
+  instant: Bike,
+  kurir_internal: Truck,
+  ekspedisi: PackageCheck,
+} as const
 
 type SearchParams = PageProps<"/dashboard">["searchParams"]
 
@@ -267,7 +282,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
 
         <Card title="Pesanan per Metode Pengiriman">
           <ul className="space-y-4">
-            {(["pick_up", "instant", "kurir_internal"] as const).map((method) => {
+            {(["pick_up", "instant", "kurir_internal", "ekspedisi"] as const).map((method) => {
               const value = report.shipping.find((row) => row.key === method)?.value ?? 0
               const Icon = METHOD_ICON[method]
               return (

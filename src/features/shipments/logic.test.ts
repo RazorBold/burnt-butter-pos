@@ -78,3 +78,15 @@ describe("parseShipmentFilters", () => {
     })
   })
 })
+
+describe("nextShipmentAction Ekspedisi", () => {
+  const base = { method: "ekspedisi", orderStatus: "siap_kirim", hasCourier: false } as const
+
+  it("Tandai Dikirim terkunci sampai resi diisi", () => {
+    expect(nextShipmentAction(base)).toMatchObject({ kind: "blocked" })
+    expect(nextShipmentAction({ ...base, hasTracking: true })).toMatchObject({
+      kind: "advance",
+      target: "dikirim",
+    })
+  })
+})

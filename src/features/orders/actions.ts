@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, inArray, sql } from "drizzle-orm"
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 
@@ -13,6 +13,8 @@ import {
   orderItems,
   orders,
   orderStatusLogs,
+  paymentMethods,
+  payments,
   shipments,
 } from "@/db/schema"
 import { CAN_INPUT_ORDER } from "@/lib/access"
@@ -21,7 +23,8 @@ import { BULK_LIMIT, type BulkResult, summarizeBulk } from "@/lib/bulk"
 import { toJakartaDateString } from "@/lib/format"
 import { normalizePhone } from "@/lib/phone"
 
-import { type DraftField, draftIssues } from "./draft"
+import { isMarketplace, ORDER_CHANNEL_LABEL, type OrderChannel } from "./constants"
+import { type DraftField, draftIssues, parseRupiahInput } from "./draft"
 import { ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from "./filters"
 import { ordersToCsv } from "./csv"
 import { formatOrderNo } from "./order-number"
@@ -36,12 +39,69 @@ export type CreateOrderResult =
 
 class StaleMenuError extends Error {}
 
+type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0]
+
+/** Customer dari no. HP, atau (no. HP disamarkan marketplace) dari nama yang sama tanpa no. HP. */
+async function resolveCustomer(
+  tx: Tx,
+  { name, phone, address }: { name: string; phone: string | null; address: string | null },
+) {
+  if (phone) {
+    const [customer] = await tx
+      .insert(customers)
+      .values({ name, phone, address })
+      .onConflictDoUpdate({
+        target: customers.phone,
+        // Nama terbaru dipakai; alamat lama dipertahankan bila kali ini kosong (mis. Pick Up).
+        set: {
+          name: sql`excluded.name`,
+          address: sql`coalesce(excluded.address, ${customers.address})`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning({ id: customers.id, name: customers.name })
+    return customer
+  }
+  const [existing] = await tx
+    .select({ id: customers.id, name: customers.name })
+    .from(customers)
+    .where(and(isNull(customers.phone), sql`lower(${customers.name}) = lower(${name})`))
+    .limit(1)
+  if (existing) return existing
+  const [created] = await tx
+    .insert(customers)
+    .values({ name, phone: null, address })
+    .returning({ id: customers.id, name: customers.name })
+  return created
+}
+
+/** No. pesanan marketplace ini sudah dipakai pesanan lain? Kembalikan nomor pesanan itu. */
+async function duplicateMarketplaceOrder(
+  channel: OrderChannel,
+  marketplaceOrderNo: string,
+  exceptId?: string,
+) {
+  const [duplicate] = await getDb()
+    .select({ orderNo: orders.orderNo })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.channel, channel),
+        eq(orders.marketplaceOrderNo, marketplaceOrderNo),
+        exceptId ? ne(orders.id, exceptId) : undefined,
+      ),
+    )
+    .limit(1)
+  return duplicate?.orderNo
+}
+
 /**
  * Simpan pesanan dari form Input Pesanan, dalam satu transaksi:
  * customer (dicari/diperbarui lewat no. HP) → nomor pesanan harian → pesanan berstatus Baru →
  * item dengan harga dari database → pengiriman → log status.
  * Pesanan Hadiah: customer = penerima; nama pengirim dan kartu ucapan disimpan di pesanan.
- * Pembayaran dicatat terpisah, jadi pesanan baru selalu belum bayar.
+ * Pembayaran WhatsApp dicatat terpisah, jadi pesanan baru belum bayar. Pesanan marketplace
+ * memakai metode Ekspedisi, total sesuai marketplace, dan langsung Lunas (sudah dibayar di sana).
  */
 export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   let userId: string
@@ -63,11 +123,23 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
     return { ok: false, message: "Masih ada isian yang belum lengkap.", errors: issues }
   }
 
-  const phone = normalizePhone(draft.phone)!
+  const marketplace = isMarketplace(draft.channel)
+  const marketplaceOrderNo = marketplace ? draft.marketplaceOrderNo.trim() : null
+  if (marketplaceOrderNo) {
+    const used = await duplicateMarketplaceOrder(draft.channel, marketplaceOrderNo)
+    if (used) {
+      const message = `No. pesanan ini sudah diinput sebagai ${used}.`
+      return { ok: false, message, errors: { marketplaceOrderNo: message } }
+    }
+  }
+
+  const phone = normalizePhone(draft.phone)
   const wanted = Object.entries(draft.quantities).filter(([, qty]) => qty > 0)
   const optional = (value: string) => value.trim() || null
-  const isHadiah = draft.type === "hadiah"
-  const shippingMethod = draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">
+  const isHadiah = !marketplace && draft.type === "hadiah"
+  const shippingMethod = marketplace
+    ? ("ekspedisi" as const)
+    : (draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">)
 
   try {
     const result = await getDb().transaction(async (tx) => {
@@ -92,22 +164,12 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
         const unitPrice = priceOf.get(variantId)!
         return { menuVariantId: variantId, qty, unitPrice, subtotal: unitPrice * qty }
       })
-      const total = items.reduce((sum, item) => sum + item.subtotal, 0)
+      const total = marketplace
+        ? parseRupiahInput(draft.marketplaceTotal)!
+        : items.reduce((sum, item) => sum + item.subtotal, 0)
 
       const address = optional(draft.address)
-      const [customer] = await tx
-        .insert(customers)
-        .values({ name: draft.name.trim(), phone, address })
-        .onConflictDoUpdate({
-          target: customers.phone,
-          // Nama terbaru dipakai; alamat lama dipertahankan bila kali ini kosong (mis. Pick Up).
-          set: {
-            name: sql`excluded.name`,
-            address: sql`coalesce(excluded.address, ${customers.address})`,
-            updatedAt: new Date(),
-          },
-        })
-        .returning({ id: customers.id, name: customers.name })
+      const customer = await resolveCustomer(tx, { name: draft.name.trim(), phone, address })
 
       const [counter] = await tx
         .insert(orderCounters)
@@ -125,11 +187,13 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
           orderNo,
           customerId: customer.id,
           customerName: draft.name.trim(),
-          type: draft.type,
+          channel: draft.channel,
+          marketplaceOrderNo,
+          type: marketplace ? "personal" : draft.type,
           deliveryDate: draft.deliveryDate,
           request: optional(draft.request),
           total,
-          rawWaText: optional(waText),
+          rawWaText: marketplace ? null : optional(waText),
           senderName: isHadiah ? optional(draft.senderName) : null,
           cardTo: isHadiah ? optional(draft.cardTo) : null,
           cardWishes: isHadiah ? optional(draft.cardWishes) : null,
@@ -145,16 +209,39 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
         // Kosong sampai pesanan Siap Kirim (lihat shipmentStatusFor).
         status: null,
         address,
+        expedition: marketplace ? optional(draft.expedition) : null,
+        trackingNo: marketplace ? optional(draft.trackingNo) : null,
       })
       await tx
         .insert(orderStatusLogs)
         .values({ orderId: order.id, fromStatus: null, toStatus: "baru", changedBy: userId })
+
+      if (marketplace) {
+        // Metode "Shopee"/"Tokopedia" dibuat saat pertama dipakai.
+        const [method] = await tx
+          .insert(paymentMethods)
+          .values({ name: ORDER_CHANNEL_LABEL[draft.channel], type: "marketplace" })
+          .onConflictDoUpdate({
+            target: paymentMethods.name,
+            set: { name: sql`excluded.name` },
+          })
+          .returning({ id: paymentMethods.id })
+        await tx.insert(payments).values({
+          orderId: order.id,
+          paymentMethodId: method.id,
+          amount: total,
+          status: "lunas",
+          paidAt: new Date(),
+          recordedBy: userId,
+        })
+      }
 
       return { orderNo, customerName: customer.name, total }
     })
 
     revalidatePath("/pesanan")
     revalidatePath("/dashboard")
+    revalidatePath("/pembayaran")
     revalidatePath("/master-data/customer")
     return { ok: true, ...result }
   } catch (error) {
@@ -199,6 +286,9 @@ async function changeOrderStatus(
   const { done, skipped } = await changeStatuses([orderId], status, userId, { limitTo })
   if (done.length > 0) {
     return { ok: true, message: `Status ${done[0]} jadi ${ORDER_STATUS_LABEL[status]}.` }
+  }
+  if (skipped[0]?.reason === "belum ada resi") {
+    return { ok: false, message: "Isi nomor resi dulu sebelum menandai Dikirim." }
   }
   if (skipped.length > 0) {
     return {
@@ -312,6 +402,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       status: orders.status,
       orderNo: orders.orderNo,
       deliveryDate: orders.deliveryDate,
+      channel: orders.channel,
     })
     .from(orders)
     .where(eq(orders.id, orderId))
@@ -323,40 +414,52 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     }
   }
 
+  const marketplace = isMarketplace(current.channel)
   // Menu tidak diubah di sini; "items" diisi supaya aturan kelengkapan lain tetap sama dengan form.
-  const issues = draftIssues({ ...draft, quantities: { menu: 1 } }, toJakartaDateString(new Date()))
+  const issues = draftIssues(
+    { ...draft, channel: current.channel, quantities: { menu: 1 } },
+    toJakartaDateString(new Date()),
+  )
+  // Kurir dan resi diubah lewat Isi Resi di Pengiriman.
+  delete issues.expedition
   // Pesanan lama boleh tetap memakai tanggal kirimnya walau sudah lewat.
   if (draft.deliveryDate === current.deliveryDate) delete issues.deliveryDate
   if (Object.keys(issues).length > 0) {
     return { ok: false, message: "Masih ada isian yang belum benar.", errors: issues }
   }
 
-  const phone = normalizePhone(draft.phone)!
+  const marketplaceOrderNo = marketplace ? draft.marketplaceOrderNo.trim() : null
+  if (marketplaceOrderNo) {
+    const used = await duplicateMarketplaceOrder(current.channel, marketplaceOrderNo, orderId)
+    if (used) {
+      const message = `No. pesanan ini sudah diinput sebagai ${used}.`
+      return { ok: false, message, errors: { marketplaceOrderNo: message } }
+    }
+  }
+
+  const phone = normalizePhone(draft.phone)
   const optional = (value: string) => value.trim() || null
-  const isHadiah = draft.type === "hadiah"
-  const method = draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">
+  const isHadiah = !marketplace && draft.type === "hadiah"
+  const method = marketplace
+    ? ("ekspedisi" as const)
+    : (draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">)
   const address = optional(draft.address)
+  const total = marketplace ? parseRupiahInput(draft.marketplaceTotal)! : undefined
 
   await db.transaction(async (tx) => {
-    const [customer] = await tx
-      .insert(customers)
-      .values({ name: draft.name.trim(), phone, address })
-      .onConflictDoUpdate({
-        target: customers.phone,
-        set: {
-          name: sql`excluded.name`,
-          address: sql`coalesce(excluded.address, ${customers.address})`,
-          updatedAt: new Date(),
-        },
-      })
-      .returning({ id: customers.id })
+    // Tanpa no. HP (disamarkan marketplace), pesanan tetap memakai customer yang sekarang.
+    const customer = phone
+      ? await resolveCustomer(tx, { name: draft.name.trim(), phone, address })
+      : undefined
 
     await tx
       .update(orders)
       .set({
-        customerId: customer.id,
+        customerId: customer?.id,
         customerName: draft.name.trim(),
-        type: draft.type,
+        marketplaceOrderNo,
+        total,
+        type: marketplace ? "personal" : draft.type,
         deliveryDate: draft.deliveryDate,
         request: optional(draft.request),
         senderName: isHadiah ? optional(draft.senderName) : null,
@@ -369,6 +472,9 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       .update(shipments)
       .set({ method, address, status: shipmentStatusFor(current.status, method) })
       .where(eq(shipments.orderId, orderId))
+    if (total !== undefined) {
+      await tx.update(payments).set({ amount: total }).where(eq(payments.orderId, orderId))
+    }
   })
 
   revalidateOrders([current.orderNo])

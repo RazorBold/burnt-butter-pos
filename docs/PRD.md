@@ -86,6 +86,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 - **F-32** Tabel dengan checkbox, No. Pesanan, Waktu, Nama Customer, Tipe, Tgl Kirim, Pengiriman, Total, Status, menu aksi; paginasi 10 baris ("Menampilkan 1–10 dari 24 pesanan").
 - **F-33** Klik baris membuka panel Detail Pesanan: nomor + status, waktu dibuat, Data Customer (bisa Edit), Daftar Menu dengan foto dan qty, Total Pembayaran.
 - **F-34** Aksi panel: dropdown **Ubah Status** dan **Lihat Detail Lengkap** (halaman belum didesain).
+- **F-36** Input Pesanan punya tiga sumber: WhatsApp (template), Shopee, dan Tokopedia. Marketplace diisi lewat form manual: no. pesanan (ditolak bila sudah pernah diinput), total sesuai marketplace, kurir, dan resi. Pesanan otomatis Lunas via Shopee/Tokopedia, memakai metode kirim Ekspedisi, dan resi wajib diisi sebelum Tandai Dikirim.
 - **F-35** Checkbox memungkinkan aksi massal. Pesanan: ubah status, tandai lunas (satu metode untuk semua), batalkan, unduh CSV. Pengiriman: atur kurir & jadwal, tandai dikirim. Pesanan yang tidak memenuhi syarat dilewati dan disebutkan.
 
 ### Pengiriman

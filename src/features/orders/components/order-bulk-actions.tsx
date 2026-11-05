@@ -54,13 +54,22 @@ export type OrderActionRow = {
   method: ShippingMethod
   paid: boolean
   total: number
+  trackingNo: string | null
 }
 
 /** Tujuan di menu "Ubah status" massal. Dibatalkan punya tombol sendiri dengan konfirmasi. */
 const STATUS_TARGETS: OrderStatus[] = ["baru", "diproses", "siap_kirim", "dikirim", "selesai"]
 
 const canChange = (row: OrderActionRow, target: OrderStatus) =>
-  statusSkipReason({ status: row.status, method: row.method, hasCourier: true }, target) === null
+  statusSkipReason(
+    {
+      status: row.status,
+      method: row.method,
+      hasCourier: true,
+      hasTracking: row.trackingNo !== null,
+    },
+    target,
+  ) === null
 const canPay = (row: OrderActionRow) => !row.paid && row.status !== "dibatalkan"
 
 type OpenDialog = { kind: "paid" | "cancel"; rows: OrderActionRow[] } | null
@@ -321,7 +330,9 @@ export function OrderRowMenu({ id }: { id: string }) {
   const { rowById, pending, changeStatus, openDialog } = useOrderActions()
   const row = rowById.get(id)
   if (!row) return null
-  const steps = nextStatuses(row.status, row.method).filter((status) => status !== "dibatalkan")
+  const steps = nextStatuses(row.status, row.method).filter(
+    (status) => status !== "dibatalkan" && canChange(row, status),
+  )
   const cancellable = canChange(row, "dibatalkan")
 
   return (

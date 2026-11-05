@@ -110,7 +110,7 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerRow; onSaved: 
           inputMode="tel"
           autoComplete="off"
           placeholder="0812 3456 7890"
-          defaultValue={customer ? formatPhone(customer.phone) : ""}
+          defaultValue={customer?.phone ? formatPhone(customer.phone) : ""}
           required
           aria-invalid={Boolean(errors.phone)}
           aria-describedby={describedBy("phone")}

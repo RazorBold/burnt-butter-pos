@@ -10,7 +10,7 @@ export const CUSTOMER_PAGE_SIZE = 10
 export type CustomerRow = {
   id: string
   name: string
-  phone: string
+  phone: string | null
   address: string | null
   /** Pesanan yang tidak dibatalkan. */
   orderCount: number

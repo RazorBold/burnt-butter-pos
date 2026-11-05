@@ -58,12 +58,14 @@ describe("buildReport", () => {
       { key: "kurir_internal", value: 1 },
       { key: "instant", value: 1 },
       { key: "pick_up", value: 1 },
+      { key: "ekspedisi", value: 0 },
     ])
     expect(report.status.find((row) => row.key === "baru")?.value).toBe(1)
     expect(report.paymentMethods).toEqual([
       { type: "bank", amount: 250_000, share: 0.625 },
       { type: "ewallet", amount: 150_000, share: 0.375 },
       { type: "cash", amount: 0, share: 0 },
+      { type: "marketplace", amount: 0, share: 0 },
     ])
   })
 })

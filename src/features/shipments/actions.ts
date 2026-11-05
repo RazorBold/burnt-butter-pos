@@ -116,3 +116,44 @@ export async function markShipmentsSent(orderIds: unknown): Promise<BulkResult> 
     many: (count) => `${count} pesanan ditandai dikirim.`,
   })
 }
+
+const trackingSchema = z.object({
+  orderId: z.uuid(),
+  expedition: z.string().trim().min(1, "Kurir wajib diisi.").max(40, "Nama kurir terlalu panjang."),
+  trackingNo: z
+    .string()
+    .trim()
+    .min(3, "Nomor resi wajib diisi.")
+    .max(60, "Nomor resi terlalu panjang."),
+})
+
+/** Isi Resi pesanan Ekspedisi (marketplace). Wajib sebelum Tandai Dikirim. */
+export async function saveTracking(input: unknown): Promise<BulkResult> {
+  const userId = await requireShipper()
+  if (typeof userId !== "string") return userId
+  const parsed = trackingSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Data belum lengkap." }
+  }
+  const { orderId, expedition, trackingNo } = parsed.data
+  const db = getDb()
+
+  const [current] = await db
+    .select({ orderNo: orders.orderNo, status: orders.status, method: shipments.method })
+    .from(orders)
+    .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .where(eq(orders.id, orderId))
+  if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+  if (current.method !== "ekspedisi") {
+    return { ok: false, message: "Resi hanya untuk pesanan Ekspedisi." }
+  }
+  if (current.status === "selesai" || current.status === "dibatalkan") {
+    return { ok: false, message: `${current.orderNo} sudah tidak bisa diubah.` }
+  }
+
+  await db.update(shipments).set({ expedition, trackingNo }).where(eq(shipments.orderId, orderId))
+  revalidatePath("/pengiriman")
+  revalidatePath("/pesanan")
+  revalidatePath(`/pesanan/${current.orderNo}`)
+  return { ok: true, message: `Resi ${current.orderNo} disimpan: ${expedition} ${trackingNo}.` }
+}

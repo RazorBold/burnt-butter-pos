@@ -4,32 +4,37 @@ import { Suspense } from "react"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NewOrderWorkspace } from "@/features/orders/components/new-order-workspace"
+import { ORDER_CHANNELS } from "@/features/orders/constants"
 import { getOrderCatalog } from "@/features/orders/queries"
 import { requirePageAccess } from "@/lib/auth"
 
 export const metadata: Metadata = { title: "Input Pesanan" }
 
-export default function InputPesananPage() {
+type SearchParams = PageProps<"/pesanan/baru">["searchParams"]
+
+export default function InputPesananPage({ searchParams }: PageProps<"/pesanan/baru">) {
   return (
     <main className={PAGE_CONTAINER}>
       <PageHeader
         title="Input Pesanan"
-        description="Tempel pesan WhatsApp, cek hasil Isi Otomatis, lalu lengkapi yang masih kosong."
+        description="Pilih sumber pesanan: tempel pesan WhatsApp, atau isi data dari Shopee dan Tokopedia."
       />
       <div className="mt-6">
         <Suspense fallback={<WorkspaceSkeleton />}>
-          <Workspace />
+          <Workspace searchParams={searchParams} />
         </Suspense>
       </div>
     </main>
   )
 }
 
-async function Workspace() {
+async function Workspace({ searchParams }: { searchParams: SearchParams }) {
   // Role yang boleh membuka /pesanan (Admin, Kasir) sama dengan CAN_INPUT_ORDER.
   await requirePageAccess("/pesanan")
   const catalog = await getOrderCatalog()
-  return <NewOrderWorkspace catalog={catalog} />
+  const { sumber } = await searchParams
+  const channel = ORDER_CHANNELS.find((value) => value === sumber) ?? "whatsapp"
+  return <NewOrderWorkspace catalog={catalog} initialChannel={channel} />
 }
 
 function WorkspaceSkeleton() {

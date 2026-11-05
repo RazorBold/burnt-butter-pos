@@ -30,9 +30,15 @@ export type Db = ReturnType<typeof createDb>
 
 // Dibuat saat pertama dipakai (bukan saat import) supaya build tidak butuh DATABASE_URL,
 // dan disimpan di globalThis supaya hot reload di dev tidak membuka koneksi baru terus.
-const globalForDb = globalThis as unknown as { db?: Db }
+// Dibuat ulang bila schema.ts berubah saat `pnpm dev` hidup: klien lama memegang skema lama, dan
+// query relasional (db.query.*) diam-diam tidak membaca kolom baru. Koneksi lama tutup sendiri
+// lewat idle_timeout.
+const globalForDb = globalThis as unknown as { db?: Db; dbSchema?: typeof schema }
 
 export function getDb(): Db {
-  globalForDb.db ??= createDb()
+  if (!globalForDb.db || globalForDb.dbSchema !== schema) {
+    globalForDb.db = createDb()
+    globalForDb.dbSchema = schema
+  }
   return globalForDb.db
 }

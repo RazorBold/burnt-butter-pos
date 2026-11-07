@@ -11,7 +11,6 @@ import {
   TypeBadge,
 } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
-import { TrackingLink } from "@/components/app/shipment-badges"
 import { SelectAllHead } from "@/components/app/row-selection"
 import { TablePagination } from "@/components/app/table-pagination"
 import { Button } from "@/components/ui/button"
@@ -25,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { OrderActionsProvider, OrderRowMenu } from "@/features/orders/components/order-bulk-actions"
+import { TrackingLinkTools } from "@/features/orders/components/tracking-link-tools"
 import { OrderDetailPanel } from "@/features/orders/components/order-detail-panel"
 import { OrderFilters } from "@/features/orders/components/order-filters"
 import { OrderRow } from "@/features/orders/components/order-row"
@@ -257,7 +257,12 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                           {SHIPPING_METHOD_LABEL[order.shippingMethod]}
                           {order.trackingUrl && order.shippingMethod !== "ekspedisi" && (
                             <span className="mt-0.5 block text-[13px]">
-                              <TrackingLink url={order.trackingUrl} orderNo={order.orderNo} />
+                              <TrackingLinkTools
+                                orderId={order.id}
+                                orderNo={order.orderNo}
+                                url={order.trackingUrl}
+                                sentAt={order.trackingLinkSentAt}
+                              />
                             </span>
                           )}
                         </TableCell>

@@ -7,7 +7,7 @@ import { OrderStatusBadge, PaymentBadge } from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
 import { ORDER_CHANNEL_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
-import { TrackingLink } from "@/components/app/shipment-badges"
+import { TrackingLinkTools } from "@/features/orders/components/tracking-link-tools"
 import { OrderNoteButton } from "@/features/orders/components/order-note-dialog"
 import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
@@ -163,7 +163,12 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         <Row label="Pengiriman">{shipping}</Row>
         {order.shipment.trackingUrl && order.shipment.method !== "ekspedisi" && (
           <Row label="Link Lacak">
-            <TrackingLink url={order.shipment.trackingUrl} orderNo={order.orderNo} />
+            <TrackingLinkTools
+              orderId={order.id}
+              orderNo={order.orderNo}
+              url={order.shipment.trackingUrl}
+              sentAt={order.shipment.trackingLinkSentAt}
+            />
           </Row>
         )}
         <Row label="Request">{order.request ?? "-"}</Row>

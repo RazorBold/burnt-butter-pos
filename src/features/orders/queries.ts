@@ -85,6 +85,7 @@ export type OrderListRow = {
   channel: OrderChannel
   marketplaceOrderNo: string | null
   trackingUrl: string | null
+  trackingLinkSentAt: Date | null
   note: string | null
 }
 
@@ -138,6 +139,7 @@ export async function listOrders(filters: OrderFilters) {
       status: orders.status,
       paid: isNotNull(payments.id).mapWith(Boolean),
       trackingUrl: shipments.trackingUrl,
+      trackingLinkSentAt: shipments.trackingLinkSentAt,
       note: orders.note,
       channel: orders.channel,
       marketplaceOrderNo: orders.marketplaceOrderNo,
@@ -199,6 +201,7 @@ export type OrderDetail = {
     courierName: string | null
     slot: "09-12" | "13-17" | null
     trackingUrl: string | null
+    trackingLinkSentAt: Date | null
   }
   items: {
     id: string
@@ -277,6 +280,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       courierName: order.shipment.courier?.name ?? null,
       slot: order.shipment.slot,
       trackingUrl: order.shipment.trackingUrl,
+      trackingLinkSentAt: order.shipment.trackingLinkSentAt,
     },
     items: [...order.items]
       .sort(
@@ -324,26 +328,28 @@ export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntr
 
 /** Pesanan terbaru pada rentang ini (termasuk dibatalkan), terbaru di atas. Untuk Dashboard. */
 export async function listLatestOrders(from: string, to: string, limit = 5) {
-  const rows: Omit<OrderListRow, "paid" | "channel" | "marketplaceOrderNo" | "trackingUrl">[] =
-    await getDb()
-      .select({
-        id: orders.id,
-        orderNo: orders.orderNo,
-        createdAt: orders.createdAt,
-        customerName: orders.customerName,
-        senderName: orders.senderName,
-        type: orders.type,
-        deliveryDate: orders.deliveryDate,
-        shippingMethod: shipments.method,
-        total: orders.total,
-        status: orders.status,
-        note: orders.note,
-      })
-      .from(orders)
-      .innerJoin(shipments, eq(shipments.orderId, orders.id))
-      .where(createdBetween(from, to))
-      .orderBy(desc(orders.createdAt))
-      .limit(limit)
+  const rows: Omit<
+    OrderListRow,
+    "paid" | "channel" | "marketplaceOrderNo" | "trackingUrl" | "trackingLinkSentAt"
+  >[] = await getDb()
+    .select({
+      id: orders.id,
+      orderNo: orders.orderNo,
+      createdAt: orders.createdAt,
+      customerName: orders.customerName,
+      senderName: orders.senderName,
+      type: orders.type,
+      deliveryDate: orders.deliveryDate,
+      shippingMethod: shipments.method,
+      total: orders.total,
+      status: orders.status,
+      note: orders.note,
+    })
+    .from(orders)
+    .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .where(createdBetween(from, to))
+    .orderBy(desc(orders.createdAt))
+    .limit(limit)
   return rows
 }
 

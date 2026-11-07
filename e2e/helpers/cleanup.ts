@@ -30,6 +30,7 @@ export type SavedOrder = {
   expedition: string | null
   tracking_no: string | null
   tracking_url: string | null
+  tracking_link_sent_at: Date | null
   note: string | null
 }
 
@@ -43,7 +44,7 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
       select o.type, o.status, o.total, c.name as customer, o.customer_name as order_name,
         o.sender_name, o.card_wishes,
         o.raw_wa_text, s.method, s.status as shipment_status, o.channel, o.marketplace_order_no,
-        s.expedition, s.tracking_no, s.tracking_url, o.note,
+        s.expedition, s.tracking_no, s.tracking_url, s.tracking_link_sent_at, o.note,
         (select count(*)::int from order_items i where i.order_id = o.id) as items,
         (select count(*)::int from order_status_logs l where l.order_id = o.id) as logs,
         (select count(*)::int from payments p where p.order_id = o.id) as payments

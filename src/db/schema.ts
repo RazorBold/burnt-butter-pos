@@ -250,6 +250,8 @@ export const shipments = pgTable(
     trackingNo: text("tracking_no"),
     /** Link lacak perjalanan makanan (ojol, ekspedisi, atau kurir). Hanya http/https. */
     trackingUrl: text("tracking_url"),
+    /** Kapan link lacak ditandai sudah dikirim ke customer; null = belum. Reset saat link diganti. */
+    trackingLinkSentAt: timestamp("tracking_link_sent_at", { withTimezone: true }),
     /**
      * Kosong sampai pesanan Siap Kirim, lalu mengikuti metode: Kurir Internal → siap_dikirim,
      * Ekspedisi → siap_dikirim, Instant → menunggu_kurir, Pick Up → siap_diambil

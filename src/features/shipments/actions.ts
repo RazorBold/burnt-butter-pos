@@ -135,7 +135,12 @@ export async function saveTrackingLink(input: unknown): Promise<BulkResult> {
 
   const db = getDb()
   const [current] = await db
-    .select({ orderNo: orders.orderNo, status: orders.status, method: shipments.method })
+    .select({
+      orderNo: orders.orderNo,
+      status: orders.status,
+      method: shipments.method,
+      trackingUrl: shipments.trackingUrl,
+    })
     .from(orders)
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
     .where(eq(orders.id, orderId))
@@ -144,7 +149,12 @@ export async function saveTrackingLink(input: unknown): Promise<BulkResult> {
     return { ok: false, message: `${current.orderNo} tidak bisa diberi link lacak.` }
   }
 
-  await db.update(shipments).set({ trackingUrl }).where(eq(shipments.orderId, orderId))
+  // Link baru (atau dihapus) berarti belum dikirim ke customer.
+  const changed = trackingUrl !== current.trackingUrl
+  await db
+    .update(shipments)
+    .set(changed ? { trackingUrl, trackingLinkSentAt: null } : { trackingUrl })
+    .where(eq(shipments.orderId, orderId))
   revalidatePath("/pengiriman")
   revalidatePath("/pesanan")
   revalidatePath(`/pesanan/${current.orderNo}`)
@@ -153,5 +163,44 @@ export async function saveTrackingLink(input: unknown): Promise<BulkResult> {
     message: trackingUrl
       ? `Link lacak ${current.orderNo} disimpan.`
       : `Link lacak ${current.orderNo} dihapus.`,
+  }
+}
+
+const linkSentSchema = z.object({ orderId: z.uuid(), sent: z.boolean() })
+
+/**
+ * Tandai link lacak sudah (atau belum) dikirim ke customer (Admin, Kasir). Hanya untuk pesanan
+ * yang punya link lacak.
+ */
+export async function markTrackingLinkSent(input: unknown): Promise<BulkResult> {
+  const userId = await requireShipper()
+  if (typeof userId !== "string") return userId
+  const parsed = linkSentSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Pesanan tidak terbaca. Muat ulang halaman." }
+  const { orderId, sent } = parsed.data
+
+  const db = getDb()
+  const [current] = await db
+    .select({ orderNo: orders.orderNo, trackingUrl: shipments.trackingUrl })
+    .from(orders)
+    .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .where(eq(orders.id, orderId))
+  if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+  if (!current.trackingUrl) {
+    return { ok: false, message: `${current.orderNo} belum punya link lacak.` }
+  }
+
+  await db
+    .update(shipments)
+    .set({ trackingLinkSentAt: sent ? new Date() : null })
+    .where(eq(shipments.orderId, orderId))
+  revalidatePath("/pengiriman")
+  revalidatePath("/pesanan")
+  revalidatePath(`/pesanan/${current.orderNo}`)
+  return {
+    ok: true,
+    message: sent
+      ? `Link lacak ${current.orderNo} ditandai sudah dikirim ke customer.`
+      : `Tanda kirim link ${current.orderNo} dibatalkan.`,
   }
 }

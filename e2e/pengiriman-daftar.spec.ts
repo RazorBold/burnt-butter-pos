@@ -63,13 +63,59 @@ test.describe("Pengiriman: selesaikan dari daftar dan link lacak", () => {
       status: "dikirim",
       tracking_url: "https://gojek.com/track/abc",
     })
+
+    // Pengiriman hanya menampilkan link; salin & tanda terkirim urusan admin di menu Pesanan.
+    await expect(rowOf(page, no(1)).getByRole("button", { name: /Salin link lacak/ })).toHaveCount(
+      0,
+    )
     await page.screenshot({ path: "test-results/pengiriman-lacak-desktop.png", fullPage: true })
 
-    // Link juga terlihat di daftar Pesanan.
+    // Menu Pesanan: link terlihat, bisa disalin untuk customer lalu ditandai sudah dikirim.
     await page.goto(`/pesanan?q=${code}`)
     await expect(
       rowOf(page, no(1)).getByRole("link", { name: `Lacak pengiriman ${no(1)}` }),
     ).toHaveAttribute("href", "https://gojek.com/track/abc")
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"])
+    await rowOf(page, no(1))
+      .getByRole("button", { name: `Salin link lacak ${no(1)}` })
+      .click()
+    await expect(page.getByText(`Link lacak ${no(1)} disalin.`)).toBeVisible()
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      "https://gojek.com/track/abc",
+    )
+    const notSent = rowOf(page, no(1)).getByRole("button", {
+      name: `Tandai link lacak ${no(1)} sudah dikirim ke customer`,
+    })
+    await expect(notSent).toHaveAttribute("aria-pressed", "false")
+    await notSent.click()
+    await expect(
+      page.getByText(`Link lacak ${no(1)} ditandai sudah dikirim ke customer.`),
+    ).toBeVisible()
+    await expect(
+      rowOf(page, no(1)).getByRole("button", { name: /sudah dikirim ke customer/ }),
+    ).toHaveAttribute("aria-pressed", "true")
+    await expect(rowOf(page, no(1)).getByText("Terkirim", { exact: true })).toBeVisible()
+    expect((await readOrder(no(1)))?.tracking_link_sent_at).not.toBeNull()
+    await page.screenshot({ path: "test-results/pesanan-lacak-desktop.png", fullPage: true })
+
+    // Link diganti di Pengiriman: tanda di Pesanan kembali "belum dikirim".
+    await page.goto(`/pengiriman?tanggal=${date}`)
+    await page.getByRole("button", { name: `Aksi untuk ${no(1)}` }).click()
+    await page.getByRole("menuitem", { name: "Ubah link lacak" }).click()
+    const editLink = page.getByRole("dialog", { name: `Link lacak ${no(1)}` })
+    await editLink.getByLabel("Link lacak").fill("https://gojek.com/track/xyz")
+    await editLink.getByRole("button", { name: "Simpan link" }).click()
+    await expect(page.getByText(`Link lacak ${no(1)} disimpan.`)).toBeVisible()
+    expect(await readOrder(no(1))).toMatchObject({
+      tracking_url: "https://gojek.com/track/xyz",
+      tracking_link_sent_at: null,
+    })
+    await page.goto(`/pesanan?q=${code}`)
+    await expect(
+      rowOf(page, no(1)).getByRole("button", {
+        name: `Tandai link lacak ${no(1)} sudah dikirim ke customer`,
+      }),
+    ).toHaveAttribute("aria-pressed", "false")
 
     // Selesaikan dari baris Pengiriman, tanpa kembali ke Pesanan.
     await page.goto(`/pengiriman?tanggal=${date}`)
@@ -77,7 +123,9 @@ test.describe("Pengiriman: selesaikan dari daftar dan link lacak", () => {
     await expect(page.getByText(`Status ${no(1)} jadi Selesai.`)).toBeVisible()
     await expect(page).toHaveURL(/\/pengiriman/)
     expect(await readOrder(no(1))).toMatchObject({ status: "selesai", shipment_status: "selesai" })
-    await expect(rowOf(page, no(1)).getByRole("button", { name: /^Tandai/ })).toHaveCount(0)
+    await expect(
+      rowOf(page, no(1)).getByRole("button", { name: /^Tandai (Dikirim|Selesai)/ }),
+    ).toHaveCount(0)
 
     // Pick Up: Sudah Diambil dari baris, tidak punya link.
     await expect(rowOf(page, no(3)).getByRole("button", { name: /link lacak/ })).toHaveCount(0)

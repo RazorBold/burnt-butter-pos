@@ -40,8 +40,6 @@ function draftOf(order: OrderDetail): EditDraft {
   return {
     channel: order.channel,
     marketplaceOrderNo: order.marketplaceOrderNo ?? "",
-    expedition: order.shipment.expedition ?? "",
-    trackingNo: order.shipment.trackingNo ?? "",
     marketplaceTotal: formatRupiah(order.total).replace("Rp ", ""),
     type: order.type,
     name: order.customer.name,
@@ -83,8 +81,6 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
       toJakartaDateString(new Date()),
     )
     if (draft.deliveryDate === order.deliveryDate) delete issues.deliveryDate
-    // Kurir dan resi diubah lewat Isi Resi di Pengiriman.
-    delete issues.expedition
     if (Object.keys(issues).length > 0) {
       setErrors(issues)
       return
@@ -125,7 +121,7 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
           </DialogTitle>
           <DialogDescription className="text-text-body">
             {marketplace
-              ? "Menu, kurir, dan resi tidak diubah di sini."
+              ? "Menu tidak diubah di sini."
               : "Menu dan jumlahnya tidak diubah di sini. No. HP baru menautkan pesanan ke customer dengan nomor itu."}
           </DialogDescription>
         </DialogHeader>

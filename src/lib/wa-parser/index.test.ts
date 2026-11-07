@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest"
 
-import { parseDeliveryDate, parseWaOrder } from "./index"
-import { HADIAH_SAMPLE, HADIAH_TEMPLATE, PERSONAL_SAMPLE, PERSONAL_TEMPLATE } from "./templates"
+import { marketplaceFrom, parseDeliveryDate, parseWaOrder } from "./index"
+import {
+  HADIAH_SAMPLE,
+  HADIAH_TEMPLATE,
+  OLSHOP_SAMPLE,
+  OLSHOP_TEMPLATE,
+  PERSONAL_SAMPLE,
+  PERSONAL_TEMPLATE,
+} from "./templates"
 
 const TODAY = "2026-10-24"
 
@@ -109,6 +116,60 @@ describe("parseWaOrder: template kosong dan variasi", () => {
     )
     expect(parsed.name).toBe("Dewi Lestari")
     expect(parsed.phone).toBeNull()
+  })
+})
+
+describe("parseWaOrder: template Olshop", () => {
+  const parsed = parseWaOrder(OLSHOP_SAMPLE, TODAY)
+
+  it("membaca marketplace, tanggal, penerima, dan nomor invoice", () => {
+    expect(parsed.isMarketplace).toBe(true)
+    expect(parsed.marketplace).toBe("shopee")
+    expect(parsed.deliveryDate).toBe("2026-10-27")
+    expect(parsed.name).toBe("Nadia Rahma")
+    expect(parsed.invoiceNo).toBe("2610270ABCDEF")
+  })
+
+  it("Nama Penerima di template Olshop bukan pesanan Hadiah", () => {
+    expect(parsed.type).toBe("personal")
+    expect(parsed.senderName).toBeNull()
+  })
+
+  it("menu terbaca dan request di bawah menu tidak dianggap menu", () => {
+    expect(parsed.items).toEqual([
+      { name: "Spaghetti Classico Bologna Brulee", size: "large", qty: 1 },
+      { name: "Not Your Mac and Cheese", size: "regular", qty: 2 },
+      { name: "Choco Bon Bon", size: "single", qty: 1 },
+    ])
+    expect(parsed.request).toBe("Saus dipisah\nTanpa sendok plastik")
+  })
+
+  it("template kosong: marketplace belum dipilih, tidak menebak apa pun", () => {
+    const empty = parseWaOrder(OLSHOP_TEMPLATE, TODAY)
+    expect(empty.isMarketplace).toBe(true)
+    expect(empty.marketplace).toBeNull()
+    expect(empty.name).toBeNull()
+    expect(empty.invoiceNo).toBeNull()
+    expect(empty.deliveryDate).toBeNull()
+    expect(empty.request).toBeNull()
+    expect(empty.items).toEqual([])
+  })
+
+  it("template WA biasa bukan Olshop", () => {
+    expect(parseWaOrder(PERSONAL_SAMPLE, TODAY).isMarketplace).toBe(false)
+    expect(parseWaOrder(HADIAH_SAMPLE, TODAY).isMarketplace).toBe(false)
+  })
+})
+
+describe("marketplaceFrom", () => {
+  it.each([
+    ["Shopee", "shopee"],
+    ["tokopedia", "tokopedia"],
+    ["Tokped", "tokopedia"],
+    ["Tokopedia/Shopee", null],
+    ["", null],
+  ] as const)("%s → %s", (text, expected) => {
+    expect(marketplaceFrom(text)).toBe(expected)
   })
 })
 

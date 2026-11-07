@@ -12,8 +12,6 @@ export const orderSubmitSchema = z.object({
   draft: z.object({
     channel: z.enum(ORDER_CHANNELS),
     marketplaceOrderNo: text(60),
-    expedition: text(40),
-    trackingNo: text(60),
     marketplaceTotal: text(20),
     type: z.enum(["personal", "hadiah"]),
     name: text(80),

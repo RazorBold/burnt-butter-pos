@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight, MessageCircle, RotateCcw, ShoppingBag, WandSparkles } from "lucide-react"
+import { MessageCircle, RotateCcw, ShoppingBag, WandSparkles } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
@@ -19,6 +19,7 @@ import {
   ORDER_CHANNEL_LABEL,
   ORDER_CHANNELS,
   type OrderChannel,
+  type StoredDraft,
   WA_DRAFT_EVENT,
   WA_DRAFT_KEY,
 } from "@/features/orders/constants"
@@ -32,7 +33,7 @@ const CHANNEL_OPTIONS = ORDER_CHANNELS.map((value) => ({
 
 // Modal dari docs/design/02-input-pesanan-modal.png. Isi Otomatis membawa pesan ke halaman
 // /pesanan/baru (lewat sessionStorage), tempat pesan dibaca dan form hasilnya bisa dicek.
-// Shopee/Tokopedia langsung membuka form manual di halaman yang sama (?sumber=).
+// Shopee/Tokopedia memakai alur yang sama dengan template Olshop (?sumber=).
 export function InputOrderDialog({
   open,
   onOpenChange,
@@ -45,16 +46,22 @@ export function InputOrderDialog({
   const router = useRouter()
   const pathname = usePathname()
 
+  const marketplace = channel !== "whatsapp"
+  const label = ORDER_CHANNEL_LABEL[channel]
+  const formHref = marketplace ? `${FORM_PATH}?sumber=${channel}` : FORM_PATH
+
   function fillForm() {
     try {
-      sessionStorage.setItem(WA_DRAFT_KEY, text)
+      const stored: StoredDraft = { text, channel }
+      sessionStorage.setItem(WA_DRAFT_KEY, JSON.stringify(stored))
     } catch {
       // Tanpa sessionStorage, kasir tetap bisa menempel ulang pesan di halaman form.
     }
     setText("")
     onOpenChange(false)
+    // Halaman yang sudah terbuka membaca pesan lewat event, dan menyesuaikan sumbernya sendiri.
     if (pathname === FORM_PATH) window.dispatchEvent(new Event(WA_DRAFT_EVENT))
-    else router.push(FORM_PATH)
+    else router.push(formHref)
   }
 
   return (
@@ -78,87 +85,71 @@ export function InputOrderDialog({
           />
         </div>
 
-        {channel !== "whatsapp" ? (
-          <div className="mt-5">
-            <div className="flex items-start gap-4 rounded-xl border border-border bg-nav-active/60 p-4 sm:p-5">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink">
-                <ShoppingBag className="size-6" aria-hidden />
-              </span>
-              <div>
-                <p className="font-semibold text-text-strong">
-                  Pesanan dari {ORDER_CHANNEL_LABEL[channel]}
-                </p>
-                <p className="mt-0.5 text-sm text-text-body">
-                  Buka detail pesanan di Seller Center, lalu isi no. pesanan, pembeli, kurir, total,
-                  dan menunya. Pesanan otomatis tercatat Lunas. Resi boleh menyusul.
-                </p>
-              </div>
-            </div>
-            <div className="mt-6">
-              <Button asChild className="h-12 rounded-lg px-6 text-[15px]">
-                <Link href={`${FORM_PATH}?sumber=${channel}`} onClick={() => onOpenChange(false)}>
-                  Isi form {ORDER_CHANNEL_LABEL[channel]}
-                  <ArrowRight aria-hidden />
-                </Link>
-              </Button>
-            </div>
+        <div className="mt-5 flex items-start gap-4 rounded-xl border border-border bg-nav-active/60 p-4 sm:p-5">
+          {marketplace ? (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink">
+              <ShoppingBag className="size-6" aria-hidden />
+            </span>
+          ) : (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#25d366] text-white">
+              <MessageCircle className="size-6" aria-hidden />
+            </span>
+          )}
+          <div>
+            <p className="font-semibold text-text-strong">
+              {marketplace ? `Tempel template ${label}` : "Tempel pesan dari WhatsApp"}
+            </p>
+            <p className="mt-0.5 text-sm text-text-body">
+              {marketplace
+                ? "Tempel template Olshop yang sudah diisi: marketplace, tanggal pengiriman, nama penerima, nomor invoice, dan menu. Pesanan otomatis tercatat Lunas."
+                : "Salin pesan pesanan dari WhatsApp, lalu tempel di sini. Sistem akan membaca dan mengisi form secara otomatis."}
+            </p>
           </div>
-        ) : (
-          <>
-            <div className="mt-5 flex items-start gap-4 rounded-xl border border-border bg-nav-active/60 p-4 sm:p-5">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#25d366] text-white">
-                <MessageCircle className="size-6" aria-hidden />
-              </span>
-              <div>
-                <p className="font-semibold text-text-strong">Tempel pesan dari WhatsApp</p>
-                <p className="mt-0.5 text-sm text-text-body">
-                  Salin pesan pesanan dari WhatsApp, lalu tempel di sini. Sistem akan membaca dan
-                  mengisi form secara otomatis.
-                </p>
-              </div>
-            </div>
+        </div>
 
-            <label htmlFor="wa-text" className="sr-only">
-              Pesan WhatsApp
-            </label>
-            <Textarea
-              id="wa-text"
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              placeholder="Tempel pesan pesanan dari WhatsApp di sini…"
-              className="mt-5 max-h-[40dvh] min-h-[200px] resize-y rounded-xl bg-white p-4 text-[15px] sm:min-h-[340px]"
-            />
+        <label htmlFor="wa-text" className="sr-only">
+          {marketplace ? `Template ${label}` : "Pesan WhatsApp"}
+        </label>
+        <Textarea
+          id="wa-text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder={
+            marketplace
+              ? "Marketplace: Shopee\nTanggal pengiriman: …\nNama Penerima: …\nNomor Invoice: …"
+              : "Tempel pesan pesanan dari WhatsApp di sini…"
+          }
+          className="mt-5 max-h-[40dvh] min-h-[200px] resize-y rounded-xl bg-white p-4 text-[15px] sm:min-h-[340px]"
+        />
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Button
-                type="button"
-                onClick={fillForm}
-                disabled={!text.trim()}
-                className="h-12 rounded-lg px-6 text-[15px]"
-              >
-                <WandSparkles aria-hidden />
-                Isi Otomatis
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setText("")}
-                disabled={!text}
-                className="h-12 rounded-lg bg-white px-6 text-[15px]"
-              >
-                <RotateCcw aria-hidden />
-                Reset
-              </Button>
-              <Link
-                href={FORM_PATH}
-                onClick={() => onOpenChange(false)}
-                className="ml-auto text-sm font-medium text-brand-ink underline underline-offset-2"
-              >
-                Isi manual tanpa pesan WA
-              </Link>
-            </div>
-          </>
-        )}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            onClick={fillForm}
+            disabled={!text.trim()}
+            className="h-12 rounded-lg px-6 text-[15px]"
+          >
+            <WandSparkles aria-hidden />
+            Isi Otomatis
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setText("")}
+            disabled={!text}
+            className="h-12 rounded-lg bg-white px-6 text-[15px]"
+          >
+            <RotateCcw aria-hidden />
+            Reset
+          </Button>
+          <Link
+            href={formHref}
+            onClick={() => onOpenChange(false)}
+            className="ml-auto text-sm font-medium text-brand-ink underline underline-offset-2"
+          >
+            {marketplace ? "Isi manual tanpa template" : "Isi manual tanpa pesan WA"}
+          </Link>
+        </div>
       </DialogContent>
     </Dialog>
   )

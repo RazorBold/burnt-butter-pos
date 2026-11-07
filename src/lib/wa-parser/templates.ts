@@ -1,4 +1,5 @@
-// Template pesan WA yang dikirim toko ke customer (dari pemilik toko, Oktober 2026).
+// Template pesan WA yang dikirim toko ke customer (dari pemilik toko, Oktober 2026), dan template
+// Olshop untuk pesanan Shopee/Tokopedia (November 2026).
 // Dipakai untuk test parser dan contoh di e2e.
 
 const SHIPPING_AND_MENU = `Pilih Metode Pengiriman :
@@ -146,3 +147,64 @@ Choco Bon Bon :
 
 Special Bundle
 Bundle of 3 : 1`
+
+/** Template pesanan Olshop (Shopee/Tokopedia), dari pemilik toko (November 2026). */
+export const OLSHOP_TEMPLATE = `Marketplace: Tokopedia/Shopee
+Tanggal pengiriman:
+Nama Penerima: 
+Nomor Invoice: 
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Spaghetti Classico Bologna Brulee : 
+B. Not Your Mac and Cheese  : 
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee : 
+B. Not Your Mac and Cheese  : 
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
+
+Dessert
+Choco Bon Bon : 
+
+Special Bundle
+Bundle of 3 :
+
+Jika ada notes/request tambahan:`
+
+/** Contoh template Olshop yang sudah diisi: Shopee, request dua baris di bawah menu. */
+export const OLSHOP_SAMPLE = `Marketplace: Shopee
+Tanggal pengiriman: 27/10/2026
+Nama Penerima: Nadia Rahma
+Nomor Invoice: 2610270ABCDEF
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Spaghetti Classico Bologna Brulee : 1
+B. Not Your Mac and Cheese  : 
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee : 
+B. Not Your Mac and Cheese  : 2
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
+
+Dessert
+Choco Bon Bon : 1
+
+Special Bundle
+Bundle of 3 :
+
+Jika ada notes/request tambahan: Saus dipisah
+Tanpa sendok plastik`

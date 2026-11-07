@@ -18,17 +18,6 @@ export function isMarketplace(channel: OrderChannel): boolean {
   return channel !== "whatsapp"
 }
 
-/** Saran isian kurir marketplace; kurir lain tetap bisa diketik. */
-export const EXPEDITION_SUGGESTIONS = [
-  "SPX Express",
-  "J&T Express",
-  "JNE",
-  "SiCepat",
-  "Anteraja",
-  "GoSend",
-  "GrabExpress",
-] as const
-
 export const SHIPPING_METHOD_LABEL: Record<ShippingMethod, string> = {
   pick_up: "Pick Up",
   instant: "Instant",
@@ -41,11 +30,16 @@ export const SHIPPING_METHOD_NOTE: Record<ShippingMethod, string> = {
   pick_up: "Customer mengambil sendiri di toko.",
   instant: "Diantar ojek online (GoSend, GrabExpress).",
   kurir_internal: "Kurir Burnt Butter, jam 09.00–17.00 mengikuti rute kurir.",
-  ekspedisi: "Kurir pilihan marketplace, memakai nomor resi.",
+  ekspedisi: "Dikirim lewat ekspedisi marketplace; cukup tandai sudah dikirim.",
 }
 
-/** Kunci sessionStorage untuk membawa pesan WA dari modal Input Pesanan ke halaman form. */
+/**
+ * Kunci sessionStorage untuk membawa pesan WA / template Olshop dari modal Input Pesanan ke
+ * halaman form. Isinya JSON `{ text, channel }` (StoredDraft).
+ */
 export const WA_DRAFT_KEY = "input-pesanan:wa"
+
+export type StoredDraft = { text: string; channel: OrderChannel }
 
 /** Event window yang dikirim modal saat halaman Input Pesanan sudah terbuka. */
 export const WA_DRAFT_EVENT = "input-pesanan:wa"

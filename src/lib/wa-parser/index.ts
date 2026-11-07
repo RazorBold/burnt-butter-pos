@@ -1,5 +1,8 @@
-// Membaca pesan pesanan WhatsApp yang mengikuti template toko (Personal atau Hadiah).
+// Membaca pesan pesanan WhatsApp yang mengikuti template toko (Personal, Hadiah, atau Olshop).
 // Fungsi murni: tidak tahu soal database. Nama menu dicocokkan ke katalog di tempat lain.
+//
+// Template Olshop (Shopee/Tokopedia): "Marketplace:", "Tanggal pengiriman:", "Nama Penerima:",
+// "Nomor Invoice:", menu, lalu "Jika ada notes/request tambahan:" di bawah menu.
 //
 // Template (lihat test): label "Nama Lengkap:" / "Nama Penerima:", "No.Telp:", "Alamat Lengkap:",
 // "Tanggal kirim:", "Nama Pengirim:", kartu ucapan "To:/Wishes:/From:", "Pilih Metode
@@ -13,6 +16,7 @@ export type ShippingMethod = "kurir_internal" | "instant" | "pick_up" | "ekspedi
 export type ParsedSize = "large" | "regular" | "single"
 
 export type ParsedItem = { name: string; size: ParsedSize; qty: number }
+export type ParsedMarketplace = "shopee" | "tokopedia"
 
 export type ParsedOrder = {
   type: OrderType
@@ -32,6 +36,12 @@ export type ParsedOrder = {
   request: string | null
   /** Hanya menu dengan jumlah > 0. */
   items: ParsedItem[]
+  /** Pesan memakai template Olshop (ada label Marketplace atau Nomor Invoice). */
+  isMarketplace: boolean
+  /** Shopee/Tokopedia dari label Marketplace; null bila kosong atau keduanya masih tertulis. */
+  marketplace: ParsedMarketplace | null
+  /** Nomor invoice / no. pesanan marketplace. */
+  invoiceNo: string | null
 }
 
 type Field =
@@ -44,6 +54,8 @@ type Field =
   | "cardWishes"
   | "cardFrom"
   | "request"
+  | "marketplace"
+  | "invoice"
 
 // Urutan penting: "Nama Pengirim" dicek sebelum pola nama umum.
 const FIELD_LABELS: [Field, RegExp][] = [
@@ -55,7 +67,9 @@ const FIELD_LABELS: [Field, RegExp][] = [
   ["cardTo", /^to\b/],
   ["cardWishes", /^(wishes|ucapan|pesan)\b/],
   ["cardFrom", /^from\b/],
-  ["request", /^request\b/],
+  ["request", /^(jika\s*ada\s*)?(notes?\s*\/?\s*)?request\b|^(jika\s*ada\s*)?notes?\b/],
+  ["marketplace", /^marketplace\b/],
+  ["invoice", /^(no\.?|nomor|nmr)\s*(invoice|inv|pesanan|order)\b/],
 ]
 
 /** Field yang nilainya boleh lebih dari satu baris. */
@@ -231,6 +245,14 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
     }
 
     if (menuSize) {
+      // Template Olshop: request ditulis di bawah menu.
+      if (labelOf(key) === "request") {
+        menuSize = null
+        current = "request"
+        const value = valueAfterLabel(line)
+        values.request = value ? [value] : []
+        continue
+      }
       const item = menuLine(line)
       if (item && item.qty > 0) items.push({ ...item, size: menuSize })
       continue
@@ -289,9 +311,12 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
 
   const phoneRaw = value("phone")
   const dateRaw = value("date")
+  const isMarketplace = values.marketplace !== undefined || values.invoice !== undefined
+  // Template Olshop juga memakai "Nama Penerima", tapi bukan pesanan Hadiah.
   const isHadiah =
-    /pemesanan\s*hadiah|nama\s*penerima|nama\s*pengirim|kartu\s*ucapan/.test(lower) ||
-    Boolean(value("sender"))
+    !isMarketplace &&
+    (/pemesanan\s*hadiah|nama\s*penerima|nama\s*pengirim|kartu\s*ucapan/.test(lower) ||
+      Boolean(value("sender")))
 
   return {
     type: isHadiah ? "hadiah" : "personal",
@@ -308,5 +333,17 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
     shippingMethod,
     request: value("request", "\n"),
     items,
+    isMarketplace,
+    marketplace: marketplaceFrom(value("marketplace") ?? ""),
+    invoiceNo: value("invoice"),
   }
+}
+
+/** "Shopee" → shopee, "Tokped" → tokopedia. Keduanya atau kosong (template belum diisi) → null. */
+export function marketplaceFrom(text: string): ParsedMarketplace | null {
+  const lower = text.toLowerCase()
+  const shopee = /shopee|shoope|sopi/.test(lower)
+  const tokopedia = /tokopedia|tokped/.test(lower)
+  if (shopee === tokopedia) return null
+  return shopee ? "shopee" : "tokopedia"
 }

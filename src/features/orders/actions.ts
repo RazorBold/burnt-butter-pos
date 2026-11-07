@@ -164,9 +164,11 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
         const unitPrice = priceOf.get(variantId)!
         return { menuVariantId: variantId, qty, unitPrice, subtotal: unitPrice * qty }
       })
+      // Olshop: total dari marketplace bila diisi (voucher/diskon), selain itu dari harga menu.
+      const menuTotal = items.reduce((sum, item) => sum + item.subtotal, 0)
       const total = marketplace
-        ? parseRupiahInput(draft.marketplaceTotal)!
-        : items.reduce((sum, item) => sum + item.subtotal, 0)
+        ? (parseRupiahInput(draft.marketplaceTotal) ?? menuTotal)
+        : menuTotal
 
       const address = optional(draft.address)
       const customer = await resolveCustomer(tx, { name: draft.name.trim(), phone, address })
@@ -193,7 +195,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
           deliveryDate: draft.deliveryDate,
           request: optional(draft.request),
           total,
-          rawWaText: marketplace ? null : optional(waText),
+          rawWaText: optional(waText),
           senderName: isHadiah ? optional(draft.senderName) : null,
           cardTo: isHadiah ? optional(draft.cardTo) : null,
           cardWishes: isHadiah ? optional(draft.cardWishes) : null,
@@ -209,8 +211,6 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
         // Kosong sampai pesanan Siap Kirim (lihat shipmentStatusFor).
         status: null,
         address,
-        expedition: marketplace ? optional(draft.expedition) : null,
-        trackingNo: marketplace ? optional(draft.trackingNo) : null,
       })
       await tx
         .insert(orderStatusLogs)
@@ -286,9 +286,6 @@ async function changeOrderStatus(
   const { done, skipped } = await changeStatuses([orderId], status, userId, { limitTo })
   if (done.length > 0) {
     return { ok: true, message: `Status ${done[0]} jadi ${ORDER_STATUS_LABEL[status]}.` }
-  }
-  if (skipped[0]?.reason === "belum ada resi") {
-    return { ok: false, message: "Isi nomor resi dulu sebelum menandai Dikirim." }
   }
   if (skipped.length > 0) {
     return {
@@ -451,8 +448,6 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     { ...draft, channel: current.channel, quantities: { menu: 1 } },
     toJakartaDateString(new Date()),
   )
-  // Kurir dan resi diubah lewat Isi Resi di Pengiriman.
-  delete issues.expedition
   // Pesanan lama boleh tetap memakai tanggal kirimnya walau sudah lewat.
   if (draft.deliveryDate === current.deliveryDate) delete issues.deliveryDate
   if (Object.keys(issues).length > 0) {
@@ -475,7 +470,8 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     ? ("ekspedisi" as const)
     : (draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">)
   const address = optional(draft.address)
-  const total = marketplace ? parseRupiahInput(draft.marketplaceTotal)! : undefined
+  // Total dikosongkan saat edit = total lama tetap dipakai.
+  const total = marketplace ? (parseRupiahInput(draft.marketplaceTotal) ?? undefined) : undefined
 
   await db.transaction(async (tx) => {
     // Tanpa no. HP (disamarkan marketplace), pesanan tetap memakai customer yang sekarang.

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { isEditable, nextStatuses, shipmentStatusFor, statusSkipReason } from "./status"
+import {
+  isEditable,
+  nextStatuses,
+  sentStatusFor,
+  shipmentStatusFor,
+  statusSkipReason,
+} from "./status"
 
 describe("nextStatuses", () => {
   it("maju satu langkah, mundur satu langkah, dan batal", () => {
@@ -93,12 +99,23 @@ describe("statusSkipReason", () => {
   })
 })
 
-describe("Ekspedisi", () => {
-  it("status kirim mengikuti alur kurir; Dikirim wajib resi", () => {
+describe("Ekspedisi (olshop)", () => {
+  it("cukup belum dikirim lalu sudah dikirim: Siap Kirim langsung Selesai, tanpa resi", () => {
+    expect(nextStatuses("siap_kirim", "ekspedisi")).toEqual(["selesai", "diproses", "dibatalkan"])
     expect(shipmentStatusFor("siap_kirim", "ekspedisi")).toBe("siap_dikirim")
-    expect(shipmentStatusFor("dikirim", "ekspedisi")).toBe("dalam_perjalanan")
+    expect(shipmentStatusFor("selesai", "ekspedisi")).toBe("selesai")
     const order = { status: "siap_kirim", method: "ekspedisi", hasCourier: false } as const
-    expect(statusSkipReason({ ...order, hasTracking: false }, "dikirim")).toBe("belum ada resi")
-    expect(statusSkipReason({ ...order, hasTracking: true }, "dikirim")).toBeNull()
+    expect(statusSkipReason(order, "selesai", { requireCourier: true })).toBeNull()
+    expect(statusSkipReason(order, "dikirim")).toBe("status Siap Kirim")
+  })
+
+  it("Tandai Dikirim: Ekspedisi ke Selesai, metode antar lain ke Dikirim", () => {
+    expect(sentStatusFor("ekspedisi")).toBe("selesai")
+    expect(sentStatusFor("instant")).toBe("dikirim")
+    expect(sentStatusFor("kurir_internal")).toBe("dikirim")
+  })
+
+  it("Ekspedisi yang terlanjur Dikirim tetap bisa diselesaikan", () => {
+    expect(nextStatuses("dikirim", "ekspedisi")).toEqual(["selesai"])
   })
 })

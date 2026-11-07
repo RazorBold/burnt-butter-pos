@@ -43,8 +43,6 @@ describe("ordersToCsv", () => {
     total: 250000,
     channel: "whatsapp",
     marketplaceOrderNo: null,
-    expedition: null,
-    trackingNo: null,
     note: "Add on keju",
     trackingUrl: null,
   }
@@ -52,10 +50,10 @@ describe("ordersToCsv", () => {
   it("baris judul lalu satu baris per pesanan, dengan CRLF", () => {
     const [header, line, end] = ordersToCsv([row]).split("\r\n")
     expect(header).toBe(
-      "No. Pesanan,Dibuat (WIB),Tipe,Nama Customer,No. HP,Alamat,Pengirim Hadiah,Tanggal Kirim,Pengiriman,Status,Pembayaran,Dibayar Lewat,Menu,Request,Total (Rp),Sumber,No. Marketplace,Kurir Ekspedisi,Resi,Catatan,Link Lacak",
+      "No. Pesanan,Dibuat (WIB),Tipe,Nama Customer,No. HP,Alamat,Pengirim Hadiah,Tanggal Kirim,Pengiriman,Status,Pembayaran,Dibayar Lewat,Menu,Request,Total (Rp),Sumber,No. Marketplace,Catatan,Link Lacak",
     )
     expect(line).toBe(
-      'BB261025001,2026-10-25 09:12,Hadiah,Nadia Rahma,0812 3456 7890,"Jl. Melati No. 10, Cilandak",Rizky,2026-10-26,Kurir Internal,Diproses,Lunas,BCA,2x Spaghetti Classico Bologna Brulee (Large); 1x Choco Bon Bon,,250000,WhatsApp,,,,Add on keju,',
+      'BB261025001,2026-10-25 09:12,Hadiah,Nadia Rahma,0812 3456 7890,"Jl. Melati No. 10, Cilandak",Rizky,2026-10-26,Kurir Internal,Diproses,Lunas,BCA,2x Spaghetti Classico Bologna Brulee (Large); 1x Choco Bon Bon,,250000,WhatsApp,,Add on keju,',
     )
     expect(end).toBe("")
   })
@@ -66,5 +64,12 @@ describe("ordersToCsv", () => {
     )[1]
     expect(line).toContain(",Nadia Rahma,0812 3456 7890,,,2026-10-26,")
     expect(line).toContain(",Belum bayar,,")
+  })
+
+  it("link lacak olshop tidak ikut diekspor", () => {
+    const link = "https://gojek.com/track/abc"
+    const ekspedisi = ordersToCsv([{ ...row, method: "ekspedisi", trackingUrl: link }])
+    expect(ekspedisi).not.toContain(link)
+    expect(ordersToCsv([{ ...row, trackingUrl: link }])).toContain(link)
   })
 })

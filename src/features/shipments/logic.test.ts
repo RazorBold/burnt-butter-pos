@@ -86,15 +86,16 @@ describe("parseShipmentFilters", () => {
   })
 })
 
-describe("nextShipmentAction Ekspedisi", () => {
+describe("nextShipmentAction Ekspedisi (olshop)", () => {
   const base = { method: "ekspedisi", orderStatus: "siap_kirim", hasCourier: false } as const
 
-  it("Tandai Dikirim terkunci sampai resi diisi", () => {
-    expect(nextShipmentAction(base)).toMatchObject({ kind: "blocked" })
-    expect(nextShipmentAction({ ...base, hasTracking: true })).toMatchObject({
+  it("Tandai Dikirim langsung bisa, tanpa resi, dan menyelesaikan pesanan", () => {
+    expect(nextShipmentAction(base)).toEqual({
       kind: "advance",
-      target: "dikirim",
+      target: "selesai",
+      label: "Tandai Dikirim",
     })
+    expect(nextShipmentAction({ ...base, orderStatus: "selesai" })).toBeNull()
   })
 })
 
@@ -127,9 +128,9 @@ describe("normalizeTrackingUrl", () => {
 })
 
 describe("canSetTrackingLink", () => {
-  it("bukan untuk Pick Up atau pesanan yang sudah berakhir", () => {
+  it("bukan untuk Pick Up, olshop, atau pesanan yang sudah berakhir", () => {
     expect(canSetTrackingLink("instant", "dikirim")).toBe(true)
-    expect(canSetTrackingLink("ekspedisi", "siap_kirim")).toBe(true)
+    expect(canSetTrackingLink("ekspedisi", "siap_kirim")).toBe(false)
     expect(canSetTrackingLink("pick_up", "siap_kirim")).toBe(false)
     expect(canSetTrackingLink("instant", "selesai")).toBe(false)
     expect(canSetTrackingLink("kurir_internal", "dibatalkan")).toBe(false)

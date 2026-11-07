@@ -84,7 +84,6 @@ export type OrderListRow = {
   paid: boolean
   channel: OrderChannel
   marketplaceOrderNo: string | null
-  trackingNo: string | null
   trackingUrl: string | null
   note: string | null
 }
@@ -100,7 +99,6 @@ function searchCondition(q: string | undefined) {
     ilike(orders.senderName, `%${escaped}%`),
     ilike(orders.orderNo, `%${escaped}%`),
     ilike(orders.marketplaceOrderNo, `%${escaped}%`),
-    ilike(shipments.trackingNo, `%${escaped}%`),
     digits.length >= 3 ? like(customers.phone, `%${digits}%`) : undefined,
   )
 }
@@ -143,7 +141,6 @@ export async function listOrders(filters: OrderFilters) {
       note: orders.note,
       channel: orders.channel,
       marketplaceOrderNo: orders.marketplaceOrderNo,
-      trackingNo: shipments.trackingNo,
     })
     .from(orders)
     .innerJoin(customers, eq(customers.id, orders.customerId))
@@ -201,8 +198,6 @@ export type OrderDetail = {
     courierId: string | null
     courierName: string | null
     slot: "09-12" | "13-17" | null
-    expedition: string | null
-    trackingNo: string | null
     trackingUrl: string | null
   }
   items: {
@@ -281,8 +276,6 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       courierId: order.shipment.courierId,
       courierName: order.shipment.courier?.name ?? null,
       slot: order.shipment.slot,
-      expedition: order.shipment.expedition,
-      trackingNo: order.shipment.trackingNo,
       trackingUrl: order.shipment.trackingUrl,
     },
     items: [...order.items]
@@ -331,28 +324,26 @@ export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntr
 
 /** Pesanan terbaru pada rentang ini (termasuk dibatalkan), terbaru di atas. Untuk Dashboard. */
 export async function listLatestOrders(from: string, to: string, limit = 5) {
-  const rows: Omit<
-    OrderListRow,
-    "paid" | "channel" | "marketplaceOrderNo" | "trackingNo" | "trackingUrl"
-  >[] = await getDb()
-    .select({
-      id: orders.id,
-      orderNo: orders.orderNo,
-      createdAt: orders.createdAt,
-      customerName: orders.customerName,
-      senderName: orders.senderName,
-      type: orders.type,
-      deliveryDate: orders.deliveryDate,
-      shippingMethod: shipments.method,
-      total: orders.total,
-      status: orders.status,
-      note: orders.note,
-    })
-    .from(orders)
-    .innerJoin(shipments, eq(shipments.orderId, orders.id))
-    .where(createdBetween(from, to))
-    .orderBy(desc(orders.createdAt))
-    .limit(limit)
+  const rows: Omit<OrderListRow, "paid" | "channel" | "marketplaceOrderNo" | "trackingUrl">[] =
+    await getDb()
+      .select({
+        id: orders.id,
+        orderNo: orders.orderNo,
+        createdAt: orders.createdAt,
+        customerName: orders.customerName,
+        senderName: orders.senderName,
+        type: orders.type,
+        deliveryDate: orders.deliveryDate,
+        shippingMethod: shipments.method,
+        total: orders.total,
+        status: orders.status,
+        note: orders.note,
+      })
+      .from(orders)
+      .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .where(createdBetween(from, to))
+      .orderBy(desc(orders.createdAt))
+      .limit(limit)
   return rows
 }
 
@@ -377,8 +368,6 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
         note: orders.note,
         channel: orders.channel,
         marketplaceOrderNo: orders.marketplaceOrderNo,
-        expedition: shipments.expedition,
-        trackingNo: shipments.trackingNo,
         trackingUrl: shipments.trackingUrl,
         request: orders.request,
         total: orders.total,

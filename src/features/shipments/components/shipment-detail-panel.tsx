@@ -84,7 +84,7 @@ export async function ShipmentDetailPanel({
       : shipment.method === "instant"
         ? "Dipesankan ojek online (GoSend, GrabExpress)."
         : shipment.method === "ekspedisi"
-          ? `${shipment.expedition ?? "Kurir belum diisi"}, ${shipment.trackingNo ? `resi ${shipment.trackingNo}` : "resi belum diisi"}`
+          ? "Dikirim lewat ekspedisi marketplace. Cukup tandai setelah paket diserahkan."
           : "Customer mengambil sendiri di toko."
   const isExpedition = shipment.method === "ekspedisi"
 
@@ -144,7 +144,7 @@ export async function ShipmentDetailPanel({
           <li className="-mt-1.5 pl-[26px] text-[13px] text-text-body">{methodNote}</li>
           {order.request && <InfoRow icon={ClipboardList}>Request: {order.request}</InfoRow>}
           {order.note && <InfoRow icon={StickyNote}>Catatan: {order.note}</InfoRow>}
-          {shipment.trackingUrl && (
+          {shipment.trackingUrl && !isExpedition && (
             <li className="pl-[26px]">
               <TrackingLink url={shipment.trackingUrl} orderNo={order.orderNo} />
             </li>
@@ -194,8 +194,6 @@ export async function ShipmentDetailPanel({
           method={shipment.method}
           courierId={shipment.courierId}
           slot={shipment.slot}
-          expedition={shipment.expedition}
-          trackingNo={shipment.trackingNo}
           couriers={couriers}
         />
       </div>

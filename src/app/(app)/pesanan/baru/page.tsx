@@ -17,7 +17,7 @@ export default function InputPesananPage({ searchParams }: PageProps<"/pesanan/b
     <main className={PAGE_CONTAINER}>
       <PageHeader
         title="Input Pesanan"
-        description="Pilih sumber pesanan: tempel pesan WhatsApp, atau isi data dari Shopee dan Tokopedia."
+        description="Pilih sumber pesanan, tempel pesan WhatsApp atau template Olshop, lalu Isi Otomatis."
       />
       <div className="mt-6">
         <Suspense fallback={<WorkspaceSkeleton />}>

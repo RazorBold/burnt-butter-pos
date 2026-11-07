@@ -9,9 +9,7 @@ export type OrderDraft = {
   channel: OrderChannel
   /** Hanya marketplace. */
   marketplaceOrderNo: string
-  expedition: string
-  trackingNo: string
-  /** Total sesuai marketplace, seperti diketik ("210.000"). */
+  /** Total sesuai marketplace, seperti diketik ("210.000"). Kosong = total dari harga menu. */
   marketplaceTotal: string
   type: OrderType
   name: string
@@ -33,8 +31,6 @@ export type DraftField = Exclude<keyof OrderDraft, "quantities"> | "items"
 export const EMPTY_DRAFT: OrderDraft = {
   channel: "whatsapp",
   marketplaceOrderNo: "",
-  expedition: "",
-  trackingNo: "",
   marketplaceTotal: "",
   type: "personal",
   name: "",
@@ -56,6 +52,7 @@ export function draftFromParsed(
 ): OrderDraft {
   return {
     ...EMPTY_DRAFT,
+    marketplaceOrderNo: parsed.invoiceNo ?? "",
     type: parsed.type,
     name: parsed.name ?? "",
     // Nomor yang tidak valid tetap ditampilkan apa adanya supaya kasir bisa membetulkan.
@@ -81,15 +78,14 @@ export function parseRupiahInput(text: string): number | null {
 /** Pesanan marketplace: no. HP dan alamat opsional karena bisa disamarkan marketplace. */
 function marketplaceIssues(draft: OrderDraft, today: string) {
   const issues: Partial<Record<DraftField, string>> = {}
-  if (!draft.marketplaceOrderNo.trim()) issues.marketplaceOrderNo = "No. pesanan wajib diisi."
-  if (draft.name.trim().length < 2) issues.name = "Nama pembeli wajib diisi."
+  if (!draft.marketplaceOrderNo.trim()) issues.marketplaceOrderNo = "Nomor invoice wajib diisi."
+  if (draft.name.trim().length < 2) issues.name = "Nama penerima wajib diisi."
   if (draft.phone.trim() && !normalizePhone(draft.phone))
     issues.phone = "Nomor HP belum benar. Kosongkan bila disamarkan marketplace."
   if (!draft.deliveryDate) issues.deliveryDate = "Tanggal kirim wajib diisi."
   else if (draft.deliveryDate < today) issues.deliveryDate = "Tanggal kirim sudah lewat."
-  if (!draft.expedition.trim()) issues.expedition = "Kurir wajib diisi."
-  if (!parseRupiahInput(draft.marketplaceTotal))
-    issues.marketplaceTotal = "Total pembayaran wajib diisi."
+  if (draft.marketplaceTotal.trim() && !parseRupiahInput(draft.marketplaceTotal))
+    issues.marketplaceTotal = "Total belum benar. Kosongkan untuk memakai harga menu."
   if (!Object.values(draft.quantities).some((qty) => qty > 0))
     issues.items = "Pilih minimal satu menu."
   return issues

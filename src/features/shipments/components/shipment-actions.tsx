@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarClock, CircleAlert, LoaderCircle, PackageSearch, Truck } from "lucide-react"
+import { CalendarClock, CircleAlert, LoaderCircle, Truck } from "lucide-react"
 import { useId, useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { updateOrderStatus } from "@/features/orders/actions"
 import type { OrderStatus } from "@/features/orders/filters"
-import { EXPEDITION_SUGGESTIONS } from "@/features/orders/constants"
-import { assignCourier, saveTracking, saveTrackingLink } from "@/features/shipments/actions"
+import { assignCourier, saveTrackingLink } from "@/features/shipments/actions"
 import {
   type DeliverySlot,
   nextShipmentAction,
@@ -36,8 +35,6 @@ export function ShipmentActions({
   method,
   courierId,
   slot,
-  expedition,
-  trackingNo,
   couriers,
 }: {
   orderId: string
@@ -46,21 +43,11 @@ export function ShipmentActions({
   method: ShippingMethod
   courierId: string | null
   slot: DeliverySlot | null
-  expedition: string | null
-  trackingNo: string | null
   couriers: CourierOption[]
 }) {
   const [pending, startTransition] = useTransition()
   const [assignOpen, setAssignOpen] = useState(false)
-  const [trackingOpen, setTrackingOpen] = useState(false)
-  const action = nextShipmentAction({
-    method,
-    orderStatus,
-    hasCourier: Boolean(courierId),
-    hasTracking: Boolean(trackingNo),
-  })
-  const canTrack =
-    method === "ekspedisi" && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
+  const action = nextShipmentAction({ method, orderStatus, hasCourier: Boolean(courierId) })
   const canAssign =
     method === "kurir_internal" && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
 
@@ -72,7 +59,7 @@ export function ShipmentActions({
     })
   }
 
-  if (!action && !canAssign && !canTrack) return null
+  if (!action && !canAssign) return null
 
   return (
     <div className="space-y-2">
@@ -87,7 +74,7 @@ export function ShipmentActions({
           <Button
             onClick={() => action.kind === "advance" && advance(action.target)}
             disabled={pending || action.kind === "blocked"}
-            className={cn("h-12 rounded-lg px-4", !canAssign && !canTrack && "sm:col-span-2")}
+            className={cn("h-12 rounded-lg px-4", !canAssign && "sm:col-span-2")}
           >
             {pending ? (
               <LoaderCircle className="animate-spin" aria-hidden />
@@ -113,26 +100,6 @@ export function ShipmentActions({
               orders={[{ id: orderId, orderNo }]}
               initial={{ courierId, slot }}
               couriers={couriers.filter((courier) => courier.type === "internal")}
-            />
-          </>
-        )}
-        {canTrack && (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setTrackingOpen(true)}
-              className={cn("h-12 rounded-lg bg-white px-4", !action && "sm:col-span-2")}
-            >
-              <PackageSearch aria-hidden />
-              {trackingNo ? "Ubah Resi" : "Isi Resi"}
-            </Button>
-            <TrackingDialog
-              open={trackingOpen}
-              onOpenChange={setTrackingOpen}
-              orderId={orderId}
-              orderNo={orderNo}
-              expedition={expedition}
-              trackingNo={trackingNo}
             />
           </>
         )}
@@ -163,8 +130,7 @@ export function TrackingLinkDialog({
             Link lacak {orderNo}
           </DialogTitle>
           <DialogDescription className="text-text-body">
-            Tempel link dari ojol, ekspedisi, atau kurir. Link tampil di daftar Pengiriman dan
-            Pesanan.
+            Tempel link dari ojol atau kurir. Link tampil di daftar Pengiriman dan Pesanan.
           </DialogDescription>
         </DialogHeader>
         <TrackingLinkForm
@@ -236,120 +202,6 @@ function TrackingLinkForm({
         <Button onClick={save} disabled={pending} className="h-11 rounded-lg px-6">
           {pending && <LoaderCircle className="animate-spin" aria-hidden />}
           {pending ? "Menyimpan…" : "Simpan link"}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/** Dialog Isi Resi pesanan Ekspedisi (marketplace): nama kurir dan nomor resi. */
-export function TrackingDialog({
-  open,
-  onOpenChange,
-  orderId,
-  orderNo,
-  expedition,
-  trackingNo,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  orderId: string
-  orderNo: string
-  expedition: string | null
-  trackingNo: string | null
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
-        <DialogHeader className="text-left">
-          <DialogTitle className="text-2xl font-bold text-brand-ink">Resi {orderNo}</DialogTitle>
-          <DialogDescription className="text-text-body">
-            Salin dari Seller Center setelah pengiriman diatur. Tandai Dikirim terbuka setelah resi
-            diisi.
-          </DialogDescription>
-        </DialogHeader>
-        <TrackingForm
-          orderId={orderId}
-          initial={{ expedition: expedition ?? "", trackingNo: trackingNo ?? "" }}
-          onSuccess={() => onOpenChange(false)}
-        />
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function TrackingForm({
-  orderId,
-  initial,
-  onSuccess,
-}: {
-  orderId: string
-  initial: { expedition: string; trackingNo: string }
-  onSuccess: () => void
-}) {
-  const id = useId()
-  const [expedition, setExpedition] = useState(initial.expedition)
-  const [trackingNo, setTrackingNo] = useState(initial.trackingNo)
-  const [error, setError] = useState<string>()
-  const [pending, startTransition] = useTransition()
-
-  function save() {
-    startTransition(async () => {
-      const result = await saveTracking({ orderId, expedition, trackingNo })
-      if (result.ok) {
-        toast.success(result.message)
-        onSuccess()
-      } else {
-        setError(result.message)
-      }
-    })
-  }
-
-  return (
-    <div className="mt-6 space-y-5">
-      <div className="space-y-1.5">
-        <Label htmlFor={`${id}-expedition`} className="text-text-strong">
-          Kurir
-        </Label>
-        <Input
-          id={`${id}-expedition`}
-          list={`${id}-expeditions`}
-          value={expedition}
-          onChange={(event) => setExpedition(event.target.value)}
-          maxLength={40}
-          className="h-11 rounded-lg bg-white"
-        />
-        <datalist id={`${id}-expeditions`}>
-          {EXPEDITION_SUGGESTIONS.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${id}-tracking`} className="text-text-strong">
-          Nomor resi
-        </Label>
-        <Input
-          id={`${id}-tracking`}
-          value={trackingNo}
-          onChange={(event) => setTrackingNo(event.target.value)}
-          maxLength={60}
-          className="h-11 rounded-lg bg-white tabular-nums"
-        />
-      </div>
-      {error && (
-        <p
-          role="alert"
-          className="flex items-start gap-2 rounded-lg bg-trend-down px-3 py-2.5 text-sm text-trend-down-fg"
-        >
-          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {error}
-        </p>
-      )}
-      <div className="flex justify-end">
-        <Button onClick={save} disabled={pending} className="h-11 rounded-lg px-6">
-          {pending && <LoaderCircle className="animate-spin" aria-hidden />}
-          {pending ? "Menyimpan…" : "Simpan resi"}
         </Button>
       </div>
     </div>

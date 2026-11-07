@@ -23,8 +23,6 @@ export type ShipmentRow = {
   address: string | null
   courierId: string | null
   courierName: string | null
-  expedition: string | null
-  trackingNo: string | null
   trackingUrl: string | null
   note: string | null
   slot: DeliverySlot | null
@@ -98,8 +96,6 @@ export async function listShipments(filters: ShipmentFilters) {
       address: shipments.address,
       courierId: shipments.courierId,
       courierName: couriers.name,
-      expedition: shipments.expedition,
-      trackingNo: shipments.trackingNo,
       trackingUrl: shipments.trackingUrl,
       note: orders.note,
       slot: shipments.slot,

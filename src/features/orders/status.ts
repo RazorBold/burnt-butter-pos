@@ -8,11 +8,20 @@ import { ORDER_STATUS_LABEL, type OrderStatus } from "./filters"
 export type ShipmentStatus =
   "menunggu_kurir" | "siap_dikirim" | "siap_diambil" | "dalam_perjalanan" | "dikirim" | "selesai"
 
-/** Urutan maju. Pick Up tidak melewati Dikirim: dari Siap Kirim langsung Selesai. */
+/**
+ * Urutan maju. Pick Up dan Ekspedisi (olshop) tidak melewati Dikirim: dari Siap Kirim langsung
+ * Selesai. Olshop cukup "belum dikirim" dan "sudah dikirim"; setelah paket diserahkan ke
+ * ekspedisi marketplace, tugas toko selesai (tanpa kurir, resi, atau link lacak).
+ */
 function forwardFlow(method: ShippingMethod): OrderStatus[] {
-  return method === "pick_up"
+  return method === "pick_up" || method === "ekspedisi"
     ? ["baru", "diproses", "siap_kirim", "selesai"]
     : ["baru", "diproses", "siap_kirim", "dikirim", "selesai"]
+}
+
+/** Status pesanan setelah "Tandai Dikirim": Ekspedisi langsung Selesai, lainnya Dikirim. */
+export function sentStatusFor(method: ShippingMethod): OrderStatus {
+  return method === "ekspedisi" ? "selesai" : "dikirim"
 }
 
 /**
@@ -26,6 +35,8 @@ export function nextStatuses(status: OrderStatus, method: ShippingMethod): Order
   const flow = forwardFlow(method)
   const index = flow.indexOf(status)
   const options: OrderStatus[] = []
+  // Ekspedisi yang sudah Dikirim sebelum alurnya diringkas tetap bisa diselesaikan.
+  if (index === -1 && status === "dikirim" && method === "ekspedisi") return ["selesai"]
   if (index === -1) return ["baru"] // mis. Dikirim lalu metode diubah ke Pick Up
   if (index + 1 < flow.length) options.push(flow[index + 1])
   if (index > 0) options.push(flow[index - 1])
@@ -70,8 +81,6 @@ export function statusSkipReason(
     status: OrderStatus
     method: ShippingMethod
     hasCourier: boolean
-    /** Ekspedisi baru boleh Dikirim setelah resi diisi; `false` = belum ada resi. */
-    hasTracking?: boolean
   },
   target: OrderStatus,
   rules: StatusRules = {},
@@ -81,9 +90,6 @@ export function statusSkipReason(
     nextStatuses(order.status, order.method).includes(target) &&
     (!rules.limitTo || (rules.limitTo.includes(order.status) && rules.limitTo.includes(target)))
   if (!allowed) return `status ${ORDER_STATUS_LABEL[order.status]}`
-  if (target === "dikirim" && order.method === "ekspedisi" && order.hasTracking === false) {
-    return "belum ada resi"
-  }
   if (
     rules.requireCourier &&
     target === "dikirim" &&

@@ -25,8 +25,6 @@ export type OrderExportRow = {
   total: number
   channel: OrderChannel
   marketplaceOrderNo: string | null
-  expedition: string | null
-  trackingNo: string | null
   note: string | null
   trackingUrl: string | null
 }
@@ -61,10 +59,9 @@ const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ["Total (Rp)", (row) => row.total],
   ["Sumber", (row) => ORDER_CHANNEL_LABEL[row.channel]],
   ["No. Marketplace", (row) => row.marketplaceOrderNo ?? ""],
-  ["Kurir Ekspedisi", (row) => row.expedition ?? ""],
-  ["Resi", (row) => row.trackingNo ?? ""],
   ["Catatan", (row) => row.note ?? ""],
-  ["Link Lacak", (row) => row.trackingUrl ?? ""],
+  // Olshop tidak memakai link lacak (diurus ekspedisi marketplace).
+  ["Link Lacak", (row) => (row.method === "ekspedisi" ? "" : (row.trackingUrl ?? ""))],
 ]
 
 /**

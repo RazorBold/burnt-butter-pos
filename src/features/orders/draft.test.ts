@@ -10,7 +10,6 @@ const shopee: OrderDraft = {
   marketplaceOrderNo: "2611040ABC",
   name: "Nadia",
   deliveryDate: TODAY,
-  expedition: "SPX Express",
   marketplaceTotal: "210.000",
   quantities: { menu: 1 },
 }
@@ -24,16 +23,15 @@ describe("parseRupiahInput", () => {
 })
 
 describe("draftIssues marketplace", () => {
-  it("no. HP, alamat, resi, dan metode kirim tidak wajib", () => {
+  it("no. HP, alamat, kurir, resi, dan metode kirim tidak wajib", () => {
     expect(draftIssues(shopee, TODAY)).toEqual({})
   })
 
-  it("no. pesanan, kurir, total, nama, dan menu wajib", () => {
+  it("no. pesanan, total, nama, dan menu wajib", () => {
     const issues = draftIssues(
       {
         ...shopee,
         marketplaceOrderNo: " ",
-        expedition: "",
         marketplaceTotal: "0",
         name: "",
         quantities: {},
@@ -41,12 +39,16 @@ describe("draftIssues marketplace", () => {
       TODAY,
     )
     expect(Object.keys(issues).sort()).toEqual([
-      "expedition",
       "items",
       "marketplaceOrderNo",
       "marketplaceTotal",
       "name",
     ])
+  })
+
+  it("total boleh kosong (dipakai harga menu), tapi yang diisi harus angka", () => {
+    expect(draftIssues({ ...shopee, marketplaceTotal: "" }, TODAY)).toEqual({})
+    expect(draftIssues({ ...shopee, marketplaceTotal: "abc" }, TODAY).marketplaceTotal).toBeTruthy()
   })
 
   it("no. HP yang diisi tetap harus benar", () => {

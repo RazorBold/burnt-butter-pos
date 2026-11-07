@@ -196,7 +196,6 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                 method: order.shippingMethod,
                 paid: order.paid,
                 total: order.total,
-                trackingNo: order.trackingNo,
                 note: order.note,
               }))}
               methods={paymentMethods}
@@ -256,7 +255,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         </TableCell>
                         <TableCell>
                           {SHIPPING_METHOD_LABEL[order.shippingMethod]}
-                          {order.trackingUrl && (
+                          {order.trackingUrl && order.shippingMethod !== "ekspedisi" && (
                             <span className="mt-0.5 block text-[13px]">
                               <TrackingLink url={order.trackingUrl} orderNo={order.orderNo} />
                             </span>

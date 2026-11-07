@@ -2,7 +2,7 @@
 // Murni supaya bisa diuji dan dipakai di klien maupun server.
 
 import type { OrderStatus } from "@/features/orders/filters"
-import type { ShipmentStatus } from "@/features/orders/status"
+import { sentStatusFor, type ShipmentStatus } from "@/features/orders/status"
 import type { ShippingMethod } from "@/lib/wa-parser"
 
 /** Status pengiriman ditambah "belum_siap" untuk pesanan yang belum selesai dimasak. */
@@ -54,18 +54,17 @@ export type ShipmentAction =
 
 /**
  * Tombol utama panel Detail Pengiriman. Mengubah status pesanan (status kirim ikut lewat
- * shipmentStatusFor): Siap Kirim → Dikirim → Selesai, atau Pick Up: Siap Kirim → Selesai.
+ * shipmentStatusFor): Siap Kirim → Dikirim → Selesai, Pick Up: Siap Kirim → Selesai, dan
+ * Ekspedisi (olshop): Siap Kirim → Tandai Dikirim → Selesai.
  */
 export function nextShipmentAction({
   method,
   orderStatus,
   hasCourier,
-  hasTracking = false,
 }: {
   method: ShippingMethod
   orderStatus: OrderStatus
   hasCourier: boolean
-  hasTracking?: boolean
 }): ShipmentAction {
   switch (orderStatus) {
     case "baru":
@@ -85,14 +84,7 @@ export function nextShipmentAction({
           reason: "Pilih kurir dulu lewat Ubah Kurir / Jadwal.",
         }
       }
-      if (method === "ekspedisi" && !hasTracking) {
-        return {
-          kind: "blocked",
-          label: "Tandai Dikirim",
-          reason: "Isi nomor resi dulu lewat Isi Resi.",
-        }
-      }
-      return { kind: "advance", target: "dikirim", label: "Tandai Dikirim" }
+      return { kind: "advance", target: sentStatusFor(method), label: "Tandai Dikirim" }
     case "dikirim":
       return { kind: "advance", target: "selesai", label: "Tandai Selesai" }
     default:
@@ -134,9 +126,14 @@ export function parseShipmentFilters(params: Params, today: string): ShipmentFil
   }
 }
 
-/** Link lacak berlaku untuk pesanan yang diantar dan belum selesai atau dibatalkan. */
+/** Link lacak berlaku untuk pesanan yang diantar toko (bukan Pick Up atau olshop) dan belum berakhir. */
 export function canSetTrackingLink(method: ShippingMethod, orderStatus: OrderStatus): boolean {
-  return method !== "pick_up" && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
+  return hasTrackingLink(method) && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
+}
+
+/** Metode yang memakai link lacak. Olshop diurus ekspedisi marketplace, jadi tidak ditampilkan. */
+export function hasTrackingLink(method: ShippingMethod): boolean {
+  return method !== "pick_up" && method !== "ekspedisi"
 }
 
 /**

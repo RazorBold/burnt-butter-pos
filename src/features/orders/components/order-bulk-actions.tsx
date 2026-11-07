@@ -56,7 +56,6 @@ export type OrderActionRow = {
   method: ShippingMethod
   paid: boolean
   total: number
-  trackingNo: string | null
   note: string | null
 }
 
@@ -64,15 +63,7 @@ export type OrderActionRow = {
 const STATUS_TARGETS: OrderStatus[] = ["baru", "diproses", "siap_kirim", "dikirim", "selesai"]
 
 const canChange = (row: OrderActionRow, target: OrderStatus) =>
-  statusSkipReason(
-    {
-      status: row.status,
-      method: row.method,
-      hasCourier: true,
-      hasTracking: row.trackingNo !== null,
-    },
-    target,
-  ) === null
+  statusSkipReason({ status: row.status, method: row.method, hasCourier: true }, target) === null
 const canPay = (row: OrderActionRow) => !row.paid && row.status !== "dibatalkan"
 
 type DialogKind = "paid" | "cancel" | "note"

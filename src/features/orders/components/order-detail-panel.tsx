@@ -131,9 +131,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
   const shipping =
     order.shipment.method === "kurir_internal"
       ? `Kurir Internal Burnt Butter${order.shipment.courierName ? ` (${order.shipment.courierName})` : ""}`
-      : order.shipment.method === "ekspedisi"
-        ? `Ekspedisi${order.shipment.expedition ? ` (${order.shipment.expedition})` : ""}`
-        : SHIPPING_METHOD_LABEL[order.shipment.method]
+      : SHIPPING_METHOD_LABEL[order.shipment.method]
   const card = [
     order.cardTo && `To: ${order.cardTo}`,
     order.cardWishes,
@@ -163,10 +161,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         <Row label="Alamat">{order.shipment.address ?? "-"}</Row>
         <Row label="Tanggal Kirim">{formatTanggal(order.deliveryDate)}</Row>
         <Row label="Pengiriman">{shipping}</Row>
-        {order.shipment.method === "ekspedisi" && (
-          <Row label="Resi">{order.shipment.trackingNo ?? "Belum diisi"}</Row>
-        )}
-        {order.shipment.trackingUrl && (
+        {order.shipment.trackingUrl && order.shipment.method !== "ekspedisi" && (
           <Row label="Link Lacak">
             <TrackingLink url={order.shipment.trackingUrl} orderNo={order.orderNo} />
           </Row>

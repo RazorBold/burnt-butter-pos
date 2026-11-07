@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { getDb } from "@/db"
 import { orders, orderStatusLogs, shipments } from "@/db/schema"
 import type { BulkSkip } from "@/lib/bulk"
+import type { ShippingMethod } from "@/lib/wa-parser"
 
 import type { OrderStatus } from "./filters"
 import { shipmentStatusFor, type StatusRules, statusSkipReason } from "./status"
@@ -23,11 +24,12 @@ export function revalidateOrders(orderNos: string[] = []) {
  * Ubah status beberapa pesanan sekaligus dalam satu transaksi. Pesanan yang langkahnya tidak
  * sah (statusSkipReason) dilewati, sisanya diubah. Status pengiriman ikut disesuaikan
  * (shipmentStatusFor) dan setiap perubahan dicatat di order_status_logs. Pemanggil wajib sudah
- * memeriksa role.
+ * memeriksa role. `target` boleh berupa fungsi per metode kirim (mis. sentStatusFor: Tandai
+ * Dikirim membawa Ekspedisi langsung ke Selesai).
  */
 export async function changeStatuses(
   orderIds: string[],
-  target: OrderStatus,
+  target: OrderStatus | ((method: ShippingMethod) => OrderStatus),
   userId: string,
   rules: StatusRules = {},
 ): Promise<{ done: string[]; skipped: (BulkSkip & { from: OrderStatus })[] }> {
@@ -41,7 +43,6 @@ export async function changeStatuses(
         status: orders.status,
         method: shipments.method,
         courierId: shipments.courierId,
-        trackingNo: shipments.trackingNo,
       })
       .from(orders)
       .innerJoin(shipments, eq(shipments.orderId, orders.id))
@@ -49,50 +50,36 @@ export async function changeStatuses(
       .orderBy(asc(orders.id))
       .for("update")
 
-    const valid: typeof rows = []
+    const targetOf = (method: ShippingMethod) =>
+      typeof target === "function" ? target(method) : target
+    const valid: (typeof rows)[number][] = []
     const skipped: (BulkSkip & { from: OrderStatus })[] = []
     for (const row of rows) {
       const reason = statusSkipReason(
-        {
-          status: row.status,
-          method: row.method,
-          hasCourier: row.courierId !== null,
-          hasTracking: row.trackingNo !== null,
-        },
-        target,
+        { status: row.status, method: row.method, hasCourier: row.courierId !== null },
+        targetOf(row.method),
         rules,
       )
       if (reason) skipped.push({ orderNo: row.orderNo, reason, from: row.status })
       else valid.push(row)
     }
 
-    if (valid.length > 0) {
+    // Status tujuan dan status pengiriman bergantung pada metode, jadi UPDATE per metode.
+    for (const method of new Set(valid.map((row) => row.method))) {
+      const status = targetOf(method)
+      const ids = valid.filter((row) => row.method === method).map((row) => row.id)
+      await tx.update(orders).set({ status }).where(inArray(orders.id, ids))
       await tx
-        .update(orders)
-        .set({ status: target })
-        .where(
-          inArray(
-            orders.id,
-            valid.map((row) => row.id),
-          ),
-        )
-      // Status pengiriman bergantung pada metode, jadi satu UPDATE per metode.
-      for (const method of new Set(valid.map((row) => row.method))) {
-        await tx
-          .update(shipments)
-          .set({ status: shipmentStatusFor(target, method) })
-          .where(
-            inArray(
-              shipments.orderId,
-              valid.filter((row) => row.method === method).map((row) => row.id),
-            ),
-          )
-      }
+        .update(shipments)
+        .set({ status: shipmentStatusFor(status, method) })
+        .where(inArray(shipments.orderId, ids))
+    }
+    if (valid.length > 0) {
       await tx.insert(orderStatusLogs).values(
         valid.map((row) => ({
           orderId: row.id,
           fromStatus: row.status,
-          toStatus: target,
+          toStatus: targetOf(row.method),
           changedBy: userId,
         })),
       )

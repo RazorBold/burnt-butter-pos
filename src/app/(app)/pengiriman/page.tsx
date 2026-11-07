@@ -179,8 +179,6 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                 method: row.method,
                 courierId: row.courierId,
                 slot: row.slot,
-                expedition: row.expedition,
-                trackingNo: row.trackingNo,
                 trackingUrl: row.trackingUrl,
               }))}
               couriers={couriers}
@@ -231,14 +229,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                             {row.method === "pick_up" ? "-" : (row.address ?? "-")}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          {row.courierName ?? row.expedition ?? "-"}
-                          {row.method === "ekspedisi" && (
-                            <span className="block text-[13px] text-text-body tabular-nums">
-                              {row.trackingNo ? `Resi ${row.trackingNo}` : "Resi belum diisi"}
-                            </span>
-                          )}
-                        </TableCell>
+                        <TableCell>{row.courierName ?? "-"}</TableCell>
                         <TableCell className="whitespace-nowrap tabular-nums">
                           {row.slot ? SLOT_LABEL[row.slot] : "-"}
                         </TableCell>

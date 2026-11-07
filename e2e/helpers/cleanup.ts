@@ -58,6 +58,24 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
 }
 
 /**
+ * Kembalikan stok packaging yang terpotong pesanan uji (packing), lalu hapus riwayatnya, supaya
+ * stok asli tidak berkurang oleh test.
+ */
+async function restorePackagingStock(tx: postgres.TransactionSql, orderIds: string[]) {
+  if (orderIds.length === 0) return
+  await tx`
+    update packagings p set stock = p.stock + n.qty
+    from (
+      select item_id, sum(case when direction = 'out' then qty else -qty end)::int as qty
+      from stock_movements
+      where item_type = 'packaging' and order_id = any(${orderIds}::uuid[])
+      group by item_id
+    ) n
+    where p.id = n.item_id and n.qty > 0`
+  await tx`delete from stock_movements where order_id = any(${orderIds}::uuid[])`
+}
+
+/**
  * Hapus pesanan uji (customer-nya bernama "QA Customer …") beserta item, pengiriman, log, dan
  * customer-nya. Penghitung nomor harian disesuaikan supaya pesanan asli tidak melompat nomornya.
  */
@@ -73,6 +91,7 @@ export async function removeOrderByNo(orderNo: string) {
       if (!order) return
       if (!order.name.startsWith("QA Customer "))
         throw new Error("Hanya pesanan uji (customer QA Customer …) yang boleh dihapus")
+      await restorePackagingStock(tx, [order.id])
       await tx`delete from orders where id = ${order.id}`
       await tx`delete from customers c where c.id = ${order.customer_id}
         and not exists (select 1 from orders o where o.customer_id = c.id)`
@@ -257,8 +276,16 @@ export async function removeQaOrders(code: string) {
   if (!url) return
   const sql = postgres(url, { max: 1 })
   try {
-    await sql`delete from orders where order_no like ${`QA${code}%`}`
-    await sql`delete from customers where name = ${`QA Customer ${code}`}`
+    await sql.begin(async (tx) => {
+      const rows = await tx<{ id: string }[]>`
+        select id from orders where order_no like ${`QA${code}%`}`
+      await restorePackagingStock(
+        tx,
+        rows.map((row) => row.id),
+      )
+      await tx`delete from orders where order_no like ${`QA${code}%`}`
+      await tx`delete from customers where name = ${`QA Customer ${code}`}`
+    })
   } finally {
     await sql.end()
   }
@@ -405,6 +432,32 @@ export async function removeRawMaterialByName(name: string) {
         and item_id in (select id from raw_materials where name = ${name})`
       await tx`delete from raw_materials where name = ${name}`
     })
+  } finally {
+    await sql.end()
+  }
+}
+
+/** Buat packaging uji (nama diawali "QA Packaging ") dengan stok awal, langsung di DB. */
+export async function createQaPackaging(name: string, stock: number) {
+  if (!name.startsWith("QA Packaging ")) throw new Error("Nama packaging uji harus QA Packaging …")
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`insert into packagings (name, stock, unit) values (${name}, ${stock}, 'pcs')`
+  } finally {
+    await sql.end()
+  }
+}
+
+/** Stok packaging sekarang menurut DB. */
+export async function readPackagingStock(name: string): Promise<number | undefined> {
+  const url = directDatabaseUrl()
+  if (!url) return undefined
+  const sql = postgres(url, { max: 1 })
+  try {
+    const [row] = await sql<{ stock: number }[]>`select stock from packagings where name = ${name}`
+    return row?.stock
   } finally {
     await sql.end()
   }

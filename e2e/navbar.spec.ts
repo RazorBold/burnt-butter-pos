@@ -21,6 +21,7 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
       "Pesanan",
       "Pembayaran",
       "Produksi",
+      "Packaging",
       "Pengiriman",
       "Laporan",
       "Stok Packaging",
@@ -40,7 +41,7 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
   } else {
     await page.getByRole("button", { name: "Buka menu" }).click()
     const sheet = page.getByRole("dialog")
-    await expect(sheet.getByRole("link")).toHaveCount(8)
+    await expect(sheet.getByRole("link")).toHaveCount(9)
     await page.screenshot({ path: `test-results/navbar-menu-${info.project.name}.png` })
     await sheet.getByRole("link", { name: "Laporan" }).click()
     await expect(page.getByRole("heading", { name: "Laporan" })).toBeVisible()

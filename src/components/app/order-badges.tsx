@@ -1,4 +1,4 @@
-import { Check, Clock, MessageCircle, ShoppingBag, StickyNote, Tag, X } from "lucide-react"
+import { Check, Clock, MessageCircle, Package, ShoppingBag, StickyNote, Tag, X } from "lucide-react"
 
 import { ORDER_CHANNEL_LABEL, type OrderChannel } from "@/features/orders/constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
@@ -26,6 +26,7 @@ export function TypeBadge({ type, className }: { type: OrderType; className?: st
 const STATUS_STYLE: Record<OrderStatus, string> = {
   baru: "bg-status-baru text-status-baru-fg",
   diproses: "bg-status-diproses text-status-diproses-fg",
+  siap_packing: "bg-status-packing text-status-packing-fg",
   siap_kirim: "bg-status-siap text-status-siap-fg",
   dikirim: "bg-status-dikirim text-status-dikirim-fg",
   selesai: "bg-status-selesai text-status-selesai-fg",
@@ -55,6 +56,8 @@ function StatusIcon({ status }: { status: OrderStatus }) {
       return <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
     case "diproses":
       return <Tag aria-hidden className={icon} />
+    case "siap_packing":
+      return <Package aria-hidden className={icon} />
     case "dibatalkan":
       return <X aria-hidden className={icon} strokeWidth={2.5} />
     default:

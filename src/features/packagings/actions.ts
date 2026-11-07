@@ -91,6 +91,7 @@ export async function savePackaging(
   const values = {
     name: input.name,
     unit: input.unit,
+    size: input.size,
     minStock: input.minStock,
     capacity: input.capacity,
     photoPath,
@@ -123,7 +124,7 @@ export async function savePackaging(
 }
 
 /**
- * Catat stok masuk, keluar, atau hitung ulang (Admin, Produksi). Baris packaging dikunci selama
+ * Catat stok masuk atau hitung ulang (Admin, Produksi). Baris packaging dikunci selama
  * transaksi supaya dua pencatatan bersamaan tidak saling menimpa.
  */
 export async function recordStockMovement(input: unknown): Promise<ActionResult> {
@@ -139,6 +140,14 @@ export async function recordStockMovement(input: unknown): Promise<ActionResult>
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Data belum lengkap." }
   }
   const { packagingId, mode, qty, note } = parsed.data
+  // Pemakaian packaging tercatat otomatis saat packing; manual hanya tambah atau hitung ulang.
+  if (mode === "keluar") {
+    return {
+      ok: false,
+      message:
+        "Stok keluar tercatat otomatis dari menu Packaging. Pakai Hitung ulang untuk membetulkan.",
+    }
+  }
 
   return getDb().transaction(async (tx) => {
     const [item] = await tx

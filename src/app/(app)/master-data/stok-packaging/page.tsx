@@ -47,7 +47,7 @@ async function PackagingSection() {
       <SectionCardHeader
         icon={Box}
         title="Stok Packaging"
-        description="Kelola jenis packaging dan stok yang tersedia."
+        description="Kelola box hampers (per ukuran) dan stok yang tersedia."
         actions={
           canEdit && (
             <PackagingFormDialog

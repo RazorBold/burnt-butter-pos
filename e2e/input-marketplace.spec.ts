@@ -136,6 +136,17 @@ test.describe("Input Pesanan marketplace", () => {
       page.getByRole("region", { name: /^Selesai masak/ }).getByRole("article", { name: orderNo }),
     ).toBeVisible()
 
+    // Packing Normal dulu di menu Packaging (stok tidak dicatat), baru bisa dikirim.
+    await page.goto(`/packaging?tanggal=${date}`)
+    await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
+    const packing = page.getByRole("dialog", { name: `Packing ${orderNo}` })
+    await packing.getByRole("button", { name: "Simpan & selesai packing" }).click()
+    await expect(
+      page
+        .getByRole("region", { name: /^Selesai packing/ })
+        .getByRole("article", { name: orderNo }),
+    ).toBeVisible()
+
     // Pengiriman olshop: langsung bisa Tandai Dikirim, tanpa resi, kurir, atau link lacak.
     await page.goto(`/pengiriman?tanggal=${date}&pesanan=${orderNo}`)
     const panel = page.getByRole("complementary", { name: "Detail Pengiriman" })

@@ -34,14 +34,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type SearchParams = PageProps<"/stok-packaging">["searchParams"]
 
-// Desain belum ada. Keputusan pemilik toko: stok masuk/keluar dicatat manual dulu (tidak
-// terpotong otomatis oleh pesanan).
+// Desain belum ada. Keputusan pemilik toko (Nov 2026): Stok Packaging hanya untuk box hampers
+// (packaging lama diarsipkan). Stok keluar terpotong otomatis saat pesanan di-packing sebagai
+// Hampers (menu Packaging); di sini cukup tambah stok dan hitung ulang (revisi).
 export default function StokPackagingPage({ searchParams }: PageProps<"/stok-packaging">) {
   return (
     <main className={PAGE_CONTAINER}>
       <PageHeader
         title="Stok Packaging"
-        description="Pantau stok box, paper bag, dan cup, lalu catat stok masuk, keluar, atau hasil hitung ulang."
+        description="Stok box hampers. Terpotong otomatis saat pesanan di-packing sebagai Hampers; di sini tambah stok atau revisi lewat hitung ulang."
       />
       <Suspense fallback={<StockSkeleton />}>
         <StockOverview />
@@ -118,7 +119,9 @@ async function StockHistory({ searchParams }: { searchParams: SearchParams }) {
           <h2 id="riwayat-title" className="text-lg font-bold text-brand-ink">
             Riwayat Stok
           </h2>
-          <p className="text-sm text-text-body">Semua stok masuk, keluar, dan hitung ulang.</p>
+          <p className="text-sm text-text-body">
+            Semua stok masuk, terpakai untuk packing, dan hitung ulang.
+          </p>
         </div>
         <MovementFilter options={items.map(({ id, name }) => ({ id, name }))} />
       </div>

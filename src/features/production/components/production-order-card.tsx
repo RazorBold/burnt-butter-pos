@@ -44,12 +44,12 @@ export function ProductionOrderCard({
     order.status === "baru"
       ? { target: "diproses" as const, label: "Mulai masak", icon: ChefHat }
       : order.status === "diproses"
-        ? { target: "siap_kirim" as const, label: "Selesai masak", icon: CircleCheck }
+        ? { target: "siap_packing" as const, label: "Selesai masak", icon: CircleCheck }
         : null
   const back =
     order.status === "diproses"
       ? { target: "baru" as const, label: "Belum mulai" }
-      : order.status === "siap_kirim"
+      : order.status === "siap_packing"
         ? { target: "diproses" as const, label: "Masak lagi" }
         : null
 
@@ -75,9 +75,10 @@ export function ProductionOrderCard({
               {order.hasCard ? "Hadiah + kartu" : "Hadiah"}
             </span>
           )}
-          {(order.status === "dikirim" || order.status === "selesai") && (
-            <OrderStatusBadge status={order.status} />
-          )}
+          {(order.status === "siap_packing" ||
+            order.status === "siap_kirim" ||
+            order.status === "dikirim" ||
+            order.status === "selesai") && <OrderStatusBadge status={order.status} />}
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import {
   House,
   type LucideIcon,
   Package,
+  PackageOpen,
   Truck,
   WalletCards,
 } from "lucide-react"
@@ -23,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/pesanan", label: "Pesanan", icon: ClipboardList },
   { href: "/pembayaran", label: "Pembayaran", icon: WalletCards },
   { href: "/produksi", label: "Produksi", icon: CookingPot },
+  { href: "/packaging", label: "Packaging", icon: PackageOpen },
   { href: "/pengiriman", label: "Pengiriman", icon: Truck },
   { href: "/laporan", label: "Laporan", icon: ChartColumnBig },
   { href: "/stok-packaging", label: "Stok Packaging", icon: Package },

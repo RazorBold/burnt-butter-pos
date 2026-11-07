@@ -1,6 +1,6 @@
 "use client"
 
-import { Minus, Package, Plus, RefreshCw } from "lucide-react"
+import { Package, Plus, RefreshCw } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils"
 
 /**
  * Kartu stok satu packaging di menu Stok Packaging: stok sekarang, bar stok / kapasitas
- * (F-19), status, dan tombol Masuk / Keluar / Hitung ulang.
+ * (F-19), status, dan tombol Masuk / Hitung ulang. Stok keluar tercatat otomatis dari menu
+ * Packaging, jadi tidak ada tombol Keluar; selisih dibetulkan lewat Hitung ulang.
  */
 export function PackagingStockCard({
   packaging,
@@ -87,7 +88,7 @@ export function PackagingStockCard({
       </div>
 
       {canEdit && (
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
             onClick={() => openWith("masuk")}
@@ -99,22 +100,12 @@ export function PackagingStockCard({
           </Button>
           <Button
             variant="outline"
-            onClick={() => openWith("keluar")}
-            disabled={packaging.stock === 0}
-            className="h-10 rounded-lg bg-white px-2"
-            aria-label={`Stok keluar ${packaging.name}`}
-          >
-            <Minus aria-hidden />
-            Keluar
-          </Button>
-          <Button
-            variant="outline"
             onClick={() => openWith("hitung")}
             className="h-10 rounded-lg bg-white px-2"
             aria-label={`Hitung ulang ${packaging.name}`}
           >
             <RefreshCw aria-hidden />
-            Hitung
+            Hitung ulang
           </Button>
         </div>
       )}

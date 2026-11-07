@@ -64,6 +64,20 @@
       "when": 1793896230624,
       "tag": "0008_tracking_url",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794040764964,
+      "tag": "0009_packing",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794043996137,
+      "tag": "0010_hampers_packaging",
+      "breakpoints": true
     }
   ]
 }

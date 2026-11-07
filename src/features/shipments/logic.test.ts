@@ -21,6 +21,12 @@ describe("tabOf", () => {
 })
 
 describe("nextShipmentAction", () => {
+  it("sudah dimasak tapi belum di-packing: belum bisa dikirim", () => {
+    expect(
+      nextShipmentAction({ method: "instant", orderStatus: "siap_packing", hasCourier: false }),
+    ).toMatchObject({ kind: "blocked", reason: "Pesanan belum di-packing (lihat menu Packaging)." })
+  })
+
   it("belum selesai dimasak: belum bisa dikirim", () => {
     expect(
       nextShipmentAction({ method: "instant", orderStatus: "diproses", hasCourier: false }),

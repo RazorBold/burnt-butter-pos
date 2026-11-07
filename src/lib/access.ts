@@ -15,7 +15,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 export const ROLE_DESCRIPTION: Record<Role, string> = {
   admin: "Semua menu, termasuk mengelola akun staf.",
   kasir: "Dashboard, Pesanan, Pembayaran, Pengiriman, Customer, dan lihat Master Data.",
-  produksi: "Dashboard, Produksi, Stok Packaging, dan lihat Master Data (tanpa Customer).",
+  produksi:
+    "Dashboard, Produksi, Packaging, Stok Packaging, dan lihat Master Data (tanpa Customer).",
   owner: "Dashboard, Laporan, dan lihat Master Data.",
 }
 
@@ -27,6 +28,7 @@ export const SECTION_ACCESS = {
   "/pesanan": ["admin", "kasir"],
   "/pembayaran": ["admin", "kasir"],
   "/produksi": ["admin", "produksi"],
+  "/packaging": ["admin", "produksi"],
   "/pengiriman": ["admin", "kasir"],
   "/laporan": ["admin", "owner"],
   "/stok-packaging": ["admin", "produksi"],
@@ -50,6 +52,9 @@ export const CAN_EDIT_STOCK: readonly Role[] = ["admin", "produksi"]
 
 /** Role yang boleh menambah dan mengubah data customer (Kasir mencatat pesanan dari WA). */
 export const CAN_EDIT_CUSTOMER: readonly Role[] = ["admin", "kasir"]
+
+/** Role yang boleh menandai pesanan selesai packing (memotong stok packaging). */
+export const CAN_PACK: readonly Role[] = ["admin", "produksi"]
 
 /** Role yang boleh membuat pesanan lewat tombol "Input Pesanan". */
 export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir"]

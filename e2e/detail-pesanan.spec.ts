@@ -59,7 +59,7 @@ test.describe("Detail Pesanan", () => {
     await page.screenshot({ path: `test-results/detail-pesanan-${info.project.name}.png` })
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
 
-    // Baru → Diproses → Siap Kirim; status kirim Instant jadi Menunggu Kurir saat Siap Kirim.
+    // Baru → Diproses → Siap Packing. Siap Kirim hanya lewat menu Packaging (stok terpotong).
     await panel.getByRole("button", { name: "Ubah Status" }).click()
     await page.getByRole("menuitem", { name: "Diproses" }).click()
     await expect(page.getByText(`Status ${orderNo} jadi Diproses.`)).toBeVisible()
@@ -67,12 +67,15 @@ test.describe("Detail Pesanan", () => {
     expect((await readOrder(orderNo))?.shipment_status).toBeNull()
 
     await panel.getByRole("button", { name: "Ubah Status" }).click()
-    await expect(page.getByRole("menuitem")).toHaveText(["Siap Kirim", "Baru", "Dibatalkan"])
-    await page.getByRole("menuitem", { name: "Siap Kirim" }).click()
-    await expect(page.getByText(`Status ${orderNo} jadi Siap Kirim.`)).toBeVisible()
+    await expect(page.getByRole("menuitem")).toHaveText(["Siap Packing", "Baru", "Dibatalkan"])
+    await page.getByRole("menuitem", { name: "Siap Packing" }).click()
+    await expect(page.getByText(`Status ${orderNo} jadi Siap Packing.`)).toBeVisible()
+    await panel.getByRole("button", { name: "Ubah Status" }).click()
+    await expect(page.getByRole("menuitem")).toHaveText(["Diproses", "Dibatalkan"])
+    await page.keyboard.press("Escape")
     expect(await readOrder(orderNo)).toMatchObject({
-      status: "siap_kirim",
-      shipment_status: "menunggu_kurir",
+      status: "siap_packing",
+      shipment_status: null,
       logs: 3,
     })
 
@@ -88,7 +91,7 @@ test.describe("Detail Pesanan", () => {
     await panel.getByRole("link", { name: "Lihat Detail Lengkap" }).click()
     await expect(page).toHaveURL(new RegExp(`/pesanan/${orderNo}$`))
     await expect(page.getByRole("heading", { name: orderNo })).toBeVisible()
-    await expect(page.getByText("Diproses → Siap Kirim")).toBeVisible()
+    await expect(page.getByText("Diproses → Siap Packing")).toBeVisible()
     await expect(page.getByText("Dibuat sebagai Baru")).toBeVisible()
     await expect(page.getByText(`Nama Lengkap: ${name}`)).toBeVisible()
     await page.screenshot({ path: "test-results/detail-lengkap.png", fullPage: true })

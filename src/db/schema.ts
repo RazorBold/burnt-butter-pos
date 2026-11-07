@@ -9,6 +9,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -29,11 +30,15 @@ export const orderChannel = pgEnum("order_channel", ["whatsapp", "shopee", "toko
 export const orderStatus = pgEnum("order_status", [
   "baru",
   "diproses",
+  /** Selesai dimasak, menunggu packing (menu Packaging). Packing selesai = Siap Kirim. */
+  "siap_packing",
   "siap_kirim",
   "dikirim",
   "selesai",
   "dibatalkan",
 ])
+/** Jenis packing: Normal (stok tidak dicatat) atau Hampers (box hampers, stok terpotong). */
+export const packagingType = pgEnum("packaging_type", ["normal", "hampers"])
 export const shippingMethod = pgEnum("shipping_method", [
   "kurir_internal",
   "instant",
@@ -150,6 +155,8 @@ export const orders = pgTable(
     marketplaceOrderNo: text("marketplace_order_no"),
     type: orderType("type").notNull(),
     status: orderStatus("status").notNull().default("baru"),
+    /** Diisi saat selesai packing (menu Packaging); kosong sebelum di-packing. */
+    packagingType: packagingType("packaging_type"),
     deliveryDate: date("delivery_date").notNull(),
     request: text("request"),
     /** Catatan staf setelah pesanan masuk, mis. add-on pembeli. Tidak mengubah total. */
@@ -306,9 +313,36 @@ export const packagings = pgTable("packagings", {
   capacity: integer("capacity"),
   minStock: integer("min_stock"),
   unit: text("unit").notNull().default("pcs"),
+  /** Box hampers per ukuran (Large/Regular); null = tanpa ukuran. */
+  size: menuSize("size"),
+  /** false = diarsipkan: tidak tampil di Stok Packaging, Dashboard, maupun dialog packing. */
+  isActive: boolean("is_active").notNull().default(true),
+  /** Belum dipakai (Nov 2026): disiapkan untuk aturan packaging otomatis per pesanan. */
+  perOrderQty: integer("per_order_qty").notNull().default(0),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }).enableRLS()
+
+/**
+ * Belum dipakai (Nov 2026): disiapkan untuk aturan packaging otomatis per menu/ukuran. Sekarang
+ * admin mengisi packaging tiap pesanan di menu Packaging.
+ */
+export const menuVariantPackagings = pgTable(
+  "menu_variant_packagings",
+  {
+    menuVariantId: uuid("menu_variant_id")
+      .notNull()
+      .references(() => menuVariants.id, { onDelete: "cascade" }),
+    packagingId: uuid("packaging_id")
+      .notNull()
+      .references(() => packagings.id, { onDelete: "cascade" }),
+    qty: integer("qty").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.menuVariantId, t.packagingId] }),
+    check("menu_variant_packagings_qty_positive", sql`${t.qty} > 0`),
+  ],
+).enableRLS()
 
 export const rawMaterials = pgTable("raw_materials", {
   id: id(),

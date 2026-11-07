@@ -16,10 +16,13 @@ export type PackagingRow = {
   capacity: number | null
   minStock: number | null
   unit: string
+  size: "large" | "regular" | "single" | null
   status: StockStatus
 }
 
-/** Semua packaging, urut seperti desain (urutan dibuat). Status dihitung dari stok minimum. */
+/**
+ * Packaging aktif (yang diarsipkan tidak ikut), urut dibuat. Status dihitung dari stok minimum.
+ */
 export async function listPackagings(): Promise<PackagingRow[]> {
   const rows = await getDb()
     .select({
@@ -30,8 +33,10 @@ export async function listPackagings(): Promise<PackagingRow[]> {
       capacity: packagings.capacity,
       minStock: packagings.minStock,
       unit: packagings.unit,
+      size: packagings.size,
     })
     .from(packagings)
+    .where(eq(packagings.isActive, true))
     .orderBy(asc(packagings.createdAt), asc(packagings.name))
   return rows.map((row) => ({ ...row, status: stockStatus(row.stock, row.minStock) }))
 }

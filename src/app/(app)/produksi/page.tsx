@@ -31,7 +31,7 @@ const STAGES: ProductionStage[] = ["belum", "proses", "selesai"]
 type SearchParams = PageProps<"/produksi">["searchParams"]
 
 // Desain belum ada. Keputusan pemilik toko: rekap per tanggal kirim. "Selesai masak" =
-// status pesanan Siap Kirim, jadi pesanan langsung masuk Pengiriman.
+// status pesanan Siap Packing, lalu pesanan di-packing di menu Packaging sebelum dikirim.
 export default function ProduksiPage({ searchParams }: PageProps<"/produksi">) {
   return (
     <main className={PAGE_CONTAINER}>

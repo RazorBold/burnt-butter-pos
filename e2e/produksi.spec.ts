@@ -95,10 +95,10 @@ test.describe("Produksi", () => {
     await expect(selesai.getByRole("article", { name: personal })).toBeVisible()
     await expect(page.getByText("6 / 8")).toBeVisible()
     await expect(bolo.getByText("2 / 2 selesai")).toBeVisible()
-    // Selesai masak = Siap Kirim; Instant langsung Menunggu Kurir di Pengiriman.
+    // Selesai masak = Siap Packing; belum masuk Pengiriman sampai selesai packing.
     expect(await readOrder(personal)).toMatchObject({
-      status: "siap_kirim",
-      shipment_status: "menunggu_kurir",
+      status: "siap_packing",
+      shipment_status: null,
     })
 
     await page.getByRole("button", { name: `Masak lagi: ${personal}` }).click()

@@ -262,7 +262,7 @@ async function requireOrderEditor(): Promise<string> {
 }
 
 /** Langkah dapur yang boleh dilakukan tim Produksi: Baru ↔ Diproses ↔ Siap Kirim. */
-const PRODUCTION_STATUSES: readonly OrderStatus[] = ["baru", "diproses", "siap_kirim"]
+const PRODUCTION_STATUSES: readonly OrderStatus[] = ["baru", "diproses", "siap_packing"]
 
 function parseStatus(target: string): OrderStatus | undefined {
   return ORDER_STATUSES.find((value) => value === target)
@@ -286,6 +286,12 @@ async function changeOrderStatus(
   const { done, skipped } = await changeStatuses([orderId], status, userId, { limitTo })
   if (done.length > 0) {
     return { ok: true, message: `Status ${done[0]} jadi ${ORDER_STATUS_LABEL[status]}.` }
+  }
+  if (skipped[0]?.reason === "belum di-packing") {
+    return { ok: false, message: "Tandai selesai packing lewat menu Packaging." }
+  }
+  if (skipped[0]?.reason.startsWith("stok ")) {
+    return { ok: false, message: `Tidak bisa: ${skipped[0].reason}.` }
   }
   if (skipped.length > 0) {
     return {

@@ -52,7 +52,7 @@ Tulis sebagai CSS variables di `src/app/globals.css` (Tailwind v4 `@theme`), den
 | Naik (badge KPI) | `#DDF2D9` | `#13711E` | panah atas |
 | Turun (badge KPI) | `#FDE5E2` | `#9E1111` | panah bawah |
 
-Siap Kirim dan Selesai hampir sama hijaunya. Ikon dan teks harus selalu tampil supaya status tidak dibedakan dari warna saja.
+Siap Packing (tanpa desain, Nov 2026) memakai warna badge Personal (`#FBE8D4` / `#552613`, token `status-packing`) dengan ikon kotak. Siap Kirim dan Selesai hampir sama hijaunya. Ikon dan teks harus selalu tampil supaya status tidak dibedakan dari warna saja.
 
 Status pengiriman ([04-pengiriman.png](design/04-pengiriman.png)): Menunggu Kurir, Dalam Perjalanan, Dikirim memakai skema biru (Baru). Siap Dikirim memakai kuning (Diproses). Siap Diambil dan Selesai memakai hijau. Master data: Aktif/Cukup hijau, Menipis kuning, Habis merah (`#FDE5E2` / `#9E1111`).
 
@@ -190,6 +190,8 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - KPI memakai versi desain utama (Total Pembayaran), bukan versi di balik modal ("Pesanan Selesai"); lihat BELL-37.
   - Isi menyesuaikan role: Produksi tidak melihat kartu uang (KPI ke-4 diganti Total Porsi) dan Daftar Pesanan Terbaru. Tombol "Lihat Semua/Detail" hanya muncul bila halaman tujuannya boleh dibuka. Kasir diarahkan ke Pembayaran, Admin/Owner ke Laporan.
   - Stok Packaging (Ringkas): maksimal 4, yang perlu restock dulu. Packaging tanpa kapasitas ditampilkan dengan status, bukan bar.
+- **Packaging** (tanpa desain, Nov 2026): pola halaman Produksi. Header + pemilih tanggal kirim, 3 KPI (Menunggu Packing, Selesai Packing, Masih Dimasak), lalu papan 2 kolom. Kartu pesanan menampilkan menu, request, dan tombol Selesai packing. Dialog: segmen Normal / Hampers (default Normal, dengan keterangan stok tidak dicatat); Hampers menampilkan box per kelompok Size Large / Size Regular (Lainnya untuk box tanpa ukuran) dengan stepper (mulai 0) dan stok per baris; simpan dinonaktifkan bila belum ada box dipilih atau melebihi stok. Kartu yang sudah di-packing menampilkan kotak krem \"Packing Normal/Hampers\" + box yang terpakai, dan tombol Batal packing. Chart status menambah batang Siap Packing; gradasi ordinal 6 langkah `#d9a877 → #52250b`.
+- **Stok Packaging = box hampers:** hanya packaging aktif (box hampers) yang tampil; form Master Data punya pilihan Ukuran box (Large / Regular / Tanpa ukuran). Kartu stok tanpa Keluar: kartu stok hanya punya Masuk dan Hitung ulang; dialog packaging tidak menampilkan pilihan Keluar (Bahan Baku tetap punya).
 - **Sidebar Master Data di ponsel:** deretan chip digulir otomatis supaya chip bagian aktif terlihat. Bagian yang tidak boleh dibuka role tersebut tidak ditampilkan.
 
 ## Gerak

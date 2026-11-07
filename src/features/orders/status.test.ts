@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import {
   isEditable,
+  isPackingStep,
+  manualStatuses,
   nextStatuses,
   sentStatusFor,
   shipmentStatusFor,
@@ -11,17 +13,22 @@ import {
 describe("nextStatuses", () => {
   it("maju satu langkah, mundur satu langkah, dan batal", () => {
     expect(nextStatuses("baru", "instant")).toEqual(["diproses", "dibatalkan"])
-    expect(nextStatuses("diproses", "instant")).toEqual(["siap_kirim", "baru", "dibatalkan"])
+    expect(nextStatuses("diproses", "instant")).toEqual(["siap_packing", "baru", "dibatalkan"])
+    expect(nextStatuses("siap_packing", "instant")).toEqual([
+      "siap_kirim",
+      "diproses",
+      "dibatalkan",
+    ])
     expect(nextStatuses("siap_kirim", "kurir_internal")).toEqual([
       "dikirim",
-      "diproses",
+      "siap_packing",
       "dibatalkan",
     ])
     expect(nextStatuses("dikirim", "kurir_internal")).toEqual(["selesai", "siap_kirim"])
   })
 
   it("Pick Up dari Siap Kirim langsung Selesai", () => {
-    expect(nextStatuses("siap_kirim", "pick_up")).toEqual(["selesai", "diproses", "dibatalkan"])
+    expect(nextStatuses("siap_kirim", "pick_up")).toEqual(["selesai", "siap_packing", "dibatalkan"])
     expect(nextStatuses("selesai", "pick_up")).toEqual([])
   })
 
@@ -93,15 +100,19 @@ describe("statusSkipReason", () => {
   })
 
   it("limitTo membatasi status asal dan tujuan", () => {
-    const rules = { limitTo: ["baru", "diproses", "siap_kirim"] as const }
-    expect(statusSkipReason(order("diproses"), "siap_kirim", rules)).toBeNull()
-    expect(statusSkipReason(order("siap_kirim"), "dikirim", rules)).toBe("status Siap Kirim")
+    const rules = { limitTo: ["baru", "diproses", "siap_packing"] as const }
+    expect(statusSkipReason(order("diproses"), "siap_packing", rules)).toBeNull()
+    expect(statusSkipReason(order("siap_packing"), "siap_kirim", rules)).toBe("status Siap Packing")
   })
 })
 
 describe("Ekspedisi (olshop)", () => {
   it("cukup belum dikirim lalu sudah dikirim: Siap Kirim langsung Selesai, tanpa resi", () => {
-    expect(nextStatuses("siap_kirim", "ekspedisi")).toEqual(["selesai", "diproses", "dibatalkan"])
+    expect(nextStatuses("siap_kirim", "ekspedisi")).toEqual([
+      "selesai",
+      "siap_packing",
+      "dibatalkan",
+    ])
     expect(shipmentStatusFor("siap_kirim", "ekspedisi")).toBe("siap_dikirim")
     expect(shipmentStatusFor("selesai", "ekspedisi")).toBe("selesai")
     const order = { status: "siap_kirim", method: "ekspedisi", hasCourier: false } as const
@@ -117,5 +128,34 @@ describe("Ekspedisi (olshop)", () => {
 
   it("Ekspedisi yang terlanjur Dikirim tetap bisa diselesaikan", () => {
     expect(nextStatuses("dikirim", "ekspedisi")).toEqual(["selesai"])
+  })
+})
+
+describe("Packing (Siap Packing → Siap Kirim)", () => {
+  const order = { status: "siap_packing", method: "instant", hasCourier: false } as const
+
+  it("selesai masak = Siap Packing; langkah packing dikenali", () => {
+    expect(nextStatuses("diproses", "pick_up")[0]).toBe("siap_packing")
+    expect(isPackingStep("siap_packing", "siap_kirim")).toBe(true)
+    expect(isPackingStep("siap_kirim", "siap_packing")).toBe(false)
+  })
+
+  it("Siap Kirim hanya lewat menu Packaging (rules.packing)", () => {
+    expect(statusSkipReason(order, "siap_kirim")).toBe("belum di-packing")
+    expect(statusSkipReason(order, "siap_kirim", { packing: true })).toBeNull()
+    expect(statusSkipReason(order, "diproses")).toBeNull()
+  })
+
+  it("dropdown Ubah Status tidak menawarkan langkah packing", () => {
+    expect(manualStatuses("siap_packing", "instant")).toEqual(["diproses", "dibatalkan"])
+    expect(manualStatuses("siap_kirim", "instant")).toEqual([
+      "dikirim",
+      "siap_packing",
+      "dibatalkan",
+    ])
+  })
+
+  it("data pesanan masih bisa diubah saat Siap Packing", () => {
+    expect(isEditable("siap_packing")).toBe(true)
   })
 })

@@ -60,7 +60,14 @@ export type OrderActionRow = {
 }
 
 /** Tujuan di menu "Ubah status" massal. Dibatalkan punya tombol sendiri dengan konfirmasi. */
-const STATUS_TARGETS: OrderStatus[] = ["baru", "diproses", "siap_kirim", "dikirim", "selesai"]
+const STATUS_TARGETS: OrderStatus[] = [
+  "baru",
+  "diproses",
+  "siap_packing",
+  "siap_kirim",
+  "dikirim",
+  "selesai",
+]
 
 const canChange = (row: OrderActionRow, target: OrderStatus) =>
   statusSkipReason({ status: row.status, method: row.method, hasCourier: true }, target) === null

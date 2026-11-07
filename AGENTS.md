@@ -6,12 +6,12 @@ Panduan untuk agent AI (Claude Code, dll.) yang mengerjakan repo ini. Balas peng
 
 Web Management POS untuk **Burnt Butter & Segelas Awan**: panel admin internal untuk input pesanan dari WhatsApp, produksi harian, pengiriman, stok, dan laporan.
 
-| Dokumen | Isi |
-| --- | --- |
-| [docs/PRD.md](docs/PRD.md) | Kebutuhan produk, kode fitur F-xx, alur status, pertanyaan terbuka |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, struktur folder, skema DB, auth, env, deploy |
-| [docs/DESIGN.md](docs/DESIGN.md) | Token warna, tipografi, layout, komponen |
-| [docs/design/](docs/design/) | Gambar desain tiap layar (sumber kebenaran visual) |
+| Dokumen                                      | Isi                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------ |
+| [docs/PRD.md](docs/PRD.md)                   | Kebutuhan produk, kode fitur F-xx, alur status, pertanyaan terbuka |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, struktur folder, skema DB, auth, env, deploy                |
+| [docs/DESIGN.md](docs/DESIGN.md)             | Token warna, tipografi, layout, komponen                           |
+| [docs/design/](docs/design/)                 | Gambar desain tiap layar (sumber kebenaran visual)                 |
 
 ## Stack singkat
 
@@ -84,21 +84,22 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 
 ## Glosarium
 
-| UI (Indonesia) | Kode / DB |
-| --- | --- |
-| Pesanan | `order` / `orders` |
-| Item menu pesanan | `order_items` |
-| Tipe: Personal / Hadiah | `type`: `personal` / `hadiah` |
-| Status: Baru, Diproses, Siap Kirim, Dikirim, Selesai, Dibatalkan | `baru`, `diproses`, `siap_kirim`, `dikirim`, `selesai`, `dibatalkan` |
-| Pengiriman | `shipment` / `shipments` |
-| Metode: Kurir Internal, Instant, Pick Up | `kurir_internal`, `instant`, `pick_up` |
+| UI (Indonesia)                                                                               | Kode / DB                                                                                  |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Pesanan                                                                                      | `order` / `orders`                                                                         |
+| Item menu pesanan                                                                            | `order_items`                                                                              |
+| Tipe: Personal / Hadiah                                                                      | `type`: `personal` / `hadiah`                                                              |
+| Status: Baru, Diproses, Siap Packing, Siap Kirim, Dikirim, Selesai, Dibatalkan               | `baru`, `diproses`, `siap_packing`, `siap_kirim`, `dikirim`, `selesai`, `dibatalkan`       |
+| Pengiriman                                                                                   | `shipment` / `shipments`                                                                   |
+| Metode: Kurir Internal, Instant, Pick Up                                                     | `kurir_internal`, `instant`, `pick_up`                                                     |
 | Status kirim: Menunggu Kurir, Siap Dikirim, Siap Diambil, Dalam Perjalanan, Dikirim, Selesai | `menunggu_kurir`, `siap_dikirim`, `siap_diambil`, `dalam_perjalanan`, `dikirim`, `selesai` |
-| Pembayaran / Metode Pembayaran | `payments` / `payment_methods` |
-| Produk & Menu, ukuran Large / Regular | `menus`, `menu_variants.size`: `large` / `regular` / `single` |
-| Stok Packaging | `packagings` |
-| Bahan Baku | `raw_materials` |
-| Kurir | `couriers` |
-| User / Staff, role | `profiles.role`: `admin`, `kasir`, `produksi`, `owner` |
+| Pembayaran / Metode Pembayaran                                                               | `payments` / `payment_methods`                                                             |
+| Produk & Menu, ukuran Large / Regular                                                        | `menus`, `menu_variants.size`: `large` / `regular` / `single`                              |
+| Stok Packaging                                                                               | `packagings`                                                                               |
+| Packaging (menu packing)                                                                     | `src/features/packing`                                                                     |
+| Bahan Baku                                                                                   | `raw_materials`                                                                            |
+| Kurir                                                                                        | `couriers`                                                                                 |
+| User / Staff, role                                                                           | `profiles.role`: `admin`, `kasir`, `produksi`, `owner`                                     |
 
 <!-- BEGIN:nextjs-agent-rules -->
 

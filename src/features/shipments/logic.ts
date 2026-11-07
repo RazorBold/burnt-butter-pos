@@ -74,6 +74,12 @@ export function nextShipmentAction({
         label: "Tandai Dikirim",
         reason: "Pesanan belum selesai dimasak (lihat menu Produksi).",
       }
+    case "siap_packing":
+      return {
+        kind: "blocked",
+        label: "Tandai Dikirim",
+        reason: "Pesanan belum di-packing (lihat menu Packaging).",
+      }
     case "siap_kirim":
       if (method === "pick_up")
         return { kind: "advance", target: "selesai", label: "Sudah Diambil" }

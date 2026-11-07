@@ -30,7 +30,7 @@ export const MASTER_DATA_SECTIONS: MasterDataSection[] = [
     slug: "stok-packaging",
     label: "Stok Packaging",
     icon: Box,
-    planned: "Jenis packaging, stok saat ini, dan statusnya (Cukup / Menipis).",
+    planned: "Box hampers per ukuran, stok saat ini, dan statusnya (Cukup / Menipis).",
   },
   {
     slug: "bahan-baku",

@@ -45,6 +45,8 @@ test.describe("Pengiriman", () => {
     page,
   }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    // Alur penuh: input 3 pesanan, masak, packing, lalu kirim; lebih lama dari batas 30 detik.
+    test.setTimeout(90_000)
     const stamp = Date.now()
     const date = testDate()
     const personal = (name: string, method: string) =>
@@ -94,6 +96,19 @@ test.describe("Pengiriman", () => {
       await expect(
         page
           .getByRole("region", { name: /^Selesai masak/ })
+          .getByRole("article", { name: orderNo }),
+      ).toBeVisible()
+    }
+
+    // Packing Normal dulu di menu Packaging (stok tidak dicatat), baru bisa dikirim.
+    await page.goto(`/packaging?tanggal=${date.iso}`)
+    for (const orderNo of [instant, kurir, pickUp]) {
+      await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
+      const packing = page.getByRole("dialog", { name: `Packing ${orderNo}` })
+      await packing.getByRole("button", { name: "Simpan & selesai packing" }).click()
+      await expect(
+        page
+          .getByRole("region", { name: /^Selesai packing/ })
           .getByRole("article", { name: orderNo }),
       ).toBeVisible()
     }

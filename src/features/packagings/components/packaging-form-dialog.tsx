@@ -117,13 +117,33 @@ function PackagingForm({ packaging, onSaved }: { packaging?: PackagingRow; onSav
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px]">
         {field("name", "Nama packaging", {
           defaultValue: packaging?.name,
-          placeholder: "Contoh: Box Large",
+          placeholder: "Contoh: Classic Red (Large)",
           maxLength: 60,
         })}
         {field("unit", "Satuan", {
           defaultValue: packaging?.unit ?? "pcs",
           maxLength: 20,
         })}
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={`${id}-size`} className="text-text-strong">
+          Ukuran box
+        </Label>
+        <select
+          id={`${id}-size`}
+          name="size"
+          defaultValue={
+            packaging?.size === "large" || packaging?.size === "regular" ? packaging.size : ""
+          }
+          className="h-11 w-full rounded-lg border border-input bg-white px-3 text-sm text-text-strong outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-[220px]"
+        >
+          <option value="large">Large</option>
+          <option value="regular">Regular</option>
+          <option value="">Tanpa ukuran</option>
+        </select>
+        <p className="text-[13px] text-text-body">
+          Mengelompokkan box hampers di dialog packing (Size Large / Size Regular).
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {field(

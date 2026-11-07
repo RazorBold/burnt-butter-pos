@@ -80,7 +80,12 @@ test.describe("Aksi massal", () => {
     await page.getByRole("checkbox", { name: "Pilih semua pesanan di halaman ini" }).check()
     await expect(bar(page)).toContainText("6 pesanan dipilih")
     await bar(page).getByRole("button", { name: "Ubah status" }).click()
-    await expect(page.getByRole("menuitem", { name: /Siap Kirim/ })).toContainText("3 dari 6")
+    await expect(page.getByRole("menuitem", { name: /Siap Packing/ })).toContainText("4 dari 6")
+    // Siap Kirim hanya lewat menu Packaging.
+    await expect(page.getByRole("menuitem", { name: /Siap Kirim/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    )
     await page.keyboard.press("Escape")
 
     // Tandai lunas: dibatalkan tidak ikut.
@@ -135,12 +140,12 @@ test.describe("Aksi massal", () => {
 
     // Menu ⋮ satu baris, tanpa membuka panel detail.
     await page.getByRole("button", { name: `Aksi untuk ${no(2)}` }).click()
-    await page.getByRole("menuitem", { name: "Jadikan Siap Kirim" }).click()
-    await expect(page.getByText(`Status ${no(2)} jadi Siap Kirim.`)).toBeVisible()
+    await page.getByRole("menuitem", { name: "Jadikan Siap Packing" }).click()
+    await expect(page.getByText(`Status ${no(2)} jadi Siap Packing.`)).toBeVisible()
     await expect(page).not.toHaveURL(/pesanan=/)
     expect(await readOrder(no(2))).toMatchObject({
-      status: "siap_kirim",
-      shipment_status: "menunggu_kurir",
+      status: "siap_packing",
+      shipment_status: null,
     })
   })
 

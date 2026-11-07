@@ -22,11 +22,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { updateOrderStatus } from "@/features/orders/actions"
 import type { OrderStatus } from "@/features/orders/filters"
-import { nextStatuses } from "@/features/orders/status"
+import { manualStatuses } from "@/features/orders/status"
 import { cn } from "@/lib/utils"
 import type { ShippingMethod } from "@/lib/wa-parser"
 
-/** Dropdown "Ubah Status" di panel detail. Pilihan mengikuti alur status (nextStatuses). */
+/** Dropdown "Ubah Status" di panel detail. Pilihan mengikuti alur status (manualStatuses). */
 export function OrderStatusSelect({
   orderId,
   orderNo,
@@ -42,7 +42,7 @@ export function OrderStatusSelect({
 }) {
   const [pending, startTransition] = useTransition()
   const [confirmCancel, setConfirmCancel] = useState(false)
-  const options = nextStatuses(status, method)
+  const options = manualStatuses(status, method)
 
   function change(target: OrderStatus) {
     startTransition(async () => {

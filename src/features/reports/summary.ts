@@ -156,7 +156,7 @@ export function buildReport(
       (order) => order.method,
     ),
     status: count(
-      ["baru", "diproses", "siap_kirim", "dikirim", "selesai"] as const,
+      ["baru", "diproses", "siap_packing", "siap_kirim", "dikirim", "selesai"] as const,
       (order) => order.status,
     ),
     cancelled: orders.filter(

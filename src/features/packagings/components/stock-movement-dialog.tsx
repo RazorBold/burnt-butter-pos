@@ -27,10 +27,12 @@ import {
 import { recordRawMaterialMovement } from "@/features/raw-materials/actions"
 import { formatJumlah } from "@/lib/format"
 
-const MODE_OPTIONS = MOVEMENT_MODES.map((value) => ({
-  value,
-  label: value === "masuk" ? "Masuk" : value === "keluar" ? "Keluar" : "Hitung ulang",
-}))
+const modeOptions = (kind: StockKind) =>
+  // Packaging keluar otomatis lewat menu Packaging; manual cukup tambah atau revisi (hitung ulang).
+  MOVEMENT_MODES.filter((value) => kind !== "packaging" || value !== "keluar").map((value) => ({
+    value,
+    label: value === "masuk" ? "Masuk" : value === "keluar" ? "Keluar" : "Hitung ulang",
+  }))
 
 const NOTE_PLACEHOLDER: Record<StockKind, Record<MovementMode, string>> = {
   packaging: {
@@ -127,7 +129,7 @@ export function StockMovementDialog({
         <div className="mt-6 space-y-5">
           <SegmentedControl
             label="Jenis perubahan stok"
-            options={MODE_OPTIONS}
+            options={modeOptions(kind)}
             value={mode}
             onChange={(value) => {
               setMode(value)

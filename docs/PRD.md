@@ -53,7 +53,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 ### Global
 
-- **F-01** Top navbar: Dashboard, Pesanan, Pembayaran, Stok Packaging, Produksi, Pengiriman, Laporan, Master Data. Menu aktif diberi latar dan garis bawah cokelat.
+- **F-01** Top navbar: Dashboard, Pesanan, Pembayaran, Produksi, Packaging, Pengiriman, Laporan, Stok Packaging, Master Data. Menu aktif diberi latar dan garis bawah cokelat.
 - **F-02** Tombol **+ Input Pesanan** selalu tampil di navbar dan membuka modal Input Pesanan dari halaman mana pun.
 - **F-03** Ikon notifikasi dengan titik merah untuk item belum dibaca; menu profil (avatar, nama, dropdown).
 - **F-04** Semua kartu KPI menampilkan nilai, sparkline, dan badge perubahan (hijau naik, merah turun) dibanding periode sebelumnya.
@@ -126,8 +126,9 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 ### Modul tanpa desain
 
 - **F-70** Pembayaran: status bayar per pesanan (Lunas / Belum bayar), dibayar lewat apa (metode dari Master Data), dan catatan. Tanpa DP dan tanpa unggah bukti transfer (keputusan pemilik toko, Okt 2026).
-- **F-71** Produksi: rekap porsi per menu dan ukuran per tanggal kirim, serta papan pesanan Belum mulai / Sedang dimasak / Selesai masak. Mulai masak = Diproses, selesai masak = Siap Kirim. Role Produksi boleh mengubah status, tapi hanya untuk langkah dapur ini.
-- **F-72** Stok Packaging: stok masuk, keluar, dan hitung ulang (stok opname) beserta riwayatnya. **Dicatat manual dulu** (keputusan pemilik toko, Okt 2026); stok tidak terpotong otomatis oleh pesanan.
+- **F-71** Produksi: rekap porsi per menu dan ukuran per tanggal kirim, serta papan pesanan Belum mulai / Sedang dimasak / Selesai masak. Mulai masak = Diproses, selesai masak = Siap Packing. Role Produksi boleh mengubah status, tapi hanya untuk langkah dapur ini.
+- **F-72** Stok Packaging: hanya **box hampers** per ukuran (Large/Regular × Classic Red, Mac & Joy, Melted Cheese, Holy E Olio); packaging lama (Box Large/Regular/Dessert, Cup Dessert, Paper Bag) diarsipkan, data dan riwayatnya tetap ada (keputusan pemilik toko, Nov 2026). Stok masuk dan hitung ulang (revisi bila ada selisih) beserta riwayatnya. Stok keluar **terpotong otomatis** saat packing Hampers (F-73), jadi tidak ada stok keluar manual.
+- **F-73** Packaging (menu baru antara Produksi dan Pengiriman, Admin + Produksi): papan Menunggu packing / Selesai packing per tanggal kirim. **Selesai packing** = Siap Packing → Siap Kirim, dengan pilihan jenis packing: **Normal** (packaging biasa, stok tidak dicatat, langsung Siap Kirim) atau **Hampers** (isi jumlah tiap box hampers, dikelompokkan Size Large / Size Regular seperti template "PESANAN BOX HAMPERS"; stoknya terpotong). Jenis packing disimpan di pesanan (`orders.packaging_type`). Stok box kurang = tidak bisa disimpan (tambah/revisi stok dulu). **Batal packing**, atau pesanan ter-packing dibatalkan, mengembalikan stoknya. Siap Kirim hanya bisa dicapai lewat menu ini (keputusan pemilik toko, Nov 2026).
 
 ## Alur pengguna
 
@@ -137,8 +138,9 @@ Semua pesanan melewati status yang sama sampai Siap Kirim; setelah itu status pe
 flowchart TD
     WA["Pesan WA masuk<br/><small>dari customer</small>"] --> IN["Input Pesanan<br/><small>Isi Otomatis</small>"]
     IN --> BARU["Baru<br/><small>nomor BB dibuat</small>"]
-    BARU --> PROSES["Diproses<br/><small>masak, packing</small>"]
-    PROSES --> SIAP["Siap Kirim<br/><small>masuk Pengiriman</small>"]
+    BARU --> PROSES["Diproses<br/><small>sedang dimasak</small>"]
+    PROSES --> PACK["Siap Packing<br/><small>selesai masak</small>"]
+    PACK --> SIAP["Siap Kirim<br/><small>selesai packing, stok terpotong</small>"]
     SIAP -- Kurir Internal --> SD[Siap Dikirim]
     SIAP -- Instant --> MK[Menunggu Kurir]
     SIAP -- Pick Up --> SA[Siap Diambil]
@@ -170,7 +172,7 @@ Pesanan adalah entitas pusat: satu pesanan punya satu customer, banyak item menu
 | StockMovement | item, jenis (masuk/keluar), qty, ref_order, waktu | → Packaging / RawMaterial |
 | User | nama, role (Admin/Staff/Owner), status | — |
 
-Status pesanan: Baru → Diproses → Siap Kirim → Dikirim → Selesai. Status pengiriman berjalan terpisah dan menggerakkan status pesanan (lihat Alur pengguna).
+Status pesanan: Baru → Diproses → Siap Packing → Siap Kirim → Dikirim → Selesai. Status pengiriman berjalan terpisah dan menggerakkan status pesanan (lihat Alur pengguna).
 
 ## Kebutuhan non-fungsional
 

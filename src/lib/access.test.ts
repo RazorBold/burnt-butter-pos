@@ -16,6 +16,13 @@ describe("canAccessPath", () => {
     expect(canAccessPath("owner", "/laporan/ringkasan")).toBe(true)
   })
 
+  it("Packaging untuk Admin dan Produksi saja", () => {
+    expect(canAccessPath("admin", "/packaging")).toBe(true)
+    expect(canAccessPath("produksi", "/packaging")).toBe(true)
+    expect(canAccessPath("kasir", "/packaging")).toBe(false)
+    expect(canAccessPath("owner", "/packaging")).toBe(false)
+  })
+
   it("User / Staff hanya untuk Admin, Master Data lain untuk semua", () => {
     expect(canAccessPath("admin", "/master-data/user-staff")).toBe(true)
     for (const role of ["kasir", "produksi", "owner"] as const) {

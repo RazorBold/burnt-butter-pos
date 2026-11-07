@@ -90,8 +90,8 @@ export function AppNavbar({
                       active && "bg-nav-active font-semibold text-brand-ink",
                     )}
                   >
-                    {/* Ikon hanya mulai 1536 px (lebar desain); di 1280–1535 label saja supaya muat. */}
-                    <item.icon className="hidden size-[18px] 2xl:block" aria-hidden />
+                    {/* Label saja: dengan 9 menu (Packaging, Nov 2026) ikon tidak muat di 1280–1536 px.
+                        Ikon tetap tampil di menu ponsel/tablet. */}
                     {item.label}
                   </Link>
                   {active && (
@@ -111,10 +111,11 @@ export function AppNavbar({
             <Button
               onClick={() => setOrderOpen(true)}
               aria-label="Input Pesanan"
-              className="size-11 rounded-lg px-0 text-sm font-semibold sm:w-auto sm:px-5"
+              className="size-11 rounded-lg px-0 text-sm font-semibold sm:w-auto sm:px-5 xl:w-11 xl:px-0 2xl:w-auto 2xl:px-5"
             >
               <Plus className="size-5 sm:size-[18px]" aria-hidden />
-              <span className="hidden sm:inline">Input Pesanan</span>
+              {/* 1280–1535 px: ikon "+" saja supaya 9 menu muat; label kembali mulai 1536 px. */}
+              <span className="hidden sm:inline xl:hidden 2xl:inline">Input Pesanan</span>
             </Button>
           )}
           <NotificationsMenu stockAlerts={stockAlerts} />

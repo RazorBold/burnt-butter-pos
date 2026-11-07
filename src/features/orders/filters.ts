@@ -8,6 +8,7 @@ import { ORDER_CHANNELS, type OrderChannel, SHIPPING_METHODS } from "./constants
 export const ORDER_STATUSES = [
   "baru",
   "diproses",
+  "siap_packing",
   "siap_kirim",
   "dikirim",
   "selesai",
@@ -18,6 +19,7 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number]
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   baru: "Baru",
   diproses: "Diproses",
+  siap_packing: "Siap Packing",
   siap_kirim: "Siap Kirim",
   dikirim: "Dikirim",
   selesai: "Selesai",

@@ -26,7 +26,7 @@ import { formatRupiah } from "@/lib/format"
 const SURFACE = "#fbf7f3"
 const GRID = "#ece3da"
 
-type StatusKey = "baru" | "diproses" | "siap_kirim" | "dikirim" | "selesai"
+type StatusKey = "baru" | "diproses" | "siap_packing" | "siap_kirim" | "dikirim" | "selesai"
 
 /**
  * Status Pesanan (F-15): bar per status, berurutan Baru → Selesai dengan gradasi ordinal yang

@@ -9,14 +9,31 @@ export type ShipmentStatus =
   "menunggu_kurir" | "siap_dikirim" | "siap_diambil" | "dalam_perjalanan" | "dikirim" | "selesai"
 
 /**
- * Urutan maju. Pick Up dan Ekspedisi (olshop) tidak melewati Dikirim: dari Siap Kirim langsung
- * Selesai. Olshop cukup "belum dikirim" dan "sudah dikirim"; setelah paket diserahkan ke
- * ekspedisi marketplace, tugas toko selesai (tanpa kurir, resi, atau link lacak).
+ * Urutan maju. Selesai masak = Siap Packing; selesai packing (menu Packaging) = Siap Kirim.
+ * Pick Up dan Ekspedisi (olshop) tidak melewati Dikirim: dari Siap Kirim langsung Selesai.
+ * Olshop cukup "belum dikirim" dan "sudah dikirim"; setelah paket diserahkan ke ekspedisi
+ * marketplace, tugas toko selesai (tanpa kurir, resi, atau link lacak).
  */
 function forwardFlow(method: ShippingMethod): OrderStatus[] {
   return method === "pick_up" || method === "ekspedisi"
-    ? ["baru", "diproses", "siap_kirim", "selesai"]
-    : ["baru", "diproses", "siap_kirim", "dikirim", "selesai"]
+    ? ["baru", "diproses", "siap_packing", "siap_kirim", "selesai"]
+    : ["baru", "diproses", "siap_packing", "siap_kirim", "dikirim", "selesai"]
+}
+
+/** Status yang sudah di-packing: stok packaging pesanan ini sudah terpotong. */
+export const PACKED_STATUSES: readonly OrderStatus[] = ["siap_kirim", "dikirim", "selesai"]
+
+/** Status sebelum packing. Pindah ke sini dari status ter-packing = stok packaging dikembalikan. */
+export const UNPACKED_STATUSES: readonly OrderStatus[] = [
+  "baru",
+  "diproses",
+  "siap_packing",
+  "dibatalkan",
+]
+
+/** Siap Packing → Siap Kirim: langkah packing, yang memotong stok packaging. */
+export function isPackingStep(from: OrderStatus, to: OrderStatus): boolean {
+  return from === "siap_packing" && to === "siap_kirim"
 }
 
 /** Status pesanan setelah "Tandai Dikirim": Ekspedisi langsung Selesai, lainnya Dikirim. */
@@ -40,8 +57,18 @@ export function nextStatuses(status: OrderStatus, method: ShippingMethod): Order
   if (index === -1) return ["baru"] // mis. Dikirim lalu metode diubah ke Pick Up
   if (index + 1 < flow.length) options.push(flow[index + 1])
   if (index > 0) options.push(flow[index - 1])
-  if (["baru", "diproses", "siap_kirim"].includes(status)) options.push("dibatalkan")
+  if (["baru", "diproses", "siap_packing", "siap_kirim"].includes(status)) {
+    options.push("dibatalkan")
+  }
   return options
+}
+
+/**
+ * Pilihan di dropdown Ubah Status (Pesanan): seperti nextStatuses, tanpa langkah packing.
+ * Packing dilakukan di menu Packaging supaya pemakaian packaging-nya tercatat.
+ */
+export function manualStatuses(status: OrderStatus, method: ShippingMethod): OrderStatus[] {
+  return nextStatuses(status, method).filter((target) => !isPackingStep(status, target))
 }
 
 /**
@@ -70,6 +97,8 @@ export type StatusRules = {
   limitTo?: readonly OrderStatus[]
   /** Kurir Internal baru boleh Dikirim setelah kurirnya dipilih (dipakai Pengiriman). */
   requireCourier?: boolean
+  /** Langkah packing (Siap Packing → Siap Kirim) hanya dari menu Packaging. */
+  packing?: boolean
 }
 
 /**
@@ -90,6 +119,7 @@ export function statusSkipReason(
     nextStatuses(order.status, order.method).includes(target) &&
     (!rules.limitTo || (rules.limitTo.includes(order.status) && rules.limitTo.includes(target)))
   if (!allowed) return `status ${ORDER_STATUS_LABEL[order.status]}`
+  if (isPackingStep(order.status, target) && !rules.packing) return "belum di-packing"
   if (
     rules.requireCourier &&
     target === "dikirim" &&
@@ -103,5 +133,10 @@ export function statusSkipReason(
 
 /** Status yang masih boleh diubah datanya (customer, alamat, tanggal, metode). */
 export function isEditable(status: OrderStatus): boolean {
-  return status === "baru" || status === "diproses" || status === "siap_kirim"
+  return (
+    status === "baru" ||
+    status === "diproses" ||
+    status === "siap_packing" ||
+    status === "siap_kirim"
+  )
 }

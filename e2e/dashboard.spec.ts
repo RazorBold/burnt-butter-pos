@@ -57,8 +57,9 @@ test.describe("Dashboard", () => {
     const production = page.getByRole("region", { name: /^Rekap Produksi/ })
     await expect(production.getByText("Spaghetti Classico Bologna Brulee")).toBeVisible()
     await expect(production.getByText("Choco Bon Bon")).toBeVisible()
+    // Box hampers (packaging lama diarsipkan).
     await expect(page.getByRole("region", { name: "Stok Packaging (Ringkas)" })).toContainText(
-      "Box Dessert",
+      /Classic Red|Mac & Joy|Melted Cheese|Holy E Olio/,
     )
     await page.screenshot({
       path: `test-results/dashboard-${info.project.name}.png`,

@@ -30,6 +30,13 @@ import { cn } from "@/lib/utils"
 export const metadata: Metadata = { title: "Stok Packaging" }
 
 const PATH = "/stok-packaging"
+
+/** Box hampers dikelompokkan per ukuran, sama dengan template "PESANAN BOX HAMPERS". */
+const SIZE_GROUPS = [
+  { key: "large", title: "Size Large" },
+  { key: "regular", title: "Size Regular" },
+  { key: "lain", title: "Lainnya" },
+] as const
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type SearchParams = PageProps<"/stok-packaging">["searchParams"]
@@ -78,18 +85,39 @@ async function StockOverview() {
           Belum ada packaging. Admin bisa menambahkannya di Master Data › Stok Packaging.
         </p>
       ) : (
-        <section aria-label="Stok per packaging" className="mt-6">
-          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {/* Yang perlu restock tampil lebih dulu. */}
-            {[...items]
-              .sort((a, b) => Number(a.status === "cukup") - Number(b.status === "cukup"))
-              .map((item) => (
-                <li key={item.id} className="flex">
-                  <PackagingStockCard packaging={item} canEdit={canEdit} />
-                </li>
-              ))}
-          </ul>
-        </section>
+        <div className="mt-6 space-y-8">
+          {SIZE_GROUPS.map((group) => {
+            const inGroup = items.filter((item) =>
+              group.key === "lain"
+                ? item.size !== "large" && item.size !== "regular"
+                : item.size === group.key,
+            )
+            if (inGroup.length === 0) return null
+            return (
+              <section key={group.key} aria-labelledby={`stok-${group.key}`}>
+                <h2
+                  id={`stok-${group.key}`}
+                  className="flex items-center gap-2 text-lg font-bold text-brand-ink"
+                >
+                  {group.title}
+                  <span className="rounded-md bg-nav-active px-2 py-0.5 text-sm font-semibold tabular-nums">
+                    {inGroup.length}
+                  </span>
+                </h2>
+                <ul className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {/* Yang perlu restock tampil lebih dulu. */}
+                  {[...inGroup]
+                    .sort((a, b) => Number(a.status === "cukup") - Number(b.status === "cukup"))
+                    .map((item) => (
+                      <li key={item.id} className="flex">
+                        <PackagingStockCard packaging={item} canEdit={canEdit} />
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            )
+          })}
+        </div>
       )}
     </>
   )

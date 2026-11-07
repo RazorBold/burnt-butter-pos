@@ -97,7 +97,7 @@ test.describe("Input Pesanan marketplace", () => {
     await page.getByLabel("Total pembayaran").fill("210000")
     await expect(page.getByTestId("order-total")).toHaveText("Rp 210.000")
     await page.getByRole("button", { name: "Simpan pesanan" }).click()
-    const dialog = page.getByRole("dialog", { name: "Pesanan tersimpan" })
+    const dialog = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
     await expect(dialog.getByText("sudah Lunas via Shopee")).toBeVisible()
     const orderNo = await dialog.getByTestId("saved-order-no").innerText()
     saved.push(orderNo)
@@ -116,7 +116,7 @@ test.describe("Input Pesanan marketplace", () => {
     })
 
     // Nomor invoice yang sama ditolak.
-    await dialog.getByRole("button", { name: "Input pesanan baru" }).click()
+    await page.goto("/pesanan/baru?sumber=shopee")
     await pasteOlshop(page, text)
     await page.getByRole("button", { name: "Simpan pesanan" }).click()
     await expect(

@@ -50,6 +50,9 @@ import { formatHariTanggal, formatRupiah, toJakartaDateString } from "@/lib/form
 import { cn } from "@/lib/utils"
 import { type OrderType, type ParsedItem, parseWaOrder } from "@/lib/wa-parser"
 
+/** Lama popup "Pesanan sudah terinput" sebelum pindah ke daftar pesanan. */
+const SAVED_REDIRECT_MS = 3000
+
 const TYPE_OPTIONS = [
   { value: "personal", label: "Personal" },
   { value: "hadiah", label: "Hadiah" },
@@ -220,6 +223,7 @@ export function NewOrderWorkspace({
     startSaving(async () => {
       const result = await createOrder({ draft, waText })
       if (result.ok) {
+        toast.success(`Pesanan ${result.orderNo} tersimpan.`)
         setSaved(result)
         return
       }
@@ -234,6 +238,17 @@ export function NewOrderWorkspace({
     setSaved(undefined)
     reset()
   }
+
+  /** Buka daftar pesanan dengan panel detail pesanan yang baru tersimpan. */
+  const listHref = saved ? `/pesanan?pesanan=${encodeURIComponent(saved.orderNo)}` : "/pesanan"
+  const goToList = useCallback(() => router.push(listHref), [router, listHref])
+
+  // Popup tampil sebentar, lalu otomatis ke daftar pesanan. "Input pesanan baru" membatalkannya.
+  useEffect(() => {
+    if (!saved) return
+    const timer = window.setTimeout(goToList, SAVED_REDIRECT_MS)
+    return () => window.clearTimeout(timer)
+  }, [saved, goToList])
 
   const issues = draftIssues(draft, today)
   const { items, total } = orderTotal(catalog, draft.quantities)
@@ -613,14 +628,14 @@ export function NewOrderWorkspace({
           </div>
         </section>
 
-        <Dialog open={Boolean(saved)} onOpenChange={(open) => !open && closeSaved()}>
+        <Dialog open={Boolean(saved)} onOpenChange={(open) => !open && goToList()}>
           <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
             <DialogHeader className="items-start text-left">
               <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-status-selesai text-status-selesai-fg">
                 <CircleCheck className="size-6" aria-hidden />
               </span>
               <DialogTitle className="text-2xl font-bold text-brand-ink">
-                Pesanan tersimpan
+                Pesanan sudah terinput
               </DialogTitle>
               <DialogDescription className="text-text-body">
                 {marketplace
@@ -651,12 +666,23 @@ export function NewOrderWorkspace({
                 </div>
               </dl>
             )}
+            <p aria-live="polite" className="mt-4 flex items-center gap-2 text-sm text-text-body">
+              <LoaderCircle
+                className="size-4 animate-spin motion-reduce:animate-none"
+                aria-hidden
+              />
+              Membuka daftar pesanan…
+            </p>
             <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <Button asChild variant="outline" className="h-11 rounded-lg bg-white px-5">
-                <Link href="/pesanan">Lihat daftar pesanan</Link>
-              </Button>
-              <Button onClick={closeSaved} className="h-11 rounded-lg px-5">
+              <Button
+                variant="outline"
+                onClick={closeSaved}
+                className="h-11 rounded-lg bg-white px-5"
+              >
                 Input pesanan baru
+              </Button>
+              <Button asChild className="h-11 rounded-lg px-5">
+                <Link href={listHref}>Lihat di daftar pesanan</Link>
               </Button>
             </div>
           </DialogContent>

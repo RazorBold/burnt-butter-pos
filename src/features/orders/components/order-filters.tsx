@@ -72,7 +72,7 @@ export function OrderFilters({ from, to, today }: { from: string; to: string; to
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari nama, no. pesanan, resi, telp…"
+          placeholder="Cari nama, no. pesanan, telp…"
           aria-label="Cari nama, no. pesanan, atau no. telp"
           className="h-10 rounded-lg bg-white pl-9"
         />

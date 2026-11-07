@@ -123,7 +123,7 @@ test.describe("Input Pesanan › Simpan", () => {
     await page.getByRole("button", { name: "Isi Otomatis" }).click()
     await expect(page.getByText("Data pesanan lengkap.")).toBeVisible()
     await page.getByRole("button", { name: "Simpan pesanan" }).click()
-    const dialog = page.getByRole("dialog", { name: "Pesanan tersimpan" })
+    const dialog = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
     await expect(dialog).toBeVisible()
     const orderNo = await dialog.getByTestId("saved-order-no").innerText()
     saved.push(orderNo)
@@ -161,10 +161,14 @@ test.describe("Input Pesanan › Simpan", () => {
     })
     expect(order?.raw_wa_text).toContain(`Nama Lengkap: ${name}`)
 
-    // Form dikosongkan supaya pesanan yang sama tidak tersimpan dua kali.
-    await dialog.getByRole("button", { name: "Input pesanan baru" }).click()
-    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue("")
-    await expect(page.getByRole("textbox", { name: "Pesan WhatsApp" })).toHaveValue("")
+    // Popup lalu otomatis ke daftar pesanan, dengan panel detail pesanan baru terbuka.
+    await expect(page).toHaveURL(new RegExp(`/pesanan\\?pesanan=${orderNo}$`), { timeout: 10_000 })
+    await expect(
+      page
+        .getByRole("complementary", { name: "Detail Pesanan" })
+        .getByText(orderNo, { exact: true }),
+    ).toBeVisible()
+    await page.screenshot({ path: "test-results/input-pesanan-redirect-desktop.png" })
 
     // Ringkasan customer ikut terisi.
     await page.goto(`/master-data/customer?q=${phone}`)

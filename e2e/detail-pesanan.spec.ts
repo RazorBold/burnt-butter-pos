@@ -23,7 +23,7 @@ async function createOrder(page: Page, name: string) {
     )
   await page.getByRole("button", { name: "Isi Otomatis" }).click()
   await page.getByRole("button", { name: "Simpan pesanan" }).click()
-  const dialog = page.getByRole("dialog", { name: "Pesanan tersimpan" })
+  const dialog = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
   const orderNo = await dialog.getByTestId("saved-order-no").innerText()
   await dialog.getByRole("button", { name: "Input pesanan baru" }).click()
   return orderNo

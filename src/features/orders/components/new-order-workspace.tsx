@@ -11,7 +11,16 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { type ReactNode, useCallback, useEffect, useId, useState, useTransition } from "react"
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react"
 import { toast } from "sonner"
 
 import { SegmentedControl } from "@/components/app/segmented-control"
@@ -249,6 +258,26 @@ export function NewOrderWorkspace({
     const timer = window.setTimeout(goToList, SAVED_REDIRECT_MS)
     return () => window.clearTimeout(timer)
   }, [saved, goToList])
+
+  // Cache Components menyembunyikan halaman (Activity), bukan membuangnya, jadi state tetap ada
+  // saat halaman ini dibuka lagi. Pesanan yang sudah tersimpan tidak boleh ikut kembali: popup
+  // dan timernya akan muncul lagi dan menutupi pesan baru dari modal Input Pesanan. Draft yang
+  // belum disimpan tetap dipertahankan.
+  const savedRef = useRef(saved)
+  useLayoutEffect(() => {
+    savedRef.current = saved
+  }, [saved])
+  useLayoutEffect(() => {
+    return () => {
+      if (!savedRef.current) return
+      savedRef.current = undefined
+      setSaved(undefined)
+      setWaText("")
+      setDraft((current) => ({ ...EMPTY_DRAFT, channel: current.channel }))
+      setFlagged(new Set())
+      setSummary(null)
+    }
+  }, [])
 
   const issues = draftIssues(draft, today)
   const { items, total } = orderTotal(catalog, draft.quantities)

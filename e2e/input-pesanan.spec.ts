@@ -227,4 +227,48 @@ test.describe("Input Pesanan › Simpan", () => {
     await expect(rows.filter({ hasText: firstNo })).toContainText(first)
     await expect(rows.filter({ hasText: secondNo })).toContainText(second)
   })
+
+  test("pesanan kedua lewat modal setelah pindah ke daftar: tidak kembali ke pesanan pertama", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    test.setTimeout(60_000)
+    const stamp = Date.now()
+    const message = (name: string, phone: string) =>
+      PERSONAL_SAMPLE.replace("Siti Nurhaliza", name)
+        .replace("0812-3456-7890", phone)
+        .replace("Sabtu, 25 Oktober 2026", "besok")
+    const viaModal = async (text: string) => {
+      await page.getByRole("button", { name: "Input Pesanan" }).click()
+      const modal = page.getByRole("dialog", { name: "Input Pesanan" })
+      await modal.getByLabel("Pesan WhatsApp").fill(text)
+      await modal.getByRole("button", { name: "Isi Otomatis" }).click()
+      await expect(page).toHaveURL(/\/pesanan\/baru$/)
+    }
+    const first = `QA Customer ${stamp} A`
+    const second = `QA Customer ${stamp} B`
+
+    await login(page, "/dashboard")
+    await viaModal(message(first, `0899${String(stamp).slice(-8)}`))
+    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue(first)
+    await page.getByRole("button", { name: "Simpan pesanan" }).click()
+    const firstPopup = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
+    const firstNo = await firstPopup.getByTestId("saved-order-no").innerText()
+    saved.push(firstNo)
+    await expect(page).toHaveURL(/\/pesanan\?pesanan=/, { timeout: 10_000 })
+
+    // Bug lama: halaman Input Pesanan yang disembunyikan (Activity) membawa popup pesanan
+    // pertama dan timernya, sehingga pesanan kedua tidak sempat disimpan.
+    await viaModal(message(second, `0898${String(stamp).slice(-8)}`))
+    await expect(page.getByRole("dialog", { name: "Pesanan sudah terinput" })).toBeHidden()
+    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue(second)
+    await page.waitForTimeout(3_500) // lewat dari timer popup lama: tetap di form
+    await expect(page).toHaveURL(/\/pesanan\/baru$/)
+    await page.getByRole("button", { name: "Simpan pesanan" }).click()
+    const secondPopup = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
+    const secondNo = await secondPopup.getByTestId("saved-order-no").innerText()
+    saved.push(secondNo)
+    expect(secondNo).not.toBe(firstNo)
+    expect(await readOrder(secondNo)).toMatchObject({ order_name: second })
+  })
 })

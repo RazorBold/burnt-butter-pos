@@ -1,4 +1,4 @@
-import { ChefHat, CircleCheck, Clock, UtensilsCrossed } from "lucide-react"
+import { ChefHat, CircleCheck, Clock, UtensilsCrossed, WalletCards } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import { Suspense } from "react"
@@ -30,7 +30,8 @@ const STAGES: ProductionStage[] = ["belum", "proses", "selesai"]
 
 type SearchParams = PageProps<"/produksi">["searchParams"]
 
-// Desain belum ada. Keputusan pemilik toko: rekap per tanggal kirim. "Selesai masak" =
+// Desain belum ada. Keputusan pemilik toko: rekap per tanggal kirim, hanya pesanan yang sudah
+// Lunas (atau terlanjur dimasak). "Selesai masak" =
 // status pesanan Siap Packing, lalu pesanan di-packing di menu Packaging sebelum dikirim.
 export default function ProduksiPage({ searchParams }: PageProps<"/produksi">) {
   return (
@@ -54,7 +55,11 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
       ? params.tanggal
       : today
 
-  const orders = await listProductionOrders(date)
+  const all = await listProductionOrders(date)
+  // Keputusan pemilik toko (Nov 2026): yang belum Lunas belum masuk antrean masak. Yang sudah
+  // terlanjur dimasak tetap tampil.
+  const orders = all.filter((order) => order.paid || order.status !== "baru")
+  const unpaid = all.length - orders.length
   const menus = summarizeProduction(orders)
   const totals = productionTotals(orders)
   const dateLabel = date === today ? "hari ini" : formatHariTanggal(date)
@@ -82,9 +87,19 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
         />
       </div>
 
+      {unpaid > 0 && (
+        <p className="mt-6 flex items-start gap-2 rounded-2xl border border-status-diproses-fg/30 bg-status-diproses px-5 py-3.5 text-sm text-status-diproses-fg">
+          <WalletCards className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {unpaid} pesanan untuk {dateLabel} belum dibayar, jadi belum masuk antrean masak. Pesanan
+          muncul di sini setelah ditandai Lunas di menu Pembayaran.
+        </p>
+      )}
+
       {orders.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-dashed border-border px-6 py-12 text-center text-text-body">
-          Belum ada pesanan yang dikirim {dateLabel}.
+          {unpaid > 0
+            ? `Belum ada pesanan lunas yang dikirim ${dateLabel}.`
+            : `Belum ada pesanan yang dikirim ${dateLabel}.`}
         </p>
       ) : (
         <>

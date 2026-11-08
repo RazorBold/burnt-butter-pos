@@ -119,7 +119,12 @@ const QA_STATUSES: OrderStatus[] = [
 ]
 const QA_METHODS = ["kurir_internal", "instant", "pick_up"] as const
 
-type SeedPlan = { status: OrderStatus; method: (typeof QA_METHODS)[number] }
+type SeedPlan = {
+  status: OrderStatus
+  method: (typeof QA_METHODS)[number]
+  /** Sudah Lunas (pesanan baru masuk antrean masak setelah Lunas). */
+  paid?: boolean
+}
 
 /**
  * Buat `count` pesanan uji hari ini langsung di DB, untuk menguji daftar dan filter.
@@ -143,7 +148,7 @@ export async function seedQaOrders(
       const [customer] = await tx<{ id: string }[]>`
         insert into customers (name, phone) values (${customerName}, ${phone}) returning id`
       for (let i = 0; i < count; i++) {
-        const { status, method } = options.plan?.[i] ?? {
+        const { status, method, paid } = options.plan?.[i] ?? {
           status: QA_STATUSES[i % QA_STATUSES.length],
           method: QA_METHODS[i % QA_METHODS.length],
         }
@@ -161,6 +166,7 @@ export async function seedQaOrders(
           returning id`
         await tx`insert into shipments (order_id, method, status)
           values (${order.id}, ${method}, ${shipmentStatusFor(status, method)})`
+        if (paid) await insertPayment(tx, order.id, 100_000 + i * 10_000)
       }
     })
   } finally {
@@ -459,6 +465,31 @@ export async function readPackagingStock(name: string): Promise<number | undefin
   try {
     const [row] = await sql<{ stock: number }[]>`select stock from packagings where name = ${name}`
     return row?.stock
+  } finally {
+    await sql.end()
+  }
+}
+
+async function insertPayment(tx: postgres.TransactionSql, orderId: string, amount: number) {
+  const [method] = await tx<{ id: string }[]>`
+    select id from payment_methods where is_active order by created_at limit 1`
+  await tx`insert into payments (order_id, payment_method_id, amount, status, paid_at)
+    values (${orderId}, ${method.id}, ${amount}, 'lunas', now())`
+}
+
+/** Tandai pesanan uji Lunas langsung di DB (nominal = total), supaya bisa mulai dimasak. */
+export async function markQaOrderPaid(orderNo: string) {
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql.begin(async (tx) => {
+      const [order] = await tx<{ id: string; total: number; name: string }[]>`
+        select o.id, o.total, o.customer_name as name from orders o where o.order_no = ${orderNo}`
+      if (!order?.name.startsWith("QA Customer "))
+        throw new Error("Hanya pesanan uji (QA Customer …) yang boleh ditandai lunas lewat test")
+      await insertPayment(tx, order.id, order.total)
+    })
   } finally {
     await sql.end()
   }

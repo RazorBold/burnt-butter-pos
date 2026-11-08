@@ -17,6 +17,8 @@ export type ProductionOrder = {
   request: string | null
   note: string | null
   hasCard: boolean
+  /** Sudah Lunas. Pesanan Baru yang belum lunas belum masuk antrean masak. */
+  paid: boolean
   createdAt: Date
   items: ProductionItem[]
 }
@@ -28,8 +30,9 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
       and(eq(order.deliveryDate, deliveryDate), ne(order.status, "dibatalkan")),
     with: {
       shipment: { columns: { method: true } },
+      payments: { columns: { id: true }, where: (payment, { eq }) => eq(payment.status, "lunas") },
       items: {
-        columns: { qty: true },
+        columns: { qty: true, note: true },
         with: {
           variant: {
             columns: { size: true },
@@ -54,6 +57,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     request: row.request,
     note: row.note,
     hasCard: Boolean(row.cardTo || row.cardWishes || row.cardFrom),
+    paid: row.payments.length > 0,
     createdAt: row.createdAt,
     items: row.items.map((item) => ({
       menuName: item.variant.menu.name,
@@ -62,6 +66,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
       qty: item.qty,
       photoPath: item.variant.menu.photoPath,
       menuOrder: item.variant.menu.createdAt.getTime(),
+      note: item.note,
     })),
   }))
 }

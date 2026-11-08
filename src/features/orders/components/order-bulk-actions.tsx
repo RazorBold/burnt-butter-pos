@@ -70,7 +70,10 @@ const STATUS_TARGETS: OrderStatus[] = [
 ]
 
 const canChange = (row: OrderActionRow, target: OrderStatus) =>
-  statusSkipReason({ status: row.status, method: row.method, hasCourier: true }, target) === null
+  statusSkipReason(
+    { status: row.status, method: row.method, hasCourier: true, paid: row.paid },
+    target,
+  ) === null
 const canPay = (row: OrderActionRow) => !row.paid && row.status !== "dibatalkan"
 
 type DialogKind = "paid" | "cancel" | "note"

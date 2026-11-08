@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { HADIAH_SAMPLE, PERSONAL_SAMPLE } from "../src/lib/wa-parser/templates"
-import { readOrder, removeOrderByNo } from "./helpers/cleanup"
+import { markQaOrderPaid, readOrder, removeOrderByNo } from "./helpers/cleanup"
 import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
@@ -88,7 +88,8 @@ test.describe("Pengiriman", () => {
       /google\.com\/maps/,
     )
 
-    // Masak ketiganya lewat Produksi.
+    // Masak ketiganya lewat Produksi (baru masuk antrean masak setelah Lunas).
+    for (const orderNo of [instant, kurir, pickUp]) await markQaOrderPaid(orderNo)
     await page.goto(`/produksi?tanggal=${date.iso}`)
     for (const orderNo of [instant, kurir, pickUp]) {
       await page.getByRole("button", { name: `Mulai masak: ${orderNo}` }).click()

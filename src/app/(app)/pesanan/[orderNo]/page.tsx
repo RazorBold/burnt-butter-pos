@@ -20,7 +20,9 @@ import {
 import { OrderInfo } from "@/features/orders/components/order-detail-panel"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
 import { ORDER_STATUS_LABEL } from "@/features/orders/filters"
-import { getOrderDetail, getOrderHistory } from "@/features/orders/queries"
+import { EditItemsDialog } from "@/features/orders/components/edit-items-dialog"
+import { getOrderCatalog, getOrderDetail, getOrderHistory } from "@/features/orders/queries"
+import { isMenuEditable } from "@/features/orders/status"
 import { requirePageAccess } from "@/lib/auth"
 import { formatRupiah, formatWaktuDibuat } from "@/lib/format"
 import { photoSrc } from "@/lib/photos"
@@ -57,7 +59,7 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
   const { orderNo } = await params
   const order = await getOrderDetail(decodeURIComponent(orderNo))
   if (!order) notFound()
-  const history = await getOrderHistory(order.id)
+  const [history, catalog] = await Promise.all([getOrderHistory(order.id), getOrderCatalog()])
 
   return (
     <>
@@ -87,9 +89,12 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
             aria-labelledby="menu-title"
             className="scroll-mt-28 rounded-2xl border border-border bg-card"
           >
-            <h2 id="menu-title" className="px-5 pt-4 pb-2 font-semibold text-brand-ink sm:px-6">
-              Daftar Menu
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4 pb-2 sm:px-6">
+              <h2 id="menu-title" className="font-semibold text-brand-ink">
+                Daftar Menu
+              </h2>
+              {isMenuEditable(order.status) && <EditItemsDialog order={order} catalog={catalog} />}
+            </div>
             <div className="overflow-x-auto">
               <Table className="min-w-[520px]">
                 <TableHeader>
@@ -125,6 +130,11 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
                             <span className="text-text-strong">
                               {item.menuName}
                               {size && ` (${size})`}
+                              {item.note && (
+                                <span className="mt-0.5 block text-[13px] font-medium text-status-diproses-fg">
+                                  Catatan: {item.note}
+                                </span>
+                              )}
                             </span>
                           </span>
                         </TableCell>

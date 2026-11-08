@@ -192,7 +192,14 @@ export type OrderDetail = {
   note: string | null
   customer: { name: string; phone: string | null }
   /** Kosong = belum bayar. */
-  payment: { methodId: string; methodName: string; note: string | null; paidAt: Date | null } | null
+  payment: {
+    methodId: string
+    methodName: string
+    note: string | null
+    paidAt: Date | null
+    /** Nominal yang dibayar; bisa beda dari total bila menu diubah setelah lunas. */
+    amount: number
+  } | null
   shipment: {
     method: ShippingMethod
     status: ShipmentStatus | null
@@ -205,8 +212,10 @@ export type OrderDetail = {
   }
   items: {
     id: string
+    menuVariantId: string
     menuName: string
     size: "large" | "regular" | "single"
+    note: string | null
     qty: number
     unitPrice: number
     subtotal: number
@@ -270,6 +279,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
           methodName: order.payments[0].method.name,
           note: order.payments[0].note,
           paidAt: order.payments[0].paidAt,
+          amount: order.payments[0].amount,
         }
       : null,
     shipment: {
@@ -292,8 +302,10 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       )
       .map((item) => ({
         id: item.id,
+        menuVariantId: item.menuVariantId,
         menuName: item.variant.menu.name,
         size: item.variant.size,
+        note: item.note,
         qty: item.qty,
         unitPrice: item.unitPrice,
         subtotal: item.subtotal,

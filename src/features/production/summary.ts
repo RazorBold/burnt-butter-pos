@@ -26,6 +26,8 @@ export type ProductionItem = {
   photoPath: string | null
   /** Urutan menu di Master Data (urutan dibuat), supaya rekap mengikuti urutan template. */
   menuOrder: number
+  /** Catatan khusus menu ini dari admin pesanan. */
+  note?: string | null
 }
 
 export type ProductionOrderLike = { status: OrderStatus; items: ProductionItem[] }

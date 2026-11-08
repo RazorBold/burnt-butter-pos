@@ -20,7 +20,7 @@ import {
 import { CAN_INPUT_ORDER } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { BULK_LIMIT, type BulkResult, summarizeBulk } from "@/lib/bulk"
-import { toJakartaDateString } from "@/lib/format"
+import { formatRupiah, toJakartaDateString } from "@/lib/format"
 import { normalizePhone } from "@/lib/phone"
 
 import { isMarketplace, ORDER_CHANNEL_LABEL, type OrderChannel } from "./constants"
@@ -30,7 +30,7 @@ import { ordersToCsv } from "./csv"
 import { formatOrderNo } from "./order-number"
 import { getOrdersForExport } from "./queries"
 import { orderEditSchema, orderSubmitSchema } from "./schemas"
-import { isEditable, shipmentStatusFor } from "./status"
+import { isEditable, isMenuEditable, shipmentStatusFor } from "./status"
 import { changeStatuses, revalidateOrders } from "./status-change"
 
 export type CreateOrderResult =
@@ -287,6 +287,12 @@ async function changeOrderStatus(
   if (done.length > 0) {
     return { ok: true, message: `Status ${done[0]} jadi ${ORDER_STATUS_LABEL[status]}.` }
   }
+  if (skipped[0]?.reason === "belum lunas") {
+    return {
+      ok: false,
+      message: `${skipped[0].orderNo} belum lunas. Catat pembayarannya dulu, baru bisa mulai dimasak.`,
+    }
+  }
   if (skipped[0]?.reason === "belum di-packing") {
     return { ok: false, message: "Tandai selesai packing lewat menu Packaging." }
   }
@@ -513,4 +519,140 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
   revalidateOrders([current.orderNo])
   revalidatePath("/master-data/customer")
   return { ok: true, message: `Data ${current.orderNo} disimpan.` }
+}
+
+const orderItemsSchema = z.object({
+  orderId: z.uuid(),
+  items: z
+    .array(
+      z.object({
+        menuVariantId: z.uuid(),
+        qty: z.number().int().min(1).max(99),
+        note: z.string().trim().max(120, "Catatan menu paling panjang 120 huruf."),
+      }),
+    )
+    .min(1, "Pesanan harus berisi minimal satu menu.")
+    .max(50),
+})
+
+export type UpdateOrderItemsResult =
+  { ok: true; message: string; warning?: string } | { ok: false; message: string }
+
+/**
+ * Ubah menu pesanan (Admin, Kasir): tambah, ganti jumlah, hapus, dan catatan per menu. Hanya
+ * selama Baru atau Diproses (belum selesai dimasak). Menu yang sudah ada tetap memakai harga
+ * saat dipesan; menu baru memakai harga sekarang. Total WhatsApp dihitung ulang; total
+ * marketplace tetap (sesuai marketplace). Pembayaran Lunas tidak diubah, tapi selisihnya
+ * dilaporkan supaya bisa ditagih atau dikembalikan.
+ */
+export async function updateOrderItems(input: unknown): Promise<UpdateOrderItemsResult> {
+  try {
+    await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const parsed = orderItemsSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Data menu tidak terbaca." }
+  }
+  const { orderId } = parsed.data
+  // Varian yang sama digabung.
+  const merged = new Map<string, { qty: number; note: string }>()
+  for (const item of parsed.data.items) {
+    const current = merged.get(item.menuVariantId)
+    merged.set(item.menuVariantId, {
+      qty: (current?.qty ?? 0) + item.qty,
+      note: current?.note || item.note,
+    })
+  }
+
+  class Rejected extends Error {}
+  try {
+    const result = await getDb().transaction(async (tx) => {
+      const [order] = await tx
+        .select({
+          orderNo: orders.orderNo,
+          status: orders.status,
+          channel: orders.channel,
+          total: orders.total,
+        })
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .for("update")
+      if (!order) throw new Rejected("Pesanan tidak ditemukan. Muat ulang halaman.")
+      if (!isMenuEditable(order.status)) {
+        throw new Rejected(
+          `Menu ${order.orderNo} sudah terkunci karena pesanan ${ORDER_STATUS_LABEL[order.status]}.`,
+        )
+      }
+
+      const existing = await tx
+        .select({ menuVariantId: orderItems.menuVariantId, unitPrice: orderItems.unitPrice })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId))
+      const oldPrice = new Map(existing.map((item) => [item.menuVariantId, item.unitPrice]))
+      const added = [...merged.keys()].filter((id) => !oldPrice.has(id))
+      const prices =
+        added.length === 0
+          ? []
+          : await tx
+              .select({ id: menuVariants.id, price: menuVariants.price })
+              .from(menuVariants)
+              .innerJoin(menus, eq(menus.id, menuVariants.menuId))
+              .where(
+                and(
+                  inArray(menuVariants.id, added),
+                  eq(menuVariants.isActive, true),
+                  eq(menus.isActive, true),
+                ),
+              )
+      if (prices.length !== added.length) {
+        throw new Rejected("Ada menu yang sudah nonaktif. Muat ulang lalu pilih lagi.")
+      }
+      const newPrice = new Map(prices.map((item) => [item.id, item.price]))
+
+      const rows = [...merged].map(([menuVariantId, { qty, note }]) => {
+        const unitPrice = oldPrice.get(menuVariantId) ?? newPrice.get(menuVariantId)!
+        return {
+          orderId,
+          menuVariantId,
+          qty,
+          unitPrice,
+          subtotal: unitPrice * qty,
+          note: note || null,
+        }
+      })
+      await tx.delete(orderItems).where(eq(orderItems.orderId, orderId))
+      await tx.insert(orderItems).values(rows)
+
+      const total = isMarketplace(order.channel)
+        ? order.total
+        : rows.reduce((sum, row) => sum + row.subtotal, 0)
+      if (total !== order.total)
+        await tx.update(orders).set({ total }).where(eq(orders.id, orderId))
+
+      const [payment] = await tx
+        .select({ amount: payments.amount })
+        .from(payments)
+        .where(and(eq(payments.orderId, orderId), eq(payments.status, "lunas")))
+      return { orderNo: order.orderNo, total, paidAmount: payment?.amount ?? null }
+    })
+
+    revalidateOrders([result.orderNo])
+    const diff = result.paidAmount === null ? 0 : result.total - result.paidAmount
+    return {
+      ok: true,
+      message: `Menu ${result.orderNo} disimpan. Total ${formatRupiah(result.total)}.`,
+      warning:
+        diff > 0
+          ? `Sudah lunas ${formatRupiah(result.paidAmount!)}. Customer kurang bayar ${formatRupiah(diff)}.`
+          : diff < 0
+            ? `Sudah lunas ${formatRupiah(result.paidAmount!)}. Lebih bayar ${formatRupiah(-diff)}, kembalikan ke customer.`
+            : undefined,
+    }
+  } catch (error) {
+    if (error instanceof Rejected) return { ok: false, message: error.message }
+    throw error
+  }
 }

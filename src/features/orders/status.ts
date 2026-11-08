@@ -31,6 +31,16 @@ export const UNPACKED_STATUSES: readonly OrderStatus[] = [
   "dibatalkan",
 ]
 
+/** Baru → Diproses: mulai dimasak. Hanya untuk pesanan yang sudah Lunas. */
+export function isCookingStart(from: OrderStatus, to: OrderStatus): boolean {
+  return from === "baru" && to === "diproses"
+}
+
+/** Menu pesanan boleh diubah selama belum selesai dimasak (Baru, Diproses). */
+export function isMenuEditable(status: OrderStatus): boolean {
+  return status === "baru" || status === "diproses"
+}
+
 /** Siap Packing → Siap Kirim: langkah packing, yang memotong stok packaging. */
 export function isPackingStep(from: OrderStatus, to: OrderStatus): boolean {
   return from === "siap_packing" && to === "siap_kirim"
@@ -110,6 +120,8 @@ export function statusSkipReason(
     status: OrderStatus
     method: ShippingMethod
     hasCourier: boolean
+    /** Sudah Lunas. `false` = belum dibayar, belum boleh mulai dimasak. */
+    paid?: boolean
   },
   target: OrderStatus,
   rules: StatusRules = {},
@@ -120,6 +132,8 @@ export function statusSkipReason(
     (!rules.limitTo || (rules.limitTo.includes(order.status) && rules.limitTo.includes(target)))
   if (!allowed) return `status ${ORDER_STATUS_LABEL[order.status]}`
   if (isPackingStep(order.status, target) && !rules.packing) return "belum di-packing"
+  // Keputusan pemilik toko (Nov 2026): pesanan baru masuk antrean masak setelah Lunas.
+  if (isCookingStart(order.status, target) && order.paid === false) return "belum lunas"
   if (
     rules.requireCourier &&
     target === "dikirim" &&

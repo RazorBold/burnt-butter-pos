@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { HADIAH_SAMPLE, PERSONAL_SAMPLE } from "../src/lib/wa-parser/templates"
-import { readOrder, removeOrderByNo } from "./helpers/cleanup"
+import { markQaOrderPaid, readOrder, removeOrderByNo } from "./helpers/cleanup"
 import { expectAccessDenied } from "./helpers/access"
 import { loginAs } from "./helpers/login"
 
@@ -70,7 +70,17 @@ test.describe("Produksi", () => {
     )
     saved.push(hadiah)
 
+    // Belum lunas: belum masuk antrean masak.
     await page.goto(`/produksi?tanggal=${date.iso}`)
+    await expect(
+      page.getByText(/2 pesanan untuk .* belum dibayar, jadi belum masuk antrean masak/),
+    ).toBeVisible()
+    await expect(page.getByRole("article", { name: personal })).toHaveCount(0)
+
+    await markQaOrderPaid(personal)
+    await markQaOrderPaid(hadiah)
+    await page.reload()
+    await expect(page.getByText(/belum dibayar, jadi belum masuk antrean masak/)).toHaveCount(0)
     await expect(page.getByText("Total Porsi")).toBeVisible()
     await expect(page.getByText("0 / 8")).toBeVisible()
     const bolo = page.getByRole("article", { name: "Spaghetti Classico Bologna Brulee" })

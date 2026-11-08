@@ -28,7 +28,12 @@ export type PackingOrder = {
   request: string | null
   note: string | null
   hasCard: boolean
-  items: { menuName: string; size: "large" | "regular" | "single"; qty: number }[]
+  items: {
+    menuName: string
+    size: "large" | "regular" | "single"
+    qty: number
+    note: string | null
+  }[]
   /** Normal / Hampers; null sebelum di-packing (atau di-packing sebelum ada pilihan ini). */
   packagingType: "normal" | "hampers" | null
   /** Box hampers yang terpotong saat packing (bersih setelah pengembalian). */
@@ -65,7 +70,7 @@ export async function listPackingOrders(
     with: {
       shipment: { columns: { method: true } },
       items: {
-        columns: { qty: true },
+        columns: { qty: true, note: true },
         with: {
           variant: { columns: { size: true }, with: { menu: { columns: { name: true } } } },
         },
@@ -111,6 +116,7 @@ export async function listPackingOrders(
       menuName: item.variant.menu.name,
       size: item.variant.size,
       qty: item.qty,
+      note: item.note,
     })),
     used: netUsage(
       movements.filter((movement) => movement.orderId === row.id),

@@ -91,10 +91,15 @@ export function PackingOrderCard({
             <span className="w-8 shrink-0 text-right font-semibold text-brand-ink tabular-nums">
               {item.qty}×
             </span>
-            <span className="text-text-strong">
+            <span className="min-w-0 text-text-strong">
               {item.menuName}
               {SIZE_LABEL[item.size] && (
                 <span className="text-text-body"> ({SIZE_LABEL[item.size]})</span>
+              )}
+              {item.note && (
+                <span className="mt-0.5 block text-[13px] font-medium break-words text-status-diproses-fg">
+                  Catatan: {item.note}
+                </span>
               )}
             </span>
           </li>

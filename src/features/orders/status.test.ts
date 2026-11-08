@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  isCookingStart,
   isEditable,
+  isMenuEditable,
   isPackingStep,
   manualStatuses,
   nextStatuses,
@@ -157,5 +159,35 @@ describe("Packing (Siap Packing → Siap Kirim)", () => {
 
   it("data pesanan masih bisa diubah saat Siap Packing", () => {
     expect(isEditable("siap_packing")).toBe(true)
+  })
+})
+
+describe("Pembayaran sebelum masak dan ubah menu", () => {
+  const order = { status: "baru", method: "instant", hasCourier: false } as const
+
+  it("belum lunas belum boleh mulai dimasak; lunas boleh", () => {
+    expect(isCookingStart("baru", "diproses")).toBe(true)
+    expect(statusSkipReason({ ...order, paid: false }, "diproses")).toBe("belum lunas")
+    expect(statusSkipReason({ ...order, paid: true }, "diproses")).toBeNull()
+    // Tanpa info bayar (mis. pemeriksaan di klien) aturan ini tidak dipakai.
+    expect(statusSkipReason(order, "diproses")).toBeNull()
+  })
+
+  it("belum lunas tetap boleh dibatalkan", () => {
+    expect(statusSkipReason({ ...order, paid: false }, "dibatalkan")).toBeNull()
+  })
+
+  it("menu bisa diubah saat Baru dan Diproses, terkunci setelah selesai masak", () => {
+    expect(isMenuEditable("baru")).toBe(true)
+    expect(isMenuEditable("diproses")).toBe(true)
+    for (const status of [
+      "siap_packing",
+      "siap_kirim",
+      "dikirim",
+      "selesai",
+      "dibatalkan",
+    ] as const) {
+      expect(isMenuEditable(status)).toBe(false)
+    }
   })
 })

@@ -1,10 +1,10 @@
 import "server-only"
 
-import { asc, eq, inArray } from "drizzle-orm"
+import { and, asc, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { getDb } from "@/db"
-import { orders, orderStatusLogs, shipments } from "@/db/schema"
+import { orders, orderStatusLogs, payments, shipments } from "@/db/schema"
 import type { PackagingUse } from "@/features/packing/needs"
 
 /** Isian dialog packing: Normal (tanpa stok) atau Hampers dengan box yang dipakai. */
@@ -69,13 +69,36 @@ export async function changeStatuses(
       .orderBy(asc(orders.id))
       .for("update")
 
+    // Status bayar dibaca terpisah: FOR UPDATE tidak boleh di sisi nullable left join.
+    const paidRows =
+      rows.length === 0
+        ? []
+        : await tx
+            .select({ orderId: payments.orderId })
+            .from(payments)
+            .where(
+              and(
+                inArray(
+                  payments.orderId,
+                  rows.map((row) => row.id),
+                ),
+                eq(payments.status, "lunas"),
+              ),
+            )
+    const paid = new Set(paidRows.map((row) => row.orderId))
+
     const targetOf = (method: ShippingMethod) =>
       typeof target === "function" ? target(method) : target
     let valid: (typeof rows)[number][] = []
     const skipped: (BulkSkip & { from: OrderStatus })[] = []
     for (const row of rows) {
       const reason = statusSkipReason(
-        { status: row.status, method: row.method, hasCourier: row.courierId !== null },
+        {
+          status: row.status,
+          method: row.method,
+          hasCourier: row.courierId !== null,
+          paid: paid.has(row.id),
+        },
         targetOf(row.method),
         rules,
       )

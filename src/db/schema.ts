@@ -196,6 +196,8 @@ export const orderItems = pgTable(
     /** Harga saat pesanan dibuat; tidak ikut berubah bila harga menu diubah. */
     unitPrice: integer("unit_price").notNull(),
     subtotal: integer("subtotal").notNull(),
+    /** Catatan khusus menu ini (mis. "extra keju"), tampil di Produksi dan Packaging. */
+    note: text("note"),
   },
   (t) => [index("order_items_order_idx").on(t.orderId)],
 ).enableRLS()

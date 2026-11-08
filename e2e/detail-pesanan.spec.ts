@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { PERSONAL_SAMPLE } from "../src/lib/wa-parser/templates"
-import { readOrder, removeOrderByNo } from "./helpers/cleanup"
+import { markQaOrderPaid, readOrder, removeOrderByNo } from "./helpers/cleanup"
 import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
@@ -62,9 +62,43 @@ test.describe("Detail Pesanan", () => {
     // Baru → Diproses → Siap Packing. Siap Kirim hanya lewat menu Packaging (stok terpotong).
     await panel.getByRole("button", { name: "Ubah Status" }).click()
     await page.getByRole("menuitem", { name: "Diproses" }).click()
+    // Belum lunas belum boleh mulai dimasak.
+    await expect(
+      page.getByText(`${orderNo} belum lunas. Catat pembayarannya dulu, baru bisa mulai dimasak.`),
+    ).toBeVisible()
+    expect((await readOrder(orderNo))?.status).toBe("baru")
+    await markQaOrderPaid(orderNo)
+    await page.reload()
+    await panel.getByRole("button", { name: "Ubah Status" }).click()
+    await page.getByRole("menuitem", { name: "Diproses" }).click()
     await expect(page.getByText(`Status ${orderNo} jadi Diproses.`)).toBeVisible()
     await expect(panel.getByText("Diproses", { exact: true })).toBeVisible()
     expect((await readOrder(orderNo))?.shipment_status).toBeNull()
+
+    // Ubah menu saat masih Diproses: ganti jumlah, hapus, tambah menu + catatan per menu.
+    await panel.getByRole("button", { name: "Ubah menu" }).click()
+    const menuDialog = page.getByRole("dialog", { name: `Ubah menu ${orderNo}` })
+    await menuDialog.getByRole("button", { name: "Kurangi Choco Bon Bon" }).click()
+    await menuDialog
+      .getByRole("textbox", { name: "Jumlah Not Your Mac and Cheese Regular" })
+      .fill("0")
+    await menuDialog.getByRole("button", { name: "Tambah Spaghetti Aglio E Olio Regular" }).click()
+    await menuDialog
+      .getByRole("textbox", { name: "Catatan Spaghetti Aglio E Olio Regular" })
+      .fill("QA pedas")
+    await menuDialog
+      .getByRole("textbox", { name: "Catatan Spaghetti Classico Bologna Brulee Large" })
+      .fill("QA extra keju")
+    // 325.000 − 40.000 (Choco) − 50.000 (Mac R) + 45.000 (Aglio R) = 280.000; sudah dibayar 325.000.
+    await expect(menuDialog.getByTestId("edit-total")).toHaveText("Rp 280.000")
+    await expect(menuDialog.getByText(/lebih bayar Rp 45\.000/)).toBeVisible()
+    await page.screenshot({ path: "test-results/ubah-menu-desktop.png" })
+    await menuDialog.getByRole("button", { name: "Simpan menu" }).click()
+    await expect(page.getByText(`Menu ${orderNo} disimpan. Total Rp 280.000.`)).toBeVisible()
+    await expect(panel.getByText("Catatan: QA pedas")).toBeVisible()
+    await expect(panel.getByText("Catatan: QA extra keju")).toBeVisible()
+    await expect(panel.getByText(/Customer lebih bayar Rp 45\.000/)).toBeVisible()
+    expect(await readOrder(orderNo)).toMatchObject({ total: 280000, items: 4 })
 
     await panel.getByRole("button", { name: "Ubah Status" }).click()
     await expect(page.getByRole("menuitem")).toHaveText(["Siap Packing", "Baru", "Dibatalkan"])
@@ -73,6 +107,8 @@ test.describe("Detail Pesanan", () => {
     await panel.getByRole("button", { name: "Ubah Status" }).click()
     await expect(page.getByRole("menuitem")).toHaveText(["Diproses", "Dibatalkan"])
     await page.keyboard.press("Escape")
+    // Setelah selesai masak, menu terkunci.
+    await expect(panel.getByRole("button", { name: "Ubah menu" })).toHaveCount(0)
     expect(await readOrder(orderNo)).toMatchObject({
       status: "siap_packing",
       shipment_status: null,

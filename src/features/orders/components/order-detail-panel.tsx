@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, CircleAlert } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
@@ -11,8 +11,9 @@ import { TrackingLinkTools } from "@/features/orders/components/tracking-link-to
 import { OrderNoteButton } from "@/features/orders/components/order-note-dialog"
 import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
-import { getOrderDetail, type OrderDetail } from "@/features/orders/queries"
-import { isEditable } from "@/features/orders/status"
+import { EditItemsDialog } from "@/features/orders/components/edit-items-dialog"
+import { getOrderCatalog, getOrderDetail, type OrderDetail } from "@/features/orders/queries"
+import { isEditable, isMenuEditable } from "@/features/orders/status"
 import { MarkPaidDialog } from "@/features/payments/components/mark-paid-dialog"
 import { listActivePaymentMethods } from "@/features/payments/queries"
 import { formatRupiah, formatTanggal, formatWaktuDibuat } from "@/lib/format"
@@ -29,7 +30,11 @@ export async function OrderDetailPanel({
   orderNo: string
   closeHref: string
 }) {
-  const [order, methods] = await Promise.all([getOrderDetail(orderNo), listActivePaymentMethods()])
+  const [order, methods, catalog] = await Promise.all([
+    getOrderDetail(orderNo),
+    listActivePaymentMethods(),
+    getOrderCatalog(),
+  ])
 
   if (!order) {
     return (
@@ -55,7 +60,10 @@ export async function OrderDetailPanel({
       </div>
 
       <OrderInfo order={order} />
-      <OrderItems order={order} />
+      <OrderItems
+        order={order}
+        action={isMenuEditable(order.status) && <EditItemsDialog order={order} catalog={catalog} />}
+      />
 
       <div className="mt-auto space-y-3 px-5 pt-2 pb-5 sm:px-6">
         <div className="rounded-xl bg-nav-active/70 px-4 py-3.5">
@@ -96,6 +104,7 @@ export async function OrderDetailPanel({
           {order.payment?.note && (
             <p className="mt-1.5 text-[13px] break-words text-text-strong">{order.payment.note}</p>
           )}
+          <PaidDifference order={order} />
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <OrderStatusSelect
@@ -184,16 +193,40 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
   )
 }
 
-export function OrderItems({ order }: { order: OrderDetail }) {
+/**
+ * Pesanan Lunas yang menunya diubah sehingga total beda dari yang dibayar: tampilkan selisihnya
+ * supaya admin menagih atau mengembalikan. Setelah beres, "Ubah pembayaran" menyamakan nominal.
+ */
+export function PaidDifference({ order }: { order: OrderDetail }) {
+  if (!order.payment || order.payment.amount === order.total) return null
+  const diff = order.total - order.payment.amount
+  return (
+    <p className="mt-2 flex items-start gap-1.5 text-[13px] font-medium text-status-diproses-fg">
+      <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span>
+        Dibayar {formatRupiah(order.payment.amount)}.{" "}
+        {diff > 0
+          ? `Customer kurang bayar ${formatRupiah(diff)}.`
+          : `Customer lebih bayar ${formatRupiah(-diff)}, kembalikan.`}{" "}
+        Setelah beres, klik Ubah pembayaran.
+      </span>
+    </p>
+  )
+}
+
+export function OrderItems({ order, action }: { order: OrderDetail; action?: ReactNode }) {
   return (
     <section aria-labelledby="order-items" className="border-t border-border px-5 py-4 sm:px-6">
-      <div className="mb-2 flex items-center justify-between gap-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 id="order-items" className="font-semibold text-brand-ink">
           Daftar Menu
         </h3>
-        <Button asChild variant="outline" size="sm" className="h-9 rounded-lg bg-white px-3">
-          <Link href={`/pesanan/${order.orderNo}#menu`}>Lihat Detail</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {action}
+          <Button asChild variant="outline" size="sm" className="h-9 rounded-lg bg-white px-3">
+            <Link href={`/pesanan/${order.orderNo}#menu`}>Lihat Detail</Link>
+          </Button>
+        </div>
       </div>
       <ul className="divide-y divide-border">
         {order.items.map((item) => {
@@ -215,6 +248,11 @@ export function OrderItems({ order }: { order: OrderDetail }) {
               <p className="min-w-0 flex-1 text-sm text-text-strong">
                 {item.menuName}
                 {size && ` (${size})`}
+                {item.note && (
+                  <span className="mt-0.5 block text-[13px] font-medium break-words text-status-diproses-fg">
+                    Catatan: {item.note}
+                  </span>
+                )}
               </p>
               <p className="text-sm font-semibold text-text-strong tabular-nums">
                 <span className="sr-only">Jumlah </span>

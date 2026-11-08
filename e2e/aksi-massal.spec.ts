@@ -37,8 +37,8 @@ test.describe("Aksi massal", () => {
     const no = (n: number) => `QA${code}${String(n).padStart(2, "0")}`
     await seedQaOrders(code, 6, 0, {
       plan: [
-        { status: "baru", method: "kurir_internal" },
-        { status: "baru", method: "instant" },
+        { status: "baru", method: "kurir_internal", paid: true },
+        { status: "baru", method: "instant", paid: true },
         { status: "diproses", method: "pick_up" },
         { status: "siap_kirim", method: "kurir_internal" },
         { status: "selesai", method: "instant" },
@@ -88,15 +88,15 @@ test.describe("Aksi massal", () => {
     )
     await page.keyboard.press("Escape")
 
-    // Tandai lunas: dibatalkan tidak ikut.
-    await bar(page).getByRole("button", { name: "Tandai lunas (5)" }).click()
-    const paidDialog = page.getByRole("dialog", { name: "Tandai 5 pesanan lunas" })
-    await paidDialog.getByRole("button", { name: "Tandai 5 lunas" }).click()
+    // Tandai lunas: yang sudah lunas (1, 2) dan dibatalkan tidak ikut.
+    await bar(page).getByRole("button", { name: "Tandai lunas (3)" }).click()
+    const paidDialog = page.getByRole("dialog", { name: "Tandai 3 pesanan lunas" })
+    await paidDialog.getByRole("button", { name: "Tandai 3 lunas" }).click()
     await expect(paidDialog.getByText("Pilih dibayar lewat apa.")).toBeVisible()
     await paidDialog.getByRole("radio").first().check()
-    await paidDialog.getByRole("button", { name: "Tandai 5 lunas" }).click()
-    await expect(page.getByText(/^5 pesanan lunas via /)).toBeVisible()
-    expect(await readOrder(no(1))).toMatchObject({ payments: 1 })
+    await paidDialog.getByRole("button", { name: "Tandai 3 lunas" }).click()
+    await expect(page.getByText(/^3 pesanan lunas via /)).toBeVisible()
+    expect(await readOrder(no(3))).toMatchObject({ payments: 1 })
     expect(await readOrder(no(6))).toMatchObject({ payments: 0 })
 
     // Batalkan: yang sudah Selesai tidak ikut.

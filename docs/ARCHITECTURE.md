@@ -96,6 +96,9 @@ Uang disimpan sebagai `integer` dalam rupiah (tanpa desimal). Waktu disimpan seb
 | `menu_variant_packagings` | menu_variant_id, packaging_id (PK gabungan), qty | Belum dipakai (Nov 2026): disiapkan untuk aturan packaging otomatis per menu. Sekarang admin mengisi packaging per pesanan di menu Packaging |
 | `raw_materials` | name, unit, stock, min_stock | status Cukup/Menipis/Habis dihitung, tidak disimpan |
 | `stock_movements` | item_type, item_id, direction, qty, order_id, note, created_by | `direction`: `in`, `out`. Packing mencatat `out` dengan `order_id`; batal packing / pesanan dibatalkan mencatat `in` dengan `order_id` yang sama. Pemakaian bersih per pesanan = out − in (`changeStatuses` di `src/features/orders/status-change.ts`, satu transaksi dengan perubahan status) |
+| `chat_messages` | author_id, body, mentions_all, created_at | Chat Tim: satu ruang untuk semua staf. Mention dibaca server dari isi pesan (`src/features/chat/mentions.ts`) |
+| `chat_mentions` | message_id, profile_id (PK gabungan) | Staf yang disebut `@Nama` di pesan |
+| `chat_reads` | profile_id (PK), last_read_at | Kapan staf terakhir membuka Chat Tim, untuk badge belum dibaca. Pakai jam database (`now()`) |
 | `store_settings` | store_name, whatsapp, pickup_address, pickup_maps_url, updated_by | Satu baris saja (`id = 1`, dijaga CHECK); dibaca dengan nilai bawaan bila belum disimpan |
 
 ### Data menu (seed)

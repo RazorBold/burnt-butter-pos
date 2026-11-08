@@ -374,6 +374,48 @@ export const stockMovements = pgTable(
   (t) => [index("stock_movements_item_idx").on(t.itemType, t.itemId)],
 ).enableRLS()
 
+// ── Chat Tim ────────────────────────────────────────────────────────────────
+
+/** Satu ruang obrolan untuk semua staf (koordinasi). */
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: id(),
+    /** Null bila akun penulis sudah dihapus. */
+    authorId: uuid("author_id").references(() => profiles.id, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    /** "@semua": menandai semua staf aktif. */
+    mentionsAll: boolean("mentions_all").notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [index("chat_messages_created_idx").on(t.createdAt)],
+).enableRLS()
+
+/** Staf yang disebut (@nama) di sebuah pesan. */
+export const chatMentions = pgTable(
+  "chat_mentions",
+  {
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.messageId, t.profileId] }),
+    index("chat_mentions_profile_idx").on(t.profileId),
+  ],
+).enableRLS()
+
+/** Kapan staf terakhir membuka Chat Tim, untuk menghitung pesan belum dibaca. */
+export const chatReads = pgTable("chat_reads", {
+  profileId: uuid("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  lastReadAt: timestamp("last_read_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS()
+
 // ── Pengaturan ──────────────────────────────────────────────────────────────
 
 /** Profil toko. Selalu tepat satu baris (id = 1); dibaca dengan nilai bawaan bila belum ada. */

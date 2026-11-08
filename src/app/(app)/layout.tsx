@@ -3,6 +3,8 @@ import { Suspense, type ReactNode } from "react"
 import { AppNavbar } from "@/components/app/app-navbar"
 import { Wordmark } from "@/components/app/wordmark"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ChatDock } from "@/features/chat/components/chat-dock"
+import { listChatMembers } from "@/features/chat/queries"
 import { listStockAlerts } from "@/features/stock-alerts/queries"
 import {
   CAN_EDIT_STOCK,
@@ -21,8 +23,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <Navbar />
       </Suspense>
       {children}
+      {/* Chat Tim di sisi kanan; membaca sesi, jadi ikut di dalam Suspense. */}
+      <Suspense fallback={null}>
+        <TeamChat />
+      </Suspense>
     </div>
   )
+}
+
+async function TeamChat() {
+  const user = await requireUser()
+  const members = await listChatMembers()
+  return <ChatDock me={{ id: user.id, name: user.name, role: user.role }} members={members} />
 }
 
 async function Navbar() {

@@ -494,3 +494,17 @@ export async function markQaOrderPaid(orderNo: string) {
     await sql.end()
   }
 }
+
+/** Hapus pesan Chat Tim uji (berisi `marker`, ditulis akun QA). */
+export async function removeChatMessages(marker: string) {
+  if (!marker.startsWith("QA-chat-")) throw new Error("Penanda pesan uji harus QA-chat-…")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from chat_messages m using profiles p
+      where p.id = m.author_id and p.name like 'QA %' and m.body like ${`%${marker}%`}`
+  } finally {
+    await sql.end()
+  }
+}

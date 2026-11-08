@@ -124,6 +124,10 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 - **F-65** User / Staff: nama, role, status.
 - **F-66** Customer dan Pengaturan (desain belum ada; isi diputuskan saat implementasi, lihat DESIGN.md). Customer: nama, no. HP (kunci unik), alamat, jumlah pesanan, total belanja, pesanan terakhir; cari nama/no. HP; dikelola Admin dan Kasir, dilihat Owner, tidak untuk Produksi. Pengaturan (Admin): profil toko, yaitu nama toko, no. WhatsApp, alamat pick-up, dan link Google Maps.
 
+### Chat Tim
+
+- **F-80** Chat Tim (semua role): satu ruang obrolan untuk koordinasi staf, di panel kanan yang bisa disembunyikan (tombol tab "Chat Tim" di tepi kanan; status buka/tutup diingat per browser). Ketik `@` untuk menandai staf (`@Nama`); **`@semua`** menandai semua staf aktif dan hanya boleh dipakai Owner dan Admin. Tombol tab menampilkan jumlah pesan belum dibaca dan tanda @ bila ada yang menandai; mention baru saat panel tertutup juga muncul sebagai notifikasi. Pesan diperbarui berkala (polling 4 detik saat terbuka, 15 detik saat tertutup). Keputusan pemilik toko, Nov 2026.
+
 ### Modul tanpa desain
 
 - **F-70** Pembayaran: status bayar per pesanan (Lunas / Belum bayar), dibayar lewat apa (metode dari Master Data), dan catatan. Tanpa DP dan tanpa unggah bukti transfer (keputusan pemilik toko, Okt 2026).

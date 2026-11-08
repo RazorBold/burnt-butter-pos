@@ -154,3 +154,15 @@ export function isEditable(status: OrderStatus): boolean {
     status === "siap_kirim"
   )
 }
+
+/** Label URGENT hanya untuk pesanan yang masih berjalan. */
+export function isUrgent(order: { urgentAt: Date | string | null; status: OrderStatus }): boolean {
+  return order.urgentAt !== null && order.status !== "selesai" && order.status !== "dibatalkan"
+}
+
+/** Urgent dulu, sisanya tetap urutan semula (untuk papan Produksi dan Packaging). */
+export function urgentFirst<T extends { urgentAt: Date | string | null; status: OrderStatus }>(
+  list: T[],
+): T[] {
+  return [...list].sort((a, b) => Number(isUrgent(b)) - Number(isUrgent(a)))
+}

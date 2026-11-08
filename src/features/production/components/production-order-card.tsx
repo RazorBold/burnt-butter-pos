@@ -12,13 +12,15 @@ import {
 import { useTransition } from "react"
 import { toast } from "sonner"
 
-import { OrderStatusBadge } from "@/components/app/order-badges"
+import { OrderStatusBadge, UrgentBadge } from "@/components/app/order-badges"
+import { isUrgent } from "@/features/orders/status"
 import { Button } from "@/components/ui/button"
 import { updateProductionStatus } from "@/features/orders/actions"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import type { OrderStatus } from "@/features/orders/filters"
 import type { ProductionOrder } from "@/features/production/queries"
 import { formatJam } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
 
@@ -56,7 +58,10 @@ export function ProductionOrderCard({
   return (
     <article
       aria-labelledby={`prod-${order.id}`}
-      className="rounded-xl border border-border bg-white p-4"
+      className={cn(
+        "rounded-xl border bg-white p-4",
+        isUrgent(order) ? "border-[#d93a2b] shadow-[inset_4px_0_0_#d93a2b]" : "border-border",
+      )}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
@@ -69,6 +74,7 @@ export function ProductionOrderCard({
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
+          {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
           {order.type === "hadiah" && (
             <span className="inline-flex items-center gap-1 rounded-md bg-hadiah px-2 py-0.5 text-xs font-medium text-hadiah-fg">
               <Gift className="size-3.5" aria-hidden />

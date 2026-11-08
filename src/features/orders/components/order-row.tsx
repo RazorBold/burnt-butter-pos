@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { ReactNode } from "react"
 
+import { UrgentBadge } from "@/components/app/order-badges"
 import { SelectRowCell } from "@/components/app/row-selection"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -18,12 +19,15 @@ export function OrderRow({
   orderNo,
   selected,
   selectId,
+  urgent = false,
   children,
 }: {
   href: string
   orderNo: string
   selected: boolean
   selectId?: string
+  /** Pesanan URGENT: baris kemerahan dan label di bawah nomor pesanan. */
+  urgent?: boolean
   children: ReactNode
 }) {
   const router = useRouter()
@@ -39,6 +43,7 @@ export function OrderRow({
       }}
       className={cn(
         "cursor-pointer has-data-[state=checked]:bg-nav-active/50",
+        urgent && "bg-trend-down/45 shadow-[inset_4px_0_0_#d93a2b] hover:bg-trend-down/60",
         selected && "bg-nav-active hover:bg-nav-active has-data-[state=checked]:bg-nav-active",
       )}
     >
@@ -54,6 +59,7 @@ export function OrderRow({
         >
           {orderNo}
         </Link>
+        {urgent && <UrgentBadge className="mt-1 flex w-fit" />}
       </TableCell>
       {children}
     </TableRow>

@@ -28,6 +28,7 @@ import { TrackingLinkTools } from "@/features/orders/components/tracking-link-to
 import { OrderDetailPanel } from "@/features/orders/components/order-detail-panel"
 import { OrderFilters } from "@/features/orders/components/order-filters"
 import { OrderRow } from "@/features/orders/components/order-row"
+import { isUrgent } from "@/features/orders/status"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { filterParams, parseOrderFilters } from "@/features/orders/filters"
 import { computeKpis, kpiWindow } from "@/features/orders/kpis"
@@ -197,6 +198,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                 paid: order.paid,
                 total: order.total,
                 note: order.note,
+                urgent: isUrgent(order),
               }))}
               methods={paymentMethods}
             >
@@ -227,6 +229,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         orderNo={order.orderNo}
                         selected={order.orderNo === selected}
                         selectId={order.id}
+                        urgent={isUrgent(order)}
                       >
                         <TableCell className="tabular-nums">
                           {singleDay

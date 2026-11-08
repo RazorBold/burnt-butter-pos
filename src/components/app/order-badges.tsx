@@ -1,4 +1,14 @@
-import { Check, Clock, MessageCircle, Package, ShoppingBag, StickyNote, Tag, X } from "lucide-react"
+import {
+  Check,
+  Clock,
+  MessageCircle,
+  Package,
+  ShoppingBag,
+  Siren,
+  StickyNote,
+  Tag,
+  X,
+} from "lucide-react"
 
 import { ORDER_CHANNEL_LABEL, type OrderChannel } from "@/features/orders/constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
@@ -125,6 +135,22 @@ export function OrderNoteLine({ note, className }: { note: string | null; classN
       <span className="truncate" title={note}>
         {note}
       </span>
+    </span>
+  )
+}
+
+/** Label pesanan URGENT (dadakan): ikon sirene + teks, merah. */
+export function UrgentBadge({ className, note }: { className?: string; note?: string | null }) {
+  return (
+    <span
+      title={note ?? undefined}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md bg-trend-down px-2 py-0.5 text-[12px] font-bold tracking-wide whitespace-nowrap text-trend-down-fg uppercase",
+        className,
+      )}
+    >
+      <Siren className="size-3.5 shrink-0" aria-hidden />
+      Urgent
     </span>
   )
 }

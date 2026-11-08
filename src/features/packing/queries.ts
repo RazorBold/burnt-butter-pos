@@ -27,6 +27,8 @@ export type PackingOrder = {
   shippingMethod: ShippingMethod
   request: string | null
   note: string | null
+  urgentAt: Date | null
+  urgentNote: string | null
   hasCard: boolean
   items: {
     menuName: string
@@ -110,6 +112,8 @@ export async function listPackingOrders(
     shippingMethod: row.shipment?.method ?? "kurir_internal",
     request: row.request,
     note: row.note,
+    urgentAt: row.urgentAt,
+    urgentNote: row.urgentNote,
     packagingType: row.packagingType,
     hasCard: Boolean(row.cardTo || row.cardWishes || row.cardFrom),
     items: row.items.map((item) => ({

@@ -124,6 +124,10 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 - **F-65** User / Staff: nama, role, status.
 - **F-66** Customer dan Pengaturan (desain belum ada; isi diputuskan saat implementasi, lihat DESIGN.md). Customer: nama, no. HP (kunci unik), alamat, jumlah pesanan, total belanja, pesanan terakhir; cari nama/no. HP; dikelola Admin dan Kasir, dilihat Owner, tidak untuk Produksi. Pengaturan (Admin): profil toko, yaitu nama toko, no. WhatsApp, alamat pick-up, dan link Google Maps.
 
+### Pesanan urgent
+
+- **F-81** Pesanan dadakan (Admin, Kasir): **Tandai urgent** dari menu ⋮ baris atau panel detail Pesanan, dengan alasan opsional; bisa dihapus lagi. Pesanan urgent berlabel merah "URGENT" (ikon sirene) di Pesanan (baris kemerahan), panel detail, Produksi, Packaging, Pengiriman, dan Dashboard, dan didahulukan di papan Produksi/Packaging. Semua akun yang sedang membuka aplikasi mendapat **popup + bunyi alarm** (cek tiap 10 detik) sampai menekan "Saya mengerti"; yang sudah dilihat diingat per browser per akun, dan menandai ulang memunculkan popup lagi. Label hilang otomatis saat pesanan Selesai/Dibatalkan. Pesanan uji e2e (QA Customer …) hanya memicu popup di akun QA. Keputusan pemilik toko, Nov 2026.
+
 ### Chat Tim
 
 - **F-80** Chat Tim (semua role): satu ruang obrolan untuk koordinasi staf, di panel kanan yang bisa disembunyikan (tombol tab "Chat Tim" di tepi kanan; status buka/tutup diingat per browser). Ketik `@` untuk menandai staf (`@Nama`); **`@semua`** menandai semua staf aktif dan hanya boleh dipakai Owner dan Admin. Tombol tab menampilkan jumlah pesan belum dibaca dan tanda @ bila ada yang menandai; mention baru saat panel tertutup juga muncul sebagai notifikasi. Pesan diperbarui berkala (polling 4 detik saat terbuka, 15 detik saat tertutup). Keputusan pemilik toko, Nov 2026.

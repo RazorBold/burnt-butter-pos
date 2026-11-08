@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { DeliveryDatePicker } from "@/components/app/delivery-date-picker"
 import { ProductionOrderCard } from "@/features/production/components/production-order-card"
 import { listProductionOrders } from "@/features/production/queries"
+import { urgentFirst } from "@/features/orders/status"
 import {
   type MenuSummary,
   type ProductionStage,
@@ -122,7 +123,9 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
             </h2>
             <div className="mt-3 grid items-start gap-4 lg:grid-cols-3">
               {STAGES.map((stage) => {
-                const inStage = orders.filter((order) => stageOf(order.status) === stage)
+                const inStage = urgentFirst(
+                  orders.filter((order) => stageOf(order.status) === stage),
+                )
                 return (
                   <section
                     key={stage}

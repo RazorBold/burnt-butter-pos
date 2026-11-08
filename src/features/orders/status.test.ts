@@ -5,11 +5,13 @@ import {
   isEditable,
   isMenuEditable,
   isPackingStep,
+  isUrgent,
   manualStatuses,
   nextStatuses,
   sentStatusFor,
   shipmentStatusFor,
   statusSkipReason,
+  urgentFirst,
 } from "./status"
 
 describe("nextStatuses", () => {
@@ -189,5 +191,26 @@ describe("Pembayaran sebelum masak dan ubah menu", () => {
     ] as const) {
       expect(isMenuEditable(status)).toBe(false)
     }
+  })
+})
+
+describe("Urgent", () => {
+  it("label urgent hanya untuk pesanan yang masih berjalan", () => {
+    const at = new Date("2026-11-08T03:00:00Z")
+    expect(isUrgent({ urgentAt: at, status: "diproses" })).toBe(true)
+    expect(isUrgent({ urgentAt: null, status: "diproses" })).toBe(false)
+    expect(isUrgent({ urgentAt: at, status: "selesai" })).toBe(false)
+    expect(isUrgent({ urgentAt: at, status: "dibatalkan" })).toBe(false)
+  })
+
+  it("urgent didahulukan, sisanya tetap urutan semula", () => {
+    const at = new Date()
+    const list = [
+      { id: "a", urgentAt: null, status: "baru" as const },
+      { id: "b", urgentAt: at, status: "baru" as const },
+      { id: "c", urgentAt: null, status: "baru" as const },
+      { id: "d", urgentAt: at, status: "selesai" as const },
+    ]
+    expect(urgentFirst(list).map((order) => order.id)).toEqual(["b", "a", "c", "d"])
   })
 })

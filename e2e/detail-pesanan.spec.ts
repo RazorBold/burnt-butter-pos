@@ -58,6 +58,8 @@ test.describe("Detail Pesanan", () => {
     await expect(panel.getByText("Rp 325.000")).toBeVisible()
     await page.screenshot({ path: `test-results/detail-pesanan-${info.project.name}.png` })
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    // Alur panjang: status, bayar, ubah menu, edit data, detail lengkap, batal.
+    test.setTimeout(90_000)
 
     // Baru → Diproses → Siap Packing. Siap Kirim hanya lewat menu Packaging (stok terpotong).
     await panel.getByRole("button", { name: "Ubah Status" }).click()

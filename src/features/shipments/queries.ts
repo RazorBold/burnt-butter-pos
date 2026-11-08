@@ -25,6 +25,8 @@ export type ShipmentRow = {
   courierName: string | null
   trackingUrl: string | null
   note: string | null
+  urgentAt: Date | null
+  urgentNote: string | null
   slot: DeliverySlot | null
   status: ShipmentStatus | null
 }
@@ -98,6 +100,8 @@ export async function listShipments(filters: ShipmentFilters) {
       courierName: couriers.name,
       trackingUrl: shipments.trackingUrl,
       note: orders.note,
+      urgentAt: orders.urgentAt,
+      urgentNote: orders.urgentNote,
       slot: shipments.slot,
       status: shipments.status,
     })

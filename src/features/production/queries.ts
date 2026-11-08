@@ -16,6 +16,8 @@ export type ProductionOrder = {
   shippingMethod: ShippingMethod
   request: string | null
   note: string | null
+  urgentAt: Date | null
+  urgentNote: string | null
   hasCard: boolean
   /** Sudah Lunas. Pesanan Baru yang belum lunas belum masuk antrean masak. */
   paid: boolean
@@ -56,6 +58,8 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     shippingMethod: row.shipment?.method ?? "kurir_internal",
     request: row.request,
     note: row.note,
+    urgentAt: row.urgentAt,
+    urgentNote: row.urgentNote,
     hasCard: Boolean(row.cardTo || row.cardWishes || row.cardFrom),
     paid: row.payments.length > 0,
     createdAt: row.createdAt,

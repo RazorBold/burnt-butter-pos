@@ -6,7 +6,7 @@ import { DeliveryDatePicker } from "@/components/app/delivery-date-picker"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
-import { PACKED_STATUSES } from "@/features/orders/status"
+import { PACKED_STATUSES, urgentFirst } from "@/features/orders/status"
 import { PackingOrderCard } from "@/features/packing/components/packing-order-card"
 import { listPackingOrders, listPackingPackagings } from "@/features/packing/queries"
 import { CAN_PACK } from "@/lib/access"
@@ -50,7 +50,7 @@ async function Packing({
 
   const packagings = await listPackingPackagings()
   const orders = await listPackingOrders(date, packagings)
-  const waiting = orders.filter((order) => order.status === "siap_packing")
+  const waiting = urgentFirst(orders.filter((order) => order.status === "siap_packing"))
   const packed = orders.filter((order) => PACKED_STATUSES.includes(order.status))
   const cooking = orders.filter(
     (order) => order.status === "baru" || order.status === "diproses",

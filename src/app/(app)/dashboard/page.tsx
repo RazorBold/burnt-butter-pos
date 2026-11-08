@@ -17,7 +17,7 @@ import { Fragment, type ReactNode, Suspense } from "react"
 
 import { AccessDeniedToast } from "@/components/app/access-denied-toast"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
+import { OrderStatusBadge, UrgentBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { STOCK_BAR_COLOR } from "@/components/app/stock-badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,6 +27,7 @@ import { parseDashboardPeriod, PERIOD_LABEL } from "@/features/dashboard/period"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { addDays, ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { listLatestOrders } from "@/features/orders/queries"
+import { isUrgent } from "@/features/orders/status"
 import { listPackagings } from "@/features/packagings/queries"
 import { listProductionOrders } from "@/features/production/queries"
 import { summarizeProduction } from "@/features/production/summary"
@@ -227,7 +228,10 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                             {formatRupiah(order.total)}
                           </td>
                           <td className="py-3 pr-5 pl-2">
-                            <OrderStatusBadge status={order.status} />
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <OrderStatusBadge status={order.status} />
+                              {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
+                            </span>
                           </td>
                         </tr>
                         {/* Baris sendiri supaya catatan terbaca penuh tanpa melebarkan kolom. */}

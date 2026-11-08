@@ -3,7 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { OrderStatusBadge, PaymentBadge } from "@/components/app/order-badges"
+import { OrderStatusBadge, PaymentBadge, UrgentBadge } from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
 import { ORDER_CHANNEL_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
@@ -13,7 +13,8 @@ import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
 import { EditItemsDialog } from "@/features/orders/components/edit-items-dialog"
 import { getOrderCatalog, getOrderDetail, type OrderDetail } from "@/features/orders/queries"
-import { isEditable, isMenuEditable } from "@/features/orders/status"
+import { isEditable, isMenuEditable, isUrgent } from "@/features/orders/status"
+import { UrgentButton } from "@/features/orders/components/urgent-dialog"
 import { MarkPaidDialog } from "@/features/payments/components/mark-paid-dialog"
 import { listActivePaymentMethods } from "@/features/payments/queries"
 import { formatRupiah, formatTanggal, formatWaktuDibuat } from "@/lib/format"
@@ -52,11 +53,22 @@ export async function OrderDetailPanel({
         <div className="flex flex-wrap items-center gap-2.5">
           <p className="text-xl font-bold text-brand-ink tabular-nums">{order.orderNo}</p>
           <OrderStatusBadge status={order.status} />
+          {isUrgent(order) && <UrgentBadge />}
         </div>
         <p className="mt-1 text-[13px] text-text-body">
           Dibuat {formatWaktuDibuat(order.createdAt)}
           {order.createdByName && ` oleh ${order.createdByName}`}
         </p>
+        {isUrgent(order) && order.urgentNote && (
+          <p className="mt-2 text-sm font-medium break-words text-trend-down-fg">
+            Urgent: {order.urgentNote}
+          </p>
+        )}
+        {(isUrgent(order) || (order.status !== "selesai" && order.status !== "dibatalkan")) && (
+          <div className="mt-3">
+            <UrgentButton orderId={order.id} orderNo={order.orderNo} urgent={isUrgent(order)} />
+          </div>
+        )}
       </div>
 
       <OrderInfo order={order} />

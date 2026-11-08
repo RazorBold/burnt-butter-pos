@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { OrderRow } from "@/features/orders/components/order-row"
+import { isUrgent } from "@/features/orders/status"
 import {
   ShipmentActionsProvider,
   ShipmentRowAction,
@@ -209,6 +210,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                         orderNo={row.orderNo}
                         selected={row.orderNo === selected}
                         selectId={row.orderId}
+                        urgent={isUrgent({ urgentAt: row.urgentAt, status: row.orderStatus })}
                       >
                         <TableCell>
                           <span className="block font-medium text-text-strong">

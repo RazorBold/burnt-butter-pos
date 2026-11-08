@@ -155,6 +155,11 @@ export const orders = pgTable(
     marketplaceOrderNo: text("marketplace_order_no"),
     type: orderType("type").notNull(),
     status: orderStatus("status").notNull().default("baru"),
+    /** Kapan ditandai urgent (pesanan dadakan); null = tidak urgent. */
+    urgentAt: timestamp("urgent_at", { withTimezone: true }),
+    urgentBy: uuid("urgent_by").references(() => profiles.id, { onDelete: "set null" }),
+    /** Alasan urgent, mis. "customer minta jam 10". */
+    urgentNote: text("urgent_note"),
     /** Diisi saat selesai packing (menu Packaging); kosong sebelum di-packing. */
     packagingType: packagingType("packaging_type"),
     deliveryDate: date("delivery_date").notNull(),

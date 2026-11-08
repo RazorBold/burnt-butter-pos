@@ -656,3 +656,58 @@ export async function updateOrderItems(input: unknown): Promise<UpdateOrderItems
     throw error
   }
 }
+
+const urgentSchema = z.object({
+  orderId: z.uuid(),
+  urgent: z.boolean(),
+  note: z.string().trim().max(120, "Alasan paling panjang 120 huruf.").optional(),
+})
+
+/**
+ * Tandai / hapus urgent (Admin, Kasir) untuk pesanan dadakan. Semua staf yang sedang membuka
+ * aplikasi mendapat popup + suara (src/features/urgent). Pesanan Selesai atau Dibatalkan tidak
+ * bisa ditandai urgent.
+ */
+export async function setOrderUrgent(input: unknown): Promise<ActionResult> {
+  let userId: string
+  try {
+    userId = await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const parsed = urgentSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Data tidak terbaca." }
+  }
+  const { orderId, urgent, note } = parsed.data
+
+  const db = getDb()
+  const [order] = await db
+    .select({ orderNo: orders.orderNo, status: orders.status })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+  if (!order) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
+  if (urgent && (order.status === "selesai" || order.status === "dibatalkan")) {
+    return {
+      ok: false,
+      message: `Pesanan ${ORDER_STATUS_LABEL[order.status]} tidak bisa ditandai urgent.`,
+    }
+  }
+
+  await db
+    .update(orders)
+    .set(
+      urgent
+        ? { urgentAt: sql`now()`, urgentBy: userId, urgentNote: note || null }
+        : { urgentAt: null, urgentBy: null, urgentNote: null },
+    )
+    .where(eq(orders.id, orderId))
+  revalidateOrders([order.orderNo])
+  return {
+    ok: true,
+    message: urgent
+      ? `${order.orderNo} ditandai URGENT. Semua staf mendapat pemberitahuan.`
+      : `Tanda urgent ${order.orderNo} dihapus.`,
+  }
+}

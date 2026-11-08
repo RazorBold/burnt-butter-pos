@@ -10,6 +10,7 @@ import {
   RefreshCw,
   StickyNote,
   Wallet,
+  Siren,
 } from "lucide-react"
 import Link from "next/link"
 import { createContext, type ReactNode, useContext, useState, useTransition } from "react"
@@ -41,6 +42,7 @@ import {
 import { exportOrdersCsv, updateOrderStatuses } from "@/features/orders/actions"
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/features/orders/filters"
 import { OrderNoteDialog } from "@/features/orders/components/order-note-dialog"
+import { UrgentDialog } from "@/features/orders/components/urgent-dialog"
 import { nextStatuses, statusSkipReason } from "@/features/orders/status"
 import { MarkManyPaidDialog } from "@/features/payments/components/mark-paid-dialog"
 import type { ActivePaymentMethod } from "@/features/payments/queries"
@@ -57,6 +59,8 @@ export type OrderActionRow = {
   paid: boolean
   total: number
   note: string | null
+  /** Sedang ditandai URGENT. */
+  urgent: boolean
 }
 
 /** Tujuan di menu "Ubah status" massal. Dibatalkan punya tombol sendiri dengan konfirmasi. */
@@ -76,7 +80,7 @@ const canChange = (row: OrderActionRow, target: OrderStatus) =>
   ) === null
 const canPay = (row: OrderActionRow) => !row.paid && row.status !== "dibatalkan"
 
-type DialogKind = "paid" | "cancel" | "note"
+type DialogKind = "paid" | "cancel" | "note" | "urgent"
 type OpenDialog = { kind: DialogKind; rows: OrderActionRow[] } | null
 
 type OrderActions = {
@@ -178,6 +182,15 @@ function OrderActionsInner({
           orderId={dialog.rows[0].id}
           orderNo={dialog.rows[0].orderNo}
           note={dialog.rows[0].note}
+        />
+      )}
+      {dialog?.kind === "urgent" && (
+        <UrgentDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          orderId={dialog.rows[0].id}
+          orderNo={dialog.rows[0].orderNo}
+          urgent={dialog.rows[0].urgent}
         />
       )}
       {dialog?.kind === "cancel" && (
@@ -373,6 +386,15 @@ export function OrderRowMenu({ id }: { id: string }) {
           <StickyNote aria-hidden />
           {row.note ? "Ubah catatan" : "Tambah catatan"}
         </DropdownMenuItem>
+        {(row.urgent || (row.status !== "selesai" && row.status !== "dibatalkan")) && (
+          <DropdownMenuItem
+            className="h-10 text-trend-down-fg focus:text-trend-down-fg"
+            onSelect={() => openDialog("urgent", [row])}
+          >
+            <Siren aria-hidden className="text-trend-down-fg" />
+            {row.urgent ? "Hapus urgent" : "Tandai urgent"}
+          </DropdownMenuItem>
+        )}
         {steps.length > 0 && <DropdownMenuSeparator />}
         {steps.map((status) => (
           <DropdownMenuItem

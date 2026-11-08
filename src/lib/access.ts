@@ -56,6 +56,9 @@ export const CAN_EDIT_CUSTOMER: readonly Role[] = ["admin", "kasir"]
 /** Role yang boleh menandai pesanan selesai packing (memotong stok packaging). */
 export const CAN_PACK: readonly Role[] = ["admin", "produksi"]
 
+/** Role yang boleh mengatur Produk & Menu dan kategorinya (keputusan pemilik toko, Nov 2026). */
+export const CAN_MANAGE_MENU: readonly Role[] = ["owner"]
+
 /** Role yang boleh membuat pesanan lewat tombol "Input Pesanan". */
 export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir"]
 

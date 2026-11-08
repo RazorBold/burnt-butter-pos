@@ -74,6 +74,13 @@ const MENUS: MenuSeed[] = [
   },
 ]
 
+/** Kategori awal (urutan = urutan template WA). Nama dipakai sebagai kunci. */
+const CATEGORIES = [
+  { key: "pasta", name: "Pasta", sized: true, sortOrder: 0 },
+  { key: "dessert", name: "Dessert", sized: false, sortOrder: 1 },
+  { key: "bundle", name: "Special Bundle", sized: false, sortOrder: 2 },
+] as const
+
 function photoPathFor(menu: MenuSeed) {
   const suffix = "large" in menu.prices ? "-large" : ""
   return `/images/menu/${menu.slug}${suffix}.webp`
@@ -88,13 +95,26 @@ async function main() {
   const db = drizzle(client, { schema })
 
   try {
+    const categoryId = new Map<string, string>()
+    for (const { key, ...category } of CATEGORIES) {
+      await db
+        .insert(schema.menuCategories)
+        .values(category)
+        .onConflictDoNothing({ target: schema.menuCategories.name })
+      const [row] = await db
+        .select({ id: schema.menuCategories.id })
+        .from(schema.menuCategories)
+        .where(eq(schema.menuCategories.name, category.name))
+      categoryId.set(key, row.id)
+    }
+
     for (const menu of MENUS) {
       await db
         .insert(schema.menus)
         .values({
           name: menu.name,
           slug: menu.slug,
-          category: menu.category,
+          categoryId: categoryId.get(menu.category),
           description: menu.description,
           photoPath: photoPathFor(menu),
         })

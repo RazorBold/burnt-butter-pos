@@ -6,7 +6,11 @@ import type { ParsedItem } from "@/lib/wa-parser"
 export type CatalogVariant = {
   id: string
   menuName: string
-  category: "pasta" | "dessert" | "bundle"
+  /** Kategori menu (diatur Owner): urutan kelompok di form, dan berukuran atau tidak. */
+  categoryId: string
+  categoryName: string
+  categorySort: number
+  sized: boolean
   size: "large" | "regular" | "single"
   price: number
   photoPath: string | null
@@ -14,23 +18,44 @@ export type CatalogVariant = {
 
 export type CatalogGroup = { key: string; title: string; variants: CatalogVariant[] }
 
-const GROUPS = [
-  { key: "large", title: "Large", match: (v: CatalogVariant) => v.size === "large" },
-  { key: "regular", title: "Regular", match: (v: CatalogVariant) => v.size === "regular" },
-  { key: "dessert", title: "Dessert", match: (v: CatalogVariant) => v.category === "dessert" },
-  { key: "bundle", title: "Special Bundle", match: (v: CatalogVariant) => v.category === "bundle" },
-]
+const SIZE_TITLE = { large: "Large", regular: "Regular" } as const
 
-/** Kelompok sesuai urutan template WA: Size Large, Size Regular, Dessert, Special Bundle. */
+/**
+ * Kelompok menu sesuai urutan kategori (seperti template WA): kategori berukuran dipecah jadi
+ * Large dan Regular, kategori lain satu kelompok bernama kategorinya. Bila ada lebih dari satu
+ * kategori berukuran, judulnya diberi nama kategori ("Event Large") supaya tidak kembar.
+ */
 export function groupCatalog(catalog: CatalogVariant[]): CatalogGroup[] {
-  const used = new Set<string>()
-  const groups = GROUPS.map(({ key, title, match }) => {
-    const variants = catalog.filter((variant) => !used.has(variant.id) && match(variant))
-    for (const variant of variants) used.add(variant.id)
-    return { key, title, variants }
-  })
-  const rest = catalog.filter((variant) => !used.has(variant.id))
-  if (rest.length) groups.push({ key: "lainnya", title: "Lainnya", variants: rest })
+  const categories = new Map<string, { name: string; sort: number; sized: boolean }>()
+  for (const variant of catalog) {
+    if (!categories.has(variant.categoryId)) {
+      categories.set(variant.categoryId, {
+        name: variant.categoryName,
+        sort: variant.categorySort,
+        sized: variant.sized,
+      })
+    }
+  }
+  const ordered = [...categories].sort(
+    ([, a], [, b]) => a.sort - b.sort || a.name.localeCompare(b.name),
+  )
+  const sizedCount = ordered.filter(([, category]) => category.sized).length
+
+  const groups: CatalogGroup[] = []
+  for (const [id, category] of ordered) {
+    const inCategory = catalog.filter((variant) => variant.categoryId === id)
+    if (category.sized) {
+      for (const size of ["large", "regular"] as const) {
+        groups.push({
+          key: `${id}-${size}`,
+          title: sizedCount > 1 ? `${category.name} ${SIZE_TITLE[size]}` : SIZE_TITLE[size],
+          variants: inCategory.filter((variant) => variant.size === size),
+        })
+      }
+    } else {
+      groups.push({ key: id, title: category.name, variants: inCategory })
+    }
+  }
   return groups.filter((group) => group.variants.length > 0)
 }
 

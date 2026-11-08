@@ -6,8 +6,17 @@ import { PERSONAL_SAMPLE } from "@/lib/wa-parser/templates"
 import { type CatalogVariant, groupCatalog, matchParsedItems, orderTotal } from "./catalog"
 import { draftFromParsed, draftIssues, EMPTY_DRAFT } from "./draft"
 
+const PASTA = { categoryId: "pasta", categoryName: "Pasta", categorySort: 0, sized: true }
+const DESSERT = { categoryId: "dessert", categoryName: "Dessert", categorySort: 1, sized: false }
+const BUNDLE = {
+  categoryId: "bundle",
+  categoryName: "Special Bundle",
+  categorySort: 2,
+  sized: false,
+}
+
 const pasta = (id: string, menuName: string, size: "large" | "regular", price: number) =>
-  ({ id, menuName, category: "pasta", size, price, photoPath: null }) satisfies CatalogVariant
+  ({ id, menuName, ...PASTA, size, price, photoPath: null }) satisfies CatalogVariant
 
 const CATALOG: CatalogVariant[] = [
   pasta("bolo-l", "Spaghetti Classico Bologna Brulee", "large", 65000),
@@ -19,7 +28,7 @@ const CATALOG: CatalogVariant[] = [
   {
     id: "choco",
     menuName: "Choco Bon Bon",
-    category: "dessert",
+    ...DESSERT,
     size: "single",
     price: 40000,
     photoPath: null,
@@ -27,7 +36,7 @@ const CATALOG: CatalogVariant[] = [
   {
     id: "bundle",
     menuName: "Bundle of 3",
-    category: "bundle",
+    ...BUNDLE,
     size: "single",
     price: 180000,
     photoPath: null,
@@ -83,6 +92,35 @@ describe("groupCatalog dan orderTotal", () => {
       ["Regular", 2],
       ["Dessert", 1],
       ["Special Bundle", 1],
+    ])
+  })
+
+  it("kategori baru (event) ikut urutan kategori; dua kategori berukuran diberi nama", () => {
+    const event = {
+      id: "natal",
+      menuName: "Lasagna Natal",
+      categoryId: "event",
+      categoryName: "Event Natal",
+      categorySort: 1,
+      sized: false,
+      size: "single" as const,
+      price: 90000,
+      photoPath: null,
+    }
+    expect(groupCatalog([...CATALOG, event]).map((group) => group.title)).toEqual([
+      "Large",
+      "Regular",
+      "Dessert",
+      "Event Natal",
+      "Special Bundle",
+    ])
+    const sizedEvent = { ...event, sized: true, size: "large" as const, categorySort: 5 }
+    expect(groupCatalog([...CATALOG, sizedEvent]).map((group) => group.title)).toEqual([
+      "Pasta Large",
+      "Pasta Regular",
+      "Dessert",
+      "Special Bundle",
+      "Event Natal Large",
     ])
   })
 

@@ -361,7 +361,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
               {menus.map((menu) => {
                 const src = photoSrc(menu.photoPath)
-                const unit = menu.category === "pasta" ? "porsi" : "pcs"
+                const unit = menu.sized ? "porsi" : "pcs"
                 return (
                   <li key={menu.menuName} className="flex items-center gap-3">
                     {src ? (

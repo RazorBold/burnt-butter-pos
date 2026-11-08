@@ -508,3 +508,18 @@ export async function removeChatMessages(marker: string) {
     await sql.end()
   }
 }
+
+/** Hapus kategori menu uji (nama diawali "QA Kategori ") beserta menu uji di dalamnya. */
+export async function removeMenuCategoryByName(name: string) {
+  if (!name.startsWith("QA Kategori ")) throw new Error("Hanya kategori uji (QA Kategori …)")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from menus m using menu_categories c
+      where c.id = m.category_id and c.name = ${name} and m.name like 'QA Menu %'`
+    await sql`delete from menu_categories where name = ${name}`
+  } finally {
+    await sql.end()
+  }
+}

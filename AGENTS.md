@@ -94,6 +94,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 | Metode: Kurir Internal, Instant, Pick Up                                                     | `kurir_internal`, `instant`, `pick_up`                                                     |
 | Status kirim: Menunggu Kurir, Siap Dikirim, Siap Diambil, Dalam Perjalanan, Dikirim, Selesai | `menunggu_kurir`, `siap_dikirim`, `siap_diambil`, `dalam_perjalanan`, `dikirim`, `selesai` |
 | Pembayaran / Metode Pembayaran                                                               | `payments` / `payment_methods`                                                             |
+| Kategori menu (diatur Owner)                                                                 | `menu_categories` (`sized`, `sort_order`), `menus.category_id`                             |
 | Produk & Menu, ukuran Large / Regular                                                        | `menus`, `menu_variants.size`: `large` / `regular` / `single`                              |
 | Stok Packaging                                                                               | `packagings`                                                                               |
 | Packaging (menu packing)                                                                     | `src/features/packing`                                                                     |

@@ -5,7 +5,6 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { PhotoField } from "@/components/app/photo-field"
-import { SegmentedControl } from "@/components/app/segmented-control"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -30,7 +29,7 @@ import { saveMenu, type MenuFormState } from "@/features/menus/actions"
 import { useActionForm } from "@/hooks/use-action-form"
 import { useFieldErrors } from "@/hooks/use-field-errors"
 import type { MenuRow } from "@/features/menus/queries"
-import { CATEGORY_LABEL, MENU_CATEGORIES, type MenuCategory } from "@/features/menus/schemas"
+import type { MenuCategoryRef } from "@/features/menus/schemas"
 
 const rupiah = new Intl.NumberFormat("id-ID")
 const formatDigits = (value: string) => {
@@ -38,12 +37,15 @@ const formatDigits = (value: string) => {
   return digits ? rupiah.format(Number(digits)) : ""
 }
 
-const SIZING_OPTIONS = [
-  { value: "two_sizes", label: "Large & Regular" },
-  { value: "single", label: "Satu harga" },
-] as const
-
-export function MenuFormDialog({ menu, trigger }: { menu?: MenuRow; trigger: ReactNode }) {
+export function MenuFormDialog({
+  menu,
+  categories,
+  trigger,
+}: {
+  menu?: MenuRow
+  categories: MenuCategoryRef[]
+  trigger: ReactNode
+}) {
   const [open, setOpen] = useState(false)
   const [session, setSession] = useState(0)
 
@@ -68,7 +70,12 @@ export function MenuFormDialog({ menu, trigger }: { menu?: MenuRow; trigger: Rea
               : "Menu baru langsung bisa dipilih saat input pesanan bila statusnya aktif."}
           </DialogDescription>
         </DialogHeader>
-        <MenuForm key={session} menu={menu} onSaved={() => setOpen(false)} />
+        <MenuForm
+          key={session}
+          menu={menu}
+          categories={categories}
+          onSaved={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -79,15 +86,22 @@ function priceOf(menu: MenuRow | undefined, size: "large" | "regular" | "single"
   return price ? rupiah.format(price) : ""
 }
 
-function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
+function MenuForm({
+  menu,
+  categories,
+  onSaved,
+}: {
+  menu?: MenuRow
+  categories: MenuCategoryRef[]
+  onSaved: () => void
+}) {
   const { state, pending, onSubmit } = useActionForm<MenuFormState>(saveMenu, {})
   const id = useId()
 
-  const [category, setCategory] = useState<MenuCategory | "">(menu?.category ?? "")
-  const initialSizing =
-    menu && menu.variants.some((variant) => variant.size !== "single") ? "two_sizes" : "single"
-  const [sizing, setSizing] = useState<"two_sizes" | "single">(menu ? initialSizing : "two_sizes")
-  const [sizingTouched, setSizingTouched] = useState(Boolean(menu))
+  const [categoryId, setCategoryId] = useState(menu?.category?.id ?? "")
+  // Ukuran mengikuti kategori: kategori "Large & Regular" punya dua harga.
+  const selected = categories.find((category) => category.id === categoryId)
+  const sizing: "two_sizes" | "single" = selected?.sized ? "two_sizes" : "single"
   const [prices, setPrices] = useState({
     priceLarge: priceOf(menu, "large"),
     priceRegular: priceOf(menu, "regular"),
@@ -107,11 +121,8 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
   }, [state, onSaved])
 
   function onCategoryChange(value: string) {
-    const next = value as MenuCategory
-    setCategory(next)
-    markEdited("category")
-    // Pasta biasanya dua ukuran; dessert dan bundle satu harga. Pilihan manual tidak ditimpa.
-    if (!sizingTouched) setSizing(next === "pasta" ? "two_sizes" : "single")
+    setCategoryId(value)
+    markEdited("categoryId", "priceLarge", "priceRegular", "priceSingle")
   }
 
   const fieldError = (name: string) =>
@@ -156,24 +167,25 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
         <Label htmlFor={`${id}-category`} className="text-text-strong">
           Kategori
         </Label>
-        <Select name="category" value={category} onValueChange={onCategoryChange} required>
+        <Select name="categoryId" value={categoryId} onValueChange={onCategoryChange} required>
           <SelectTrigger
             id={`${id}-category`}
-            aria-invalid={Boolean(errors.category)}
-            aria-describedby={describedBy("category")}
+            aria-invalid={Boolean(errors.categoryId)}
+            aria-describedby={describedBy("categoryId")}
             className="h-11! w-full rounded-lg bg-white"
           >
             <SelectValue placeholder="Pilih kategori" />
           </SelectTrigger>
           <SelectContent>
-            {MENU_CATEGORIES.map((value) => (
-              <SelectItem key={value} value={value}>
-                {CATEGORY_LABEL[value]}
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+                {category.sized ? " (Large & Regular)" : ""}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {fieldError("category")}
+        {fieldError("categoryId")}
       </div>
 
       <div className="space-y-1.5">
@@ -193,17 +205,14 @@ function MenuForm({ menu, onSaved }: { menu?: MenuRow; onSaved: () => void }) {
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-text-strong">Ukuran dan harga</legend>
-        <SegmentedControl
-          label="Ukuran dan harga"
-          options={SIZING_OPTIONS}
-          value={sizing}
-          onChange={(value) => {
-            setSizing(value)
-            setSizingTouched(true)
-            markEdited("priceLarge", "priceRegular", "priceSingle")
-          }}
-        />
+        <legend className="text-sm font-medium text-text-strong">Harga</legend>
+        <p className="text-[13px] text-text-body">
+          {selected
+            ? selected.sized
+              ? `Kategori ${selected.name} memakai ukuran Large dan Regular.`
+              : `Kategori ${selected.name} memakai satu harga.`
+            : "Pilih kategori dulu; ukuran mengikuti kategori."}
+        </p>
 
         <div className="grid gap-3 pt-1 sm:grid-cols-2">
           {sizing === "two_sizes" ? (

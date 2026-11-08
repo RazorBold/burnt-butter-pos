@@ -10,6 +10,7 @@ const accounts = [
   process.env.E2E_EMAIL,
   process.env.E2E_KASIR_EMAIL,
   process.env.E2E_PRODUKSI_EMAIL,
+  process.env.E2E_OWNER_EMAIL,
 ].filter((email): email is string => Boolean(email))
 
 // Sesi lama dibuang: kata sandi QA disetel ulang setiap run.

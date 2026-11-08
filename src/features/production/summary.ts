@@ -20,7 +20,10 @@ export function stageOf(status: OrderStatus): ProductionStage {
 
 export type ProductionItem = {
   menuName: string
-  category: "pasta" | "dessert" | "bundle"
+  /** Urutan kategori dari Owner (rekap mengikuti urutan template). */
+  categorySort: number
+  /** Kategori berukuran Large/Regular (satuan "porsi"); selain itu "pcs". */
+  sized: boolean
   size: "large" | "regular" | "single"
   qty: number
   photoPath: string | null
@@ -34,14 +37,14 @@ export type ProductionOrderLike = { status: OrderStatus; items: ProductionItem[]
 
 export type MenuSummary = {
   menuName: string
-  category: ProductionItem["category"]
+  categorySort: number
+  sized: boolean
   photoPath: string | null
   sizes: { size: ProductionItem["size"]; total: number; done: number }[]
   total: number
   done: number
 }
 
-const CATEGORY_ORDER = { pasta: 0, dessert: 1, bundle: 2 } as const
 const SIZE_ORDER = { large: 0, regular: 1, single: 2 } as const
 
 /** Porsi per menu (dan per ukuran) dari pesanan yang tidak dibatalkan. */
@@ -56,7 +59,8 @@ export function summarizeProduction(orders: ProductionOrderLike[]): MenuSummary[
       if (!menu) {
         menu = {
           menuName: item.menuName,
-          category: item.category,
+          categorySort: item.categorySort,
+          sized: item.sized,
           photoPath: item.photoPath,
           sizes: [],
           total: 0,
@@ -81,7 +85,7 @@ export function summarizeProduction(orders: ProductionOrderLike[]): MenuSummary[
   return [...byMenu.values()]
     .sort(
       (a, b) =>
-        CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category] ||
+        a.categorySort - b.categorySort ||
         menuOrder.get(a.menuName)! - menuOrder.get(b.menuName)! ||
         a.menuName.localeCompare(b.menuName),
     )

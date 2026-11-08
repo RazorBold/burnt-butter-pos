@@ -192,3 +192,17 @@ describe("parseDeliveryDate", () => {
     expect(parseDeliveryDate("secepatnya", TODAY)).toBeNull()
   })
 })
+
+describe("parseWaOrder: kategori menu baru dari Owner", () => {
+  it("judul bagian yang tidak dikenal dibaca sebagai kategori satu ukuran", () => {
+    const text = PERSONAL_SAMPLE.replace(
+      "Special Bundle\nBundle of 3 :",
+      "Special Bundle\nBundle of 3 :\n\nEvent Natal\nLasagna Natal : 2\n\nEvent Natal Large\nPasta Natal : 1",
+    )
+    const parsed = parseWaOrder(text, TODAY)
+    expect(parsed.items).toContainEqual({ name: "Lasagna Natal", size: "single", qty: 2 })
+    expect(parsed.items).toContainEqual({ name: "Pasta Natal", size: "large", qty: 1 })
+    // Menu lama tetap terbaca seperti biasa.
+    expect(parsed.items).toContainEqual({ name: "Choco Bon Bon", size: "single", qty: 2 })
+  })
+})

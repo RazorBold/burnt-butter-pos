@@ -254,6 +254,12 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
         continue
       }
       const item = menuLine(line)
+      // Judul bagian lain di daftar menu (kategori baru dari Owner, mis. "Event Natal"): tanpa
+      // titik dua dan tanpa jumlah. Ukurannya Large/Regular bila disebut di akhir judul.
+      if (!item && !line.includes(":")) {
+        menuSize = /\blarge$/.test(key) ? "large" : /\bregular$/.test(key) ? "regular" : "single"
+        continue
+      }
       if (item && item.qty > 0) items.push({ ...item, size: menuSize })
       continue
     }

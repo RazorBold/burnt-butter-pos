@@ -1,13 +1,19 @@
 import { z } from "zod"
 
-export const MENU_CATEGORIES = ["pasta", "dessert", "bundle"] as const
-export type MenuCategory = (typeof MENU_CATEGORIES)[number]
+/** Kategori menu (diatur Owner). `sized`: menunya punya harga Large dan Regular. */
+export type MenuCategoryRef = { id: string; name: string; sized: boolean }
 
-export const CATEGORY_LABEL: Record<MenuCategory, string> = {
-  pasta: "Pasta",
-  dessert: "Dessert",
-  bundle: "Bundle",
-}
+export const categoryFormSchema = z.object({
+  id: z.uuid().optional(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Nama kategori minimal 2 huruf.")
+    .max(40, "Nama kategori terlalu panjang."),
+  sized: z.boolean(),
+})
+
+export type CategoryFormValues = z.infer<typeof categoryFormSchema>
 
 /** "65.000", "Rp 65.000", "65000" → 65000. Kosong → undefined. */
 export function parseRupiah(input: unknown): number | undefined {
@@ -24,14 +30,14 @@ const price = (label: string) =>
     .max(10_000_000, `${label} terlalu besar.`)
 
 /**
- * Isian form Produk & Menu. Menu pasta biasanya punya dua ukuran (Large/Regular);
- * dessert dan bundle satu harga ("single").
+ * Isian form Produk & Menu. Ukuran mengikuti kategori: kategori bertanda "Large & Regular"
+ * punya dua harga, selain itu satu harga ("single"). `sizing` diisi server dari kategori.
  */
 export const menuFormSchema = z
   .object({
     id: z.uuid().optional(),
     name: z.string().trim().min(3, "Nama menu minimal 3 huruf.").max(80, "Nama terlalu panjang."),
-    category: z.enum(MENU_CATEGORIES, { error: "Pilih kategori." }),
+    categoryId: z.uuid({ error: "Pilih kategori." }),
     description: z.string().trim().max(240, "Deskripsi maksimal 240 karakter.").optional(),
     sizing: z.enum(["two_sizes", "single"]),
     priceLarge: price("Harga Large").optional(),
@@ -65,7 +71,7 @@ export function menuFormFromData(formData: FormData) {
   return {
     id: text("id") || undefined,
     name: text("name") ?? "",
-    category: text("category"),
+    categoryId: text("categoryId"),
     description: text("description") || undefined,
     sizing: text("sizing") === "single" ? "single" : "two_sizes",
     priceLarge: parseRupiah(text("priceLarge")),

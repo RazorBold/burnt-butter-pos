@@ -116,7 +116,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode Pembayaran, Customer, User / Staff, Pengaturan. Tiap tabel punya tombol Tambah, ikon edit, dan menu aksi.
 
-- **F-60** Produk & Menu: foto, nama, deskripsi singkat, kategori (Pasta, Dessert, Bundle), ukuran (Large/Regular atau tanpa ukuran), harga per ukuran, status Aktif; cari + filter kategori.
+- **F-60** Produk & Menu (diatur **Owner saja**; role lain hanya melihat, keputusan pemilik toko Nov 2026): foto, nama, deskripsi singkat, kategori, harga, status Aktif; cari + filter kategori. **Kategori menu bisa ditambah, diubah, digeser urutannya, dan dihapus** (mis. kategori event). Tiap kategori bertipe "Large & Regular" (dua harga, seperti Pasta) atau "Satu harga" (seperti Dessert, Special Bundle); tipe terkunci selama masih ada menu. Urutan kategori = urutan kelompok di form pesanan dan template WA. Kategori hanya bisa dihapus bila kosong. **Hapus menu**: yang belum pernah dipesan dihapus, yang sudah pernah dipesan diarsipkan (hilang dari daftar dan form, pesanan lama dan laporan tetap utuh). Parser WA membaca judul bagian kategori baru (mis. "Event Natal") sebagai kategori satu harga.
 - **F-61** Stok Packaging: foto, nama, stok, satuan, status Cukup/Menipis.
 - **F-62** Bahan Baku: nama, satuan, stok saat ini, stok minimum, status Cukup/Menipis/Habis. Rumus sama dengan packaging: Habis bila stok 0, Menipis bila stok ≤ minimum, selain itu Cukup. Stok boleh pecahan (2 angka di belakang koma, mis. 2,5 kg) dan dicatat lewat masuk/keluar/hitung ulang oleh Admin dan Produksi.
 - **F-63** Kurir & Pengiriman: nama, tipe (Kurir Internal/Eksternal), no. telp, status.

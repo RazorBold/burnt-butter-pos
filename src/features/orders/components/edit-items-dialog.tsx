@@ -81,7 +81,10 @@ function EditItemsForm({
       .map((item) => ({
         id: item.menuVariantId,
         menuName: `${item.menuName} (nonaktif)`,
-        category: "pasta" as const,
+        categoryId: "nonaktif",
+        categoryName: "Menu nonaktif",
+        categorySort: Number.MAX_SAFE_INTEGER,
+        sized: false,
         size: item.size,
         price: item.unitPrice,
         photoPath: item.photoPath,

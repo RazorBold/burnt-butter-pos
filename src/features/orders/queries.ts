@@ -20,6 +20,7 @@ import {
 import { getDb } from "@/db"
 import {
   customers,
+  menuCategories,
   menus,
   menuVariants,
   orderItems,
@@ -51,21 +52,30 @@ function createdBetween(from: string, to: string) {
   )
 }
 
-/** Varian menu aktif untuk form pesanan, urut seperti Master Data (kategori, lalu urutan dibuat). */
+/**
+ * Varian menu aktif untuk form pesanan, urut seperti Master Data (urutan kategori dari Owner,
+ * lalu urutan dibuat). Menu arsip dan menu tanpa kategori tidak ikut.
+ */
 export async function getOrderCatalog(): Promise<CatalogVariant[]> {
   return getDb()
     .select({
       id: menuVariants.id,
       menuName: menus.name,
-      category: menus.category,
+      categoryId: menuCategories.id,
+      categoryName: menuCategories.name,
+      categorySort: menuCategories.sortOrder,
+      sized: menuCategories.sized,
       size: menuVariants.size,
       price: menuVariants.price,
       photoPath: menus.photoPath,
     })
     .from(menuVariants)
     .innerJoin(menus, eq(menus.id, menuVariants.menuId))
-    .where(and(eq(menus.isActive, true), eq(menuVariants.isActive, true)))
-    .orderBy(asc(menus.category), asc(menus.createdAt), asc(menus.name))
+    .innerJoin(menuCategories, eq(menuCategories.id, menus.categoryId))
+    .where(
+      and(eq(menus.isActive, true), eq(menus.isArchived, false), eq(menuVariants.isActive, true)),
+    )
+    .orderBy(asc(menuCategories.sortOrder), asc(menus.createdAt), asc(menus.name))
 }
 
 export type OrderListRow = {
@@ -229,9 +239,9 @@ export type OrderDetail = {
   }[]
 }
 
-// Urutan seperti template WA: pasta Large, pasta Regular, dessert, bundle; dalam satu
-// kelompok mengikuti urutan menu di Master Data (A–E di template).
-const CATEGORY_ORDER = { pasta: 0, dessert: 1, bundle: 2 } as const
+// Urutan seperti template WA: urutan kategori dari Owner, lalu ukuran (Large, Regular); dalam
+// satu kelompok mengikuti urutan menu di Master Data (A–E di template).
+const NO_CATEGORY = Number.MAX_SAFE_INTEGER
 const SIZE_ORDER = { large: 0, regular: 1, single: 2 } as const
 
 /** Detail satu pesanan untuk panel kanan Daftar Pesanan dan halaman Detail Lengkap. */
@@ -251,7 +261,10 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
           variant: {
             columns: { size: true },
             with: {
-              menu: { columns: { name: true, photoPath: true, category: true, createdAt: true } },
+              menu: {
+                columns: { name: true, photoPath: true, createdAt: true },
+                with: { category: { columns: { sortOrder: true } } },
+              },
             },
           },
         },
@@ -303,7 +316,8 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     items: [...order.items]
       .sort(
         (a, b) =>
-          CATEGORY_ORDER[a.variant.menu.category] - CATEGORY_ORDER[b.variant.menu.category] ||
+          (a.variant.menu.category?.sortOrder ?? NO_CATEGORY) -
+            (b.variant.menu.category?.sortOrder ?? NO_CATEGORY) ||
           SIZE_ORDER[a.variant.size] - SIZE_ORDER[b.variant.size] ||
           a.variant.menu.createdAt.getTime() - b.variant.menu.createdAt.getTime() ||
           a.variant.menu.name.localeCompare(b.variant.menu.name),
@@ -418,7 +432,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
       .innerJoin(menuVariants, eq(menuVariants.id, orderItems.menuVariantId))
       .innerJoin(menus, eq(menus.id, menuVariants.menuId))
       .where(inArray(orderItems.orderId, orderIds))
-      .orderBy(asc(menus.category), asc(menus.createdAt), asc(menuVariants.size)),
+      .orderBy(asc(menus.createdAt), asc(menuVariants.size)),
   ])
   return rows.map(({ id, ...row }) => ({
     ...row,

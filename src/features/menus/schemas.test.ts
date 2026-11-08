@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest"
 
 import { fieldErrors } from "@/lib/form"
 
-import { menuFormFromData, menuFormSchema, parseRupiah, slugify } from "./schemas"
+import {
+  categoryFormSchema,
+  menuFormFromData,
+  menuFormSchema,
+  parseRupiah,
+  slugify,
+} from "./schemas"
+
+const CATEGORY_ID = "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed"
 
 function form(entries: Record<string, string>) {
   const data = new FormData()
@@ -34,7 +42,7 @@ describe("menuFormSchema", () => {
       menuFormFromData(
         form({
           name: "Spaghetti Classico Bologna Brulee",
-          category: "pasta",
+          categoryId: CATEGORY_ID,
           sizing: "two_sizes",
           priceLarge: "65.000",
           priceRegular: "50.000",
@@ -49,7 +57,12 @@ describe("menuFormSchema", () => {
   it("mewajibkan kedua harga untuk menu dua ukuran", () => {
     const parsed = menuFormSchema.safeParse(
       menuFormFromData(
-        form({ name: "Lasagna", category: "pasta", sizing: "two_sizes", priceLarge: "65000" }),
+        form({
+          name: "Lasagna",
+          categoryId: CATEGORY_ID,
+          sizing: "two_sizes",
+          priceLarge: "65000",
+        }),
       ),
     )
     expect(parsed.success).toBe(false)
@@ -58,7 +71,7 @@ describe("menuFormSchema", () => {
 
   it("mewajibkan satu harga untuk menu tanpa ukuran", () => {
     const parsed = menuFormSchema.safeParse(
-      menuFormFromData(form({ name: "Choco Bon Bon", category: "dessert", sizing: "single" })),
+      menuFormFromData(form({ name: "Choco Bon Bon", categoryId: CATEGORY_ID, sizing: "single" })),
     )
     expect(fieldErrors(parsed.error!)).toEqual({ priceSingle: "Harga wajib diisi." })
   })
@@ -69,6 +82,16 @@ describe("menuFormSchema", () => {
     )
     const errors = fieldErrors(parsed.error!)
     expect(errors.name).toBe("Nama menu minimal 3 huruf.")
-    expect(errors.category).toBe("Pilih kategori.")
+    expect(errors.categoryId).toBe("Pilih kategori.")
+  })
+})
+
+describe("categoryFormSchema", () => {
+  it("nama kategori dirapikan dan wajib minimal 2 huruf", () => {
+    expect(categoryFormSchema.parse({ name: "  Event Natal ", sized: false })).toEqual({
+      name: "Event Natal",
+      sized: false,
+    })
+    expect(categoryFormSchema.safeParse({ name: "A", sized: true }).success).toBe(false)
   })
 })

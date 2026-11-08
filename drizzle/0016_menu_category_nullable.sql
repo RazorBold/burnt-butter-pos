@@ -1,0 +1,1 @@
+ALTER TABLE "menus" ALTER COLUMN "category" DROP NOT NULL;

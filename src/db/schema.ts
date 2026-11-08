@@ -23,8 +23,9 @@ import { authUsers } from "drizzle-orm/supabase"
 // ── Enum ────────────────────────────────────────────────────────────────────
 
 export const userRole = pgEnum("user_role", ["admin", "kasir", "produksi", "owner"])
-export const menuCategory = pgEnum("menu_category", ["pasta", "dessert", "bundle"])
 export const menuSize = pgEnum("menu_size", ["large", "regular", "single"])
+/** Lama (sebelum kategori bisa diatur Owner). Tidak dipakai lagi; dihapus di migrasi berikutnya. */
+export const menuCategory = pgEnum("menu_category", ["pasta", "dessert", "bundle"])
 export const orderType = pgEnum("order_type", ["personal", "hadiah"])
 export const orderChannel = pgEnum("order_channel", ["whatsapp", "shopee", "tokopedia"])
 export const orderStatus = pgEnum("order_status", [
@@ -104,15 +105,37 @@ export const customers = pgTable(
   (t) => [uniqueIndex("customers_phone_idx").on(t.phone)],
 ).enableRLS()
 
+/**
+ * Kategori menu yang diatur Owner (Pasta, Dessert, Special Bundle, event, ...). Urutan = urutan
+ * kelompok di form pesanan dan template WA. `sized`: menu di kategori ini punya harga Large dan
+ * Regular; selain itu satu harga.
+ */
+export const menuCategories = pgTable("menu_categories", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  sized: boolean("sized").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}).enableRLS()
+
 export const menus = pgTable("menus", {
   id: id(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  category: menuCategory("category").notNull(),
+  /** Null hanya untuk menu arsip yang kategorinya sudah dihapus. */
+  categoryId: uuid("category_id").references(() => menuCategories.id, { onDelete: "set null" }),
+  /** Lama: tidak dipakai lagi (diganti categoryId), dibiarkan supaya versi live aman saat deploy. */
+  legacyCategory: menuCategory("category"),
   description: text("description"),
   /** "/images/menu/<slug>-large.webp" atau path di Supabase Storage. */
   photoPath: text("photo_path"),
   isActive: boolean("is_active").notNull().default(true),
+  /**
+   * Dihapus Owner tapi sudah pernah dipesan: disembunyikan dari form pesanan dan Master Data,
+   * datanya tetap untuk riwayat pesanan dan laporan.
+   */
+  isArchived: boolean("is_archived").notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }).enableRLS()
@@ -442,7 +465,12 @@ export const storeSettings = pgTable(
 
 // ── Relasi (untuk db.query) ─────────────────────────────────────────────────
 
-export const menusRelations = relations(menus, ({ many }) => ({
+export const menuCategoriesRelations = relations(menuCategories, ({ many }) => ({
+  menus: many(menus),
+}))
+
+export const menusRelations = relations(menus, ({ one, many }) => ({
+  category: one(menuCategories, { fields: [menus.categoryId], references: [menuCategories.id] }),
   variants: many(menuVariants),
 }))
 

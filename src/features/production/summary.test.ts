@@ -4,13 +4,20 @@ import type { OrderStatus } from "@/features/orders/filters"
 
 import { type ProductionItem, productionTotals, stageOf, summarizeProduction } from "./summary"
 
+// Urutan kategori seperti data awal: Pasta (berukuran), Dessert, Special Bundle.
+const CATEGORY = {
+  pasta: { categorySort: 0, sized: true },
+  dessert: { categorySort: 1, sized: false },
+  bundle: { categorySort: 2, sized: false },
+} as const
+
 const item = (
   menuName: string,
   size: ProductionItem["size"],
   qty: number,
   menuOrder: number,
-  category: ProductionItem["category"] = "pasta",
-): ProductionItem => ({ menuName, size, qty, menuOrder, category, photoPath: null })
+  category: keyof typeof CATEGORY = "pasta",
+): ProductionItem => ({ menuName, size, qty, menuOrder, ...CATEGORY[category], photoPath: null })
 
 const order = (status: OrderStatus, items: ProductionItem[]) => ({ status, items })
 

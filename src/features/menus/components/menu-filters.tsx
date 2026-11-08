@@ -10,14 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CATEGORY_LABEL, MENU_CATEGORIES } from "@/features/menus/schemas"
+import type { MenuCategoryRef } from "@/features/menus/schemas"
 import { useDebouncedQuery, useUrlFilters } from "@/hooks/use-url-filters"
 import { cn } from "@/lib/utils"
 
 const ALL = "semua"
 
 /** Cari nama + filter kategori. Disimpan di URL (?q=&kategori=) supaya bisa dibagikan. */
-export function MenuFilters() {
+export function MenuFilters({ categories }: { categories: MenuCategoryRef[] }) {
   const { current, update, pending } = useUrlFilters()
   const [query, setQuery] = useDebouncedQuery(current, update)
   return (
@@ -45,9 +45,9 @@ export function MenuFilters() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>Semua Kategori</SelectItem>
-          {MENU_CATEGORIES.map((category) => (
-            <SelectItem key={category} value={category}>
-              {CATEGORY_LABEL[category]}
+          {categories.map((category) => (
+            <SelectItem key={category.id} value={category.id}>
+              {category.name}
             </SelectItem>
           ))}
         </SelectContent>

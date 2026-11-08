@@ -39,7 +39,10 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
           variant: {
             columns: { size: true },
             with: {
-              menu: { columns: { name: true, category: true, photoPath: true, createdAt: true } },
+              menu: {
+                columns: { name: true, photoPath: true, createdAt: true },
+                with: { category: { columns: { sortOrder: true, sized: true } } },
+              },
             },
           },
         },
@@ -65,7 +68,8 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     createdAt: row.createdAt,
     items: row.items.map((item) => ({
       menuName: item.variant.menu.name,
-      category: item.variant.menu.category,
+      categorySort: item.variant.menu.category?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+      sized: item.variant.menu.category?.sized ?? item.variant.size !== "single",
       size: item.variant.size,
       qty: item.qty,
       photoPath: item.variant.menu.photoPath,

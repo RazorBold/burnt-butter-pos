@@ -22,10 +22,13 @@ import {
   SectionCardSkeleton,
 } from "@/features/master-data/components/section-card"
 import { setMenusActive } from "@/features/menus/actions"
+import { CategoryManager } from "@/features/menus/components/category-manager"
+import { DeleteMenuButton } from "@/features/menus/components/delete-menu-button"
 import { MenuFilters } from "@/features/menus/components/menu-filters"
 import { MenuFormDialog } from "@/features/menus/components/menu-form-dialog"
-import { listMenus, type MenuRow } from "@/features/menus/queries"
-import { CATEGORY_LABEL, MENU_CATEGORIES, type MenuCategory } from "@/features/menus/schemas"
+import { listMenuCategories, listMenus, type MenuRow } from "@/features/menus/queries"
+import type { MenuCategoryRef } from "@/features/menus/schemas"
+import { CAN_MANAGE_MENU } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 import { formatRupiah } from "@/lib/format"
 import { photoSrc } from "@/lib/photos"
@@ -46,13 +49,19 @@ async function MenuSection({
   searchParams,
 }: Pick<PageProps<"/master-data/produk-menu">, "searchParams">) {
   const user = await requirePageAccess("/master-data")
-  const canEdit = user.role === "admin"
+  // Keputusan pemilik toko (Nov 2026): menu dan kategori diatur Owner saja.
+  const canEdit = CAN_MANAGE_MENU.includes(user.role)
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q : undefined
-  const category = MENU_CATEGORIES.find((value) => value === params.kategori) as
-    MenuCategory | undefined
-  const menus = await listMenus({ q, category })
-  const filtered = Boolean(q || category)
+  const categoryRows = await listMenuCategories()
+  const categories: MenuCategoryRef[] = categoryRows.map(({ id, name, sized }) => ({
+    id,
+    name,
+    sized,
+  }))
+  const categoryId = categories.find((category) => category.id === params.kategori)?.id
+  const menus = await listMenus({ q, categoryId })
+  const filtered = Boolean(q || categoryId)
 
   return (
     <>
@@ -62,9 +71,10 @@ async function MenuSection({
         description="Kelola daftar menu, harga, kategori, dan ketersediaan."
         actions={
           <>
-            <MenuFilters />
+            <MenuFilters categories={categories} />
             {canEdit && (
               <MenuFormDialog
+                categories={categories}
                 trigger={
                   <Button className="h-10 rounded-lg px-4 font-semibold">
                     <Plus className="size-[18px]" aria-hidden />
@@ -77,13 +87,19 @@ async function MenuSection({
         }
       />
 
+      <CategoryManager categories={categoryRows} canEdit={canEdit} />
+
       {menus.length === 0 ? (
         <EmptyState filtered={filtered} />
       ) : (
-        <MenuTable menus={menus} canEdit={canEdit} />
+        <MenuTable menus={menus} categories={categories} canEdit={canEdit} />
       )}
 
-      {!canEdit && <ReadOnlyNote>Hanya Admin yang bisa menambah atau mengubah menu.</ReadOnlyNote>}
+      {!canEdit && (
+        <ReadOnlyNote>
+          Hanya Owner yang bisa menambah, mengubah, atau menghapus menu dan kategori.
+        </ReadOnlyNote>
+      )}
     </>
   )
 }
@@ -99,7 +115,15 @@ function pricesLabel(menu: MenuRow) {
   return menu.variants.length ? menu.variants.map((v) => formatRupiah(v.price)).join(" / ") : "–"
 }
 
-function MenuTable({ menus, canEdit }: { menus: MenuRow[]; canEdit: boolean }) {
+function MenuTable({
+  menus,
+  categories,
+  canEdit,
+}: {
+  menus: MenuRow[]
+  categories: MenuCategoryRef[]
+  canEdit: boolean
+}) {
   return (
     <div className="overflow-x-auto">
       <Table className="min-w-[760px]">
@@ -132,7 +156,7 @@ function MenuTable({ menus, canEdit }: { menus: MenuRow[]; canEdit: boolean }) {
                     </p>
                   )}
                 </TableCell>
-                <TableCell>{CATEGORY_LABEL[menu.category]}</TableCell>
+                <TableCell>{menu.category?.name ?? "–"}</TableCell>
                 <TableCell>{sizesLabel(menu)}</TableCell>
                 <TableCell className="tabular-nums">{pricesLabel(menu)}</TableCell>
                 <TableCell>
@@ -141,7 +165,12 @@ function MenuTable({ menus, canEdit }: { menus: MenuRow[]; canEdit: boolean }) {
                 {canEdit && (
                   <TableCell className="pr-6">
                     <div className="flex items-center justify-end gap-1">
-                      <MenuFormDialog menu={menu} trigger={<EditIconButton name={menu.name} />} />
+                      <MenuFormDialog
+                        menu={menu}
+                        categories={categories}
+                        trigger={<EditIconButton name={menu.name} />}
+                      />
+                      <DeleteMenuButton id={menu.id} name={menu.name} />
                       <ActiveToggleMenu
                         name={menu.name}
                         isActive={menu.isActive}

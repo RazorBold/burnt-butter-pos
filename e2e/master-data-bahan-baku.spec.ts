@@ -1,10 +1,12 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { removeRawMaterialByName } from "./helpers/cleanup"
+import { expectAccessDenied } from "./helpers/access"
 import { loginAs } from "./helpers/login"
 
 const password = process.env.E2E_PASSWORD
 const adminEmail = process.env.E2E_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 const kasirEmail = process.env.E2E_KASIR_EMAIL
 const produksiEmail = process.env.E2E_PRODUKSI_EMAIL
 
@@ -26,7 +28,7 @@ async function recordStock(page: Page, opener: () => Promise<void>, mode: string
 }
 
 test.describe("Master Data › Bahan Baku", () => {
-  test.skip(!adminEmail || !password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   let name: string | undefined
   test.afterEach(async () => {
@@ -35,7 +37,7 @@ test.describe("Master Data › Bahan Baku", () => {
   })
 
   test("tambah, catat stok desimal, status, notifikasi, riwayat, ubah", async ({ page }, info) => {
-    await loginAs(page, adminEmail!, password!, PATH)
+    await loginAs(page, ownerEmail!, password!, PATH)
     await expect(page.getByRole("heading", { name: "Bahan Baku", level: 1 })).toBeVisible()
     await expect(row(page, "Keju Cheddar")).toBeVisible()
     await expect(page.getByRole("heading", { name: "Riwayat Stok Bahan Baku" })).toBeVisible()
@@ -116,38 +118,16 @@ test.describe("Master Data › Bahan Baku", () => {
     await expect(page.getByRole("menuitem", { name: new RegExp(name) })).toHaveCount(0)
   })
 
-  test("Produksi hanya bisa catat stok; Kasir hanya melihat", async ({ page }, info) => {
+  test("Admin, Produksi, dan Kasir tidak bisa membuka Bahan Baku (khusus Owner)", async ({
+    page,
+  }, info) => {
     test.skip(
       !produksiEmail || !kasirEmail || info.project.name !== "desktop",
       "butuh akun Produksi dan Kasir, desktop saja",
     )
-    name = `QA Bahan ${Date.now()}`
-    await loginAs(page, adminEmail!, password!, PATH)
-    await page.getByRole("button", { name: "Tambah Bahan Baku" }).click()
-    const form = page.getByRole("dialog", { name: "Tambah bahan baku" })
-    await form.getByLabel("Nama bahan").fill(name)
-    await form.getByLabel("Stok minimum").fill("1")
-    await form.getByRole("button", { name: "Tambah bahan baku" }).click()
-    await expect(page.getByText("Bahan baku ditambahkan.")).toBeVisible()
-
-    await loginAs(page, produksiEmail!, password!, PATH)
-    await expect(page.getByRole("button", { name: "Tambah Bahan Baku" })).toHaveCount(0)
-    await expect(page.getByRole("button", { name: `Ubah ${name}` })).toHaveCount(0)
-    const dialog = await recordStock(
-      page,
-      () => page.getByRole("button", { name: `Catat stok ${name}` }).click(),
-      "Masuk",
-      "2,5",
-    )
-    await dialog.getByRole("button", { name: "Simpan" }).click()
-    await expect(page.getByText(`Stok ${name} jadi 2,5 kg.`)).toBeVisible()
-    await expect(page.getByRole("button", { name: /^Notifikasi/ })).toBeVisible()
-
-    await loginAs(page, kasirEmail!, password!, PATH)
-    await expect(row(page, name)).toContainText("2,5")
-    await expect(page.getByRole("button", { name: `Catat stok ${name}` })).toHaveCount(0)
-    await expect(page.getByText("Stok dicatat oleh Admin dan tim Produksi.")).toBeVisible()
-    await page.getByRole("button", { name: "Notifikasi" }).click()
-    await expect(page.getByText("Belum ada notifikasi.")).toBeVisible()
+    for (const email of [adminEmail!, produksiEmail!, kasirEmail!]) {
+      await loginAs(page, email, password!, PATH)
+      await expectAccessDenied(page)
+    }
   })
 })

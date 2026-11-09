@@ -3,8 +3,21 @@ import { describe, expect, it } from "vitest"
 import { canAccessPath, safeNextPath } from "./access"
 
 describe("canAccessPath", () => {
-  it("Admin boleh membuka semua halaman", () => {
-    expect(canAccessPath("admin", "/laporan/penjualan")).toBe(true)
+  it("Admin: semua menu operasional, tanpa Laporan dan Master Data", () => {
+    for (const path of [
+      "/pesanan",
+      "/pembayaran",
+      "/produksi",
+      "/packaging",
+      "/pengiriman",
+      "/stok-packaging",
+    ]) {
+      expect(canAccessPath("admin", path)).toBe(true)
+    }
+    expect(canAccessPath("admin", "/laporan")).toBe(false)
+    expect(canAccessPath("admin", "/master-data/produk-menu")).toBe(false)
+    expect(canAccessPath("admin", "/master-data/user-staff")).toBe(false)
+    // Halaman yang tidak terdaftar (mis. /dev/komponen) tetap khusus Admin.
     expect(canAccessPath("admin", "/halaman-baru")).toBe(true)
   })
 
@@ -23,20 +36,21 @@ describe("canAccessPath", () => {
     expect(canAccessPath("owner", "/packaging")).toBe(false)
   })
 
-  it("User / Staff hanya untuk Admin, Master Data lain untuk semua", () => {
-    expect(canAccessPath("admin", "/master-data/user-staff")).toBe(true)
-    for (const role of ["kasir", "produksi", "owner"] as const) {
-      expect(canAccessPath(role, "/master-data/user-staff")).toBe(false)
-      expect(canAccessPath(role, "/master-data/kurir")).toBe(true)
+  it("Laporan dan seluruh Master Data khusus Owner", () => {
+    for (const path of [
+      "/laporan",
+      "/master-data",
+      "/master-data/kurir",
+      "/master-data/customer",
+      "/master-data/user-staff",
+      "/master-data/pengaturan",
+      "/master-data/bahan-baku",
+    ]) {
+      expect(canAccessPath("owner", path)).toBe(true)
+      for (const role of ["admin", "kasir", "produksi"] as const) {
+        expect(canAccessPath(role, path)).toBe(false)
+      }
     }
-  })
-
-  it("Customer untuk Admin, Kasir, Owner; Pengaturan hanya Admin", () => {
-    expect(canAccessPath("kasir", "/master-data/customer")).toBe(true)
-    expect(canAccessPath("owner", "/master-data/customer")).toBe(true)
-    expect(canAccessPath("produksi", "/master-data/customer")).toBe(false)
-    expect(canAccessPath("admin", "/master-data/pengaturan")).toBe(true)
-    expect(canAccessPath("kasir", "/master-data/pengaturan")).toBe(false)
   })
 
   it("mencocokkan per segmen, bukan awalan teks", () => {

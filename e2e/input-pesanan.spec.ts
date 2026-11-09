@@ -175,8 +175,14 @@ test.describe("Input Pesanan › Simpan", () => {
       page.getByRole("row", { name: new RegExp(orderNo) }).getByText("PO", { exact: true }),
     ).toBeVisible()
 
-    // Ringkasan customer ikut terisi.
-    await page.goto(`/master-data/customer?q=${phone}`)
+    // Ringkasan customer ikut terisi (Master Data khusus Owner).
+    test.skip(!process.env.E2E_OWNER_EMAIL, "butuh E2E_OWNER_EMAIL untuk cek Master Data")
+    await loginAs(
+      page,
+      process.env.E2E_OWNER_EMAIL!,
+      admin.password!,
+      `/master-data/customer?q=${phone}`,
+    )
     const row = page.getByRole("row", { name: new RegExp(name) })
     await expect(row.getByRole("cell", { name: "Rp 325.000" })).toBeVisible()
     await expect(row.getByRole("cell", { name: "1", exact: true })).toBeVisible()

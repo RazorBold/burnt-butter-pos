@@ -55,12 +55,16 @@ test.describe("Atribut dari ekstensi browser tidak memicu error hydration", () =
     "/laporan",
     "/master-data/bahan-baku",
   ]) {
+    // Laporan dan Master Data khusus Owner.
+    const ownerOnly = path === "/laporan" || path.startsWith("/master-data")
     test(`halaman ${path}`, async ({ page }, info) => {
       test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
       test.skip(info.project.name !== "desktop", "cukup di desktop")
       await injectLikeExtension(page)
       const errors = collectHydrationErrors(page)
-      await loginAs(page, admin.email!, admin.password!, path)
+      const email = ownerOnly ? process.env.E2E_OWNER_EMAIL : admin.email
+      test.skip(!email, "butuh akun QA untuk halaman ini")
+      await loginAs(page, email!, admin.password!, path)
       await page.waitForLoadState("networkidle")
       expect(errors).toEqual([])
     })

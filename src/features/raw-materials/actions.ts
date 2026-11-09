@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { getDb } from "@/db"
 import { rawMaterials, stockMovements } from "@/db/schema"
 import { planMovement } from "@/features/packagings/stock"
-import { CAN_EDIT_STOCK } from "@/lib/access"
+import { CAN_EDIT_RAW_STOCK, CAN_MANAGE_MASTER } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { fieldErrors } from "@/lib/form"
 import { formatJumlah } from "@/lib/format"
@@ -38,7 +38,7 @@ export async function saveRawMaterial(
 ): Promise<RawMaterialFormState> {
   let userId: string
   try {
-    userId = (await requireRole(["admin"])).id
+    userId = (await requireRole(CAN_MANAGE_MASTER)).id
   } catch (error) {
     if (error instanceof AuthorizationError) return { message: error.message }
     throw error
@@ -107,7 +107,7 @@ export async function saveRawMaterial(
 export async function recordRawMaterialMovement(input: unknown): Promise<ActionResult> {
   let userId: string
   try {
-    userId = (await requireRole(CAN_EDIT_STOCK)).id
+    userId = (await requireRole(CAN_EDIT_RAW_STOCK)).id
   } catch (error) {
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error

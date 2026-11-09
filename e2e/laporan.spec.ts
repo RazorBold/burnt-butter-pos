@@ -6,13 +6,14 @@ import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 
 async function login(page: Page, email: string, target: string) {
   await loginAs(page, email, admin.password!, target)
 }
 
 test.describe("Laporan", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   let code: string | undefined
   test.afterEach(async () => {
@@ -23,7 +24,7 @@ test.describe("Laporan", () => {
   test("Ringkasan: KPI + tren, donat, produk terlaris, metode bayar", async ({ page }, info) => {
     code = `${Date.now()}`
     await seedReportOrders(code)
-    await login(page, admin.email!, "/laporan?dari=2021-03-01&sampai=2021-03-03")
+    await login(page, ownerEmail!, "/laporan?dari=2021-03-01&sampai=2021-03-03")
 
     await expect(page.getByRole("heading", { name: "Laporan", level: 1 })).toBeVisible()
     // Label KPI pertama di halaman (Total Pembayaran juga muncul di kartu Metode Pembayaran).
@@ -61,9 +62,11 @@ test.describe("Laporan", () => {
     await page.screenshot({ path: `test-results/laporan-${info.project.name}.png`, fullPage: true })
   })
 
-  test("Kasir tidak bisa membuka Laporan", async ({ page }, info) => {
+  test("Admin dan Kasir tidak bisa membuka Laporan (khusus Owner)", async ({ page }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
-    await login(page, kasirEmail!, "/laporan")
-    await expectAccessDenied(page)
+    for (const email of [admin.email!, kasirEmail!]) {
+      await login(page, email, "/laporan")
+      await expectAccessDenied(page)
+    }
   })
 })

@@ -13,11 +13,10 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 /** Ringkasan hak akses per role, ditampilkan di form User / Staff. Selaras dengan SECTION_ACCESS. */
 export const ROLE_DESCRIPTION: Record<Role, string> = {
-  admin: "Semua menu, termasuk mengelola akun staf.",
-  kasir: "Dashboard, Pesanan, Pembayaran, Pengiriman, Customer, dan lihat Master Data.",
-  produksi:
-    "Dashboard, Produksi, Packaging, Stok Packaging, dan lihat Master Data (tanpa Customer).",
-  owner: "Dashboard, Laporan, dan Master Data (atur Produk & Menu serta jenis Stok Packaging).",
+  admin: "Dashboard, Pesanan, Pembayaran, Produksi, Packaging, Pengiriman, dan Stok Packaging.",
+  kasir: "Dashboard, Pesanan, Pembayaran, dan Pengiriman.",
+  produksi: "Dashboard, Produksi, Packaging, dan Stok Packaging.",
+  owner: "Dashboard, Laporan, dan semua Master Data, termasuk akun staf dan pengaturan.",
 }
 
 const ALL: readonly Role[] = ROLES
@@ -30,28 +29,36 @@ export const SECTION_ACCESS = {
   "/produksi": ["admin", "produksi"],
   "/packaging": ["admin", "produksi"],
   "/pengiriman": ["admin", "kasir"],
-  "/laporan": ["admin", "owner"],
+  "/laporan": ["owner"],
   "/stok-packaging": ["admin", "produksi"],
-  "/master-data": ALL,
+  // Laporan dan Master Data khusus Owner (keputusan pemilik toko, Nov 2026).
+  "/master-data": ["owner"],
 } as const satisfies Record<string, readonly Role[]>
 
 export type Section = keyof typeof SECTION_ACCESS
 
 /**
- * Sub-halaman yang aksesnya lebih sempit dari halaman induknya. Diperiksa sebelum SECTION_ACCESS.
- * Customer berisi data pribadi (no. HP, alamat); User / Staff dan Pengaturan khusus Admin.
+ * Sub-halaman yang aksesnya berbeda dari halaman induknya. Diperiksa sebelum SECTION_ACCESS.
+ * Sejak Nov 2026 seluruh Master Data khusus Owner, jadi daftar ini hanya menegaskan halaman
+ * yang paling sensitif (data pribadi customer, akun staf, pengaturan).
  */
 export const SUBSECTION_ACCESS = {
-  "/master-data/customer": ["admin", "kasir", "owner"],
-  "/master-data/user-staff": ["admin"],
-  "/master-data/pengaturan": ["admin"],
+  "/master-data/customer": ["owner"],
+  "/master-data/user-staff": ["owner"],
+  "/master-data/pengaturan": ["owner"],
 } as const satisfies Record<string, readonly Role[]>
 
-/** Role yang boleh mencatat stok masuk/keluar (packaging, bahan baku). */
+/** Role yang mengelola Master Data (kurir, metode bayar, bahan baku, staf, pengaturan). */
+export const CAN_MANAGE_MASTER: readonly Role[] = ["owner"]
+
+/** Role yang boleh mencatat stok packaging (masuk, hitung ulang) di menu Stok Packaging. */
 export const CAN_EDIT_STOCK: readonly Role[] = ["admin", "produksi"]
 
-/** Role yang boleh menambah dan mengubah data customer (Kasir mencatat pesanan dari WA). */
-export const CAN_EDIT_CUSTOMER: readonly Role[] = ["admin", "kasir"]
+/** Role yang boleh mencatat stok bahan baku (di Master Data, khusus Owner sejak Nov 2026). */
+export const CAN_EDIT_RAW_STOCK: readonly Role[] = ["owner"]
+
+/** Role yang boleh mengubah data customer di Master Data. Customer baru tetap dibuat dari pesanan. */
+export const CAN_EDIT_CUSTOMER: readonly Role[] = ["owner"]
 
 /** Role yang boleh menandai pesanan selesai packing (memotong stok packaging). */
 export const CAN_PACK: readonly Role[] = ["admin", "produksi"]

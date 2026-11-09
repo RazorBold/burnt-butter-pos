@@ -23,6 +23,7 @@ import { setPaymentMethodActive } from "@/features/payment-methods/actions"
 import { PaymentMethodFormDialog } from "@/features/payment-methods/components/payment-method-form-dialog"
 import { listPaymentMethods } from "@/features/payment-methods/queries"
 import { PAYMENT_METHOD_TYPE_LABEL } from "@/features/payment-methods/schemas"
+import { CAN_MANAGE_MASTER } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 
 export const metadata: Metadata = { title: "Metode Pembayaran" }
@@ -39,7 +40,7 @@ export default function MetodePembayaranPage() {
 
 async function PaymentMethodSection() {
   const user = await requirePageAccess("/master-data")
-  const canEdit = user.role === "admin"
+  const canEdit = CAN_MANAGE_MASTER.includes(user.role)
   const methods = await listPaymentMethods()
 
   return (

@@ -28,7 +28,7 @@ import {
   listRawMaterials,
   RAW_MOVEMENT_PAGE_SIZE,
 } from "@/features/raw-materials/queries"
-import { CAN_EDIT_STOCK } from "@/lib/access"
+import { CAN_EDIT_RAW_STOCK, CAN_MANAGE_MASTER } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 import { formatJumlah, formatWaktuDibuat } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -57,8 +57,8 @@ export default function BahanBakuPage({ searchParams }: PageProps<"/master-data/
 
 async function MaterialSection() {
   const user = await requirePageAccess("/master-data")
-  const canEditData = user.role === "admin"
-  const canRecord = CAN_EDIT_STOCK.includes(user.role)
+  const canEditData = CAN_MANAGE_MASTER.includes(user.role)
+  const canRecord = CAN_EDIT_RAW_STOCK.includes(user.role)
   const items = await listRawMaterials()
 
   return (

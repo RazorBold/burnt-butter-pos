@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { getDb } from "@/db"
 import { storeSettings } from "@/db/schema"
+import { CAN_MANAGE_MASTER } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { fieldErrors } from "@/lib/form"
 
@@ -21,7 +22,7 @@ export async function saveStoreSettings(
 ): Promise<StoreSettingsFormState> {
   let userId: string
   try {
-    userId = (await requireRole(["admin"])).id
+    userId = (await requireRole(CAN_MANAGE_MASTER)).id
   } catch (error) {
     if (error instanceof AuthorizationError) return { message: error.message }
     throw error

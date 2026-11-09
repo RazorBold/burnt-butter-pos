@@ -1,17 +1,19 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { removeCourierByName } from "./helpers/cleanup"
+import { expectAccessDenied } from "./helpers/access"
 import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 
 async function login(page: Page, email: string, password: string, target: string) {
   await loginAs(page, email, password, target)
 }
 
 test.describe("Master Data › Kurir & Pengiriman", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   let createdCourier: string | undefined
   test.afterEach(async () => {
@@ -20,7 +22,7 @@ test.describe("Master Data › Kurir & Pengiriman", () => {
   })
 
   test("daftar kurir sesuai desain", async ({ page }, info) => {
-    await login(page, admin.email!, admin.password!, "/master-data/kurir")
+    await login(page, ownerEmail!, admin.password!, "/master-data/kurir")
     const table = page.getByRole("table")
     await expect(table.getByRole("row", { name: /Andi/ }).getByText("0812 3456 7890")).toBeVisible()
     const citra = table.getByRole("row", { name: /Citra Express/ })
@@ -38,7 +40,7 @@ test.describe("Master Data › Kurir & Pengiriman", () => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
     const name = `QA Kurir ${Date.now()}`
     createdCourier = name
-    await login(page, admin.email!, admin.password!, "/master-data/kurir")
+    await login(page, ownerEmail!, admin.password!, "/master-data/kurir")
 
     await page.getByRole("button", { name: "Tambah Kurir" }).click()
     const dialog = page.getByRole("dialog", { name: "Tambah kurir" })
@@ -78,13 +80,11 @@ test.describe("Master Data › Kurir & Pengiriman", () => {
     await expect(row.getByText("Nonaktif", { exact: true })).toBeVisible()
   })
 
-  test("Kasir hanya bisa melihat", async ({ page }, info) => {
+  test("Admin dan Kasir tidak bisa membuka Kurir (khusus Owner)", async ({ page }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
-    await login(page, kasirEmail!, admin.password!, "/master-data/kurir")
-    await expect(page.getByRole("table").getByText("Budi")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Tambah Kurir" })).toHaveCount(0)
-    await expect(
-      page.getByText("Hanya Admin yang bisa menambah atau mengubah kurir."),
-    ).toBeVisible()
+    for (const email of [admin.email!, kasirEmail!]) {
+      await login(page, email, admin.password!, "/master-data/kurir")
+      await expectAccessDenied(page)
+    }
   })
 })

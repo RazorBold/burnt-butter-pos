@@ -39,7 +39,10 @@ export function CategoryManager({
   canEdit: boolean
 }) {
   const [editing, setEditing] = useState<MenuCategoryRow | "new" | null>(null)
-  const [removing, setRemoving] = useState<MenuCategoryRow | null>(null)
+  // Simpan id saja: dialog selalu membaca data terbaru dari server (mis. jumlah isi setelah
+  // packaging/menu terakhir dihapus), bukan salinan saat tombol diklik.
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const removing = categories.find((category) => category.id === removingId) ?? null
   const [pending, startTransition] = useTransition()
 
   function move(id: string, direction: "up" | "down") {
@@ -106,7 +109,7 @@ export function CategoryManager({
                 </IconButton>
                 <IconButton
                   label={`Hapus kategori ${category.name}`}
-                  onClick={() => setRemoving(category)}
+                  onClick={() => setRemovingId(category.id)}
                   className="text-trend-down-fg hover:bg-trend-down"
                 >
                   <Trash2 className="size-4" aria-hidden />
@@ -123,7 +126,7 @@ export function CategoryManager({
           onClose={() => setEditing(null)}
         />
       )}
-      {removing && <DeleteCategoryDialog category={removing} onClose={() => setRemoving(null)} />}
+      {removing && <DeleteCategoryDialog category={removing} onClose={() => setRemovingId(null)} />}
     </section>
   )
 }

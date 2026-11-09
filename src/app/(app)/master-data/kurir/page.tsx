@@ -23,6 +23,7 @@ import {
   SectionCardHeader,
   SectionCardSkeleton,
 } from "@/features/master-data/components/section-card"
+import { CAN_MANAGE_MASTER } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 import { formatPhone } from "@/lib/phone"
 
@@ -40,7 +41,7 @@ export default function KurirPage() {
 
 async function CourierSection() {
   const user = await requirePageAccess("/master-data")
-  const canEdit = user.role === "admin"
+  const canEdit = CAN_MANAGE_MASTER.includes(user.role)
   const couriers = await listCouriers()
 
   return (

@@ -3,6 +3,7 @@ import path from "node:path"
 import { expect, type Page, test } from "@playwright/test"
 
 import { removeMenuByName, removeMenuCategoryByName } from "./helpers/cleanup"
+import { expectAccessDenied } from "./helpers/access"
 import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
@@ -13,10 +14,8 @@ async function login(page: Page, email: string, target: string) {
   await loginAs(page, email, admin.password!, target)
 }
 
-const READ_ONLY = "Hanya Owner yang bisa menambah, mengubah, atau menghapus menu dan kategori."
-
 test.describe("Master Data › Produk & Menu", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   // Data yang dibuat test terakhir; dihapus setelah test selesai (lulus atau gagal).
   let createdMenu: string | undefined
@@ -29,7 +28,7 @@ test.describe("Master Data › Produk & Menu", () => {
   })
 
   test("daftar, cari, dan filter kategori", async ({ page }, info) => {
-    await login(page, admin.email!, "/master-data")
+    await login(page, ownerEmail!, "/master-data")
     await expect(page).toHaveURL(/\/master-data\/produk-menu$/)
 
     const table = page.getByRole("table")
@@ -57,7 +56,7 @@ test.describe("Master Data › Produk & Menu", () => {
     page,
     browser,
   }, info) => {
-    test.skip(!ownerEmail || info.project.name !== "desktop", "butuh E2E_OWNER_EMAIL, desktop saja")
+    test.skip(info.project.name !== "desktop", "desktop saja")
     test.setTimeout(90_000)
     const stamp = Date.now()
     const category = `QA Kategori ${stamp}`
@@ -148,19 +147,13 @@ test.describe("Master Data › Produk & Menu", () => {
     await expect(categories.getByText(renamed, { exact: true })).toHaveCount(0)
   })
 
-  test("Admin dan Kasir hanya bisa melihat", async ({ page, browser }, info) => {
+  test("Admin dan Kasir tidak bisa membuka Produk & Menu (khusus Owner)", async ({
+    page,
+  }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
-    await login(page, admin.email!, "/master-data/produk-menu")
-    await expect(page.getByRole("table").getByText("Choco Bon Bon")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Tambah Menu" })).toHaveCount(0)
-    await expect(page.getByRole("button", { name: "Tambah kategori" })).toHaveCount(0)
-    await expect(page.getByRole("columnheader", { name: "Aksi" })).toHaveCount(0)
-    await expect(page.getByText(READ_ONLY)).toBeVisible()
-
-    const kasir = await browser.newPage()
-    await login(kasir, kasirEmail!, "/master-data/produk-menu")
-    await expect(kasir.getByRole("button", { name: "Tambah Menu" })).toHaveCount(0)
-    await expect(kasir.getByText(READ_ONLY)).toBeVisible()
-    await kasir.close()
+    for (const email of [admin.email!, kasirEmail!]) {
+      await login(page, email, "/master-data/produk-menu")
+      await expectAccessDenied(page)
+    }
   })
 })

@@ -6,13 +6,14 @@ import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 
 async function login(page: Page, email: string, password: string, target: string) {
   await loginAs(page, email, password, target)
 }
 
 test.describe("Master Data › User / Staff", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   let createdEmail: string | undefined
   test.afterEach(async () => {
@@ -23,15 +24,15 @@ test.describe("Master Data › User / Staff", () => {
   test("daftar akun, akun sendiri ditandai dan tidak bisa dinonaktifkan", async ({
     page,
   }, info) => {
-    await login(page, admin.email!, admin.password!, "/master-data/user-staff")
-    const self = page.getByRole("row", { name: new RegExp(admin.email!) })
+    await login(page, ownerEmail!, admin.password!, "/master-data/user-staff")
+    const self = page.getByRole("row", { name: new RegExp(ownerEmail!) })
     await expect(self.getByText("Kamu", { exact: true })).toBeVisible()
-    await expect(self.getByRole("cell", { name: "Admin", exact: true })).toBeVisible()
+    await expect(self.getByRole("cell", { name: "Owner", exact: true })).toBeVisible()
     await page.screenshot({ path: `test-results/staff-${info.project.name}.png`, fullPage: true })
 
     await page.getByRole("button", { name: "Tambah User" }).click()
     const add = page.getByRole("dialog", { name: "Tambah akun staf" })
-    await expect(add.getByRole("radio", { name: /Kasir/ })).toBeChecked()
+    await expect(add.getByRole("radio", { name: /^Kasir/ })).toBeChecked()
     await page.screenshot({ path: `test-results/staff-dialog-${info.project.name}.png` })
     await page.keyboard.press("Escape")
 
@@ -42,8 +43,8 @@ test.describe("Master Data › User / Staff", () => {
 
     await self.getByRole("button", { name: /^Ubah / }).click()
     const edit = page.getByRole("dialog", { name: "Ubah akun staf" })
-    await expect(edit.getByRole("radio", { name: /Admin/ })).toBeDisabled()
-    await expect(edit.getByText("Role akunmu sendiri hanya bisa diubah Admin lain.")).toBeVisible()
+    await expect(edit.getByRole("radio", { name: /^Owner/ })).toBeDisabled()
+    await expect(edit.getByText("Role akunmu sendiri hanya bisa diubah Owner lain.")).toBeVisible()
   })
 
   test("buat akun, ubah role, reset sandi, nonaktifkan lalu aktifkan lagi", async ({
@@ -55,14 +56,14 @@ test.describe("Master Data › User / Staff", () => {
     const name = `QA Staff ${stamp}`
     const email = `qa-staff-${stamp}@example.com`
     createdEmail = email
-    await login(page, admin.email!, admin.password!, "/master-data/user-staff")
+    await login(page, ownerEmail!, admin.password!, "/master-data/user-staff")
 
     // Email yang sudah dipakai ditolak, isian tetap ada.
     await page.getByRole("button", { name: "Tambah User" }).click()
     const dialog = page.getByRole("dialog", { name: "Tambah akun staf" })
     await dialog.getByLabel("Nama").fill(name)
     await dialog.getByLabel("Email").fill(admin.email!)
-    await dialog.getByRole("radio", { name: /Produksi/ }).check()
+    await dialog.getByRole("radio", { name: /^Produksi/ }).check()
     await dialog.getByRole("button", { name: "Buat akun" }).click()
     await expect(dialog.getByText("Email ini sudah dipakai akun lain.")).toBeVisible()
     await expect(dialog.getByLabel("Nama")).toHaveValue(name)
@@ -81,7 +82,7 @@ test.describe("Master Data › User / Staff", () => {
 
     await row.getByRole("button", { name: `Ubah ${name}` }).click()
     const edit = page.getByRole("dialog", { name: "Ubah akun staf" })
-    await edit.getByRole("radio", { name: /Kasir/ }).check()
+    await edit.getByRole("radio", { name: /^Kasir/ }).check()
     await edit.getByRole("button", { name: "Simpan perubahan" }).click()
     await expect(page.getByText("Data staf disimpan.")).toBeVisible()
     await expect(row.getByRole("cell", { name: "Kasir", exact: true })).toBeVisible()
@@ -104,7 +105,7 @@ test.describe("Master Data › User / Staff", () => {
     const staffPage = await staffContext.newPage()
     await login(staffPage, email, password, "/login")
     await expect(staffPage.locator("#login-error")).toHaveText(
-      "Akun ini sedang dinonaktifkan. Hubungi Admin.",
+      "Akun ini sedang dinonaktifkan. Hubungi Owner.",
     )
 
     await row.getByRole("button", { name: `Aksi lain untuk ${name}` }).click()
@@ -117,16 +118,11 @@ test.describe("Master Data › User / Staff", () => {
     await staffContext.close()
   })
 
-  test("role selain Admin tidak melihat dan tidak bisa membuka User / Staff", async ({
-    page,
-  }, info) => {
+  test("Admin dan Kasir tidak bisa membuka User / Staff (khusus Owner)", async ({ page }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
-    await login(page, kasirEmail!, admin.password!, "/master-data/kurir")
-    const nav = page.getByRole("navigation", { name: "Bagian Master Data" })
-    await expect(nav.getByRole("link", { name: "Kurir & Pengiriman" })).toBeVisible()
-    await expect(nav.getByRole("link", { name: "User / Staff" })).toHaveCount(0)
-
-    await page.goto("/master-data/user-staff")
-    await expectAccessDenied(page)
+    for (const email of [admin.email!, kasirEmail!]) {
+      await login(page, email, admin.password!, "/master-data/user-staff")
+      await expectAccessDenied(page)
+    }
   })
 })

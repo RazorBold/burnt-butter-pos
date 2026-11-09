@@ -217,7 +217,7 @@ function StaffForm({
         </div>
         {isSelf && (
           <p className="text-[13px] text-text-body">
-            Role akunmu sendiri hanya bisa diubah Admin lain.
+            Role akunmu sendiri hanya bisa diubah Owner lain.
           </p>
         )}
         {errors.role && <p className="text-sm text-trend-down-fg">{errors.role}</p>}

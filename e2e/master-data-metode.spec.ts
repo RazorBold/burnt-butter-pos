@@ -1,17 +1,19 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { removePaymentMethodByName } from "./helpers/cleanup"
+import { expectAccessDenied } from "./helpers/access"
 import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 
 async function login(page: Page, email: string, password: string, target: string) {
   await loginAs(page, email, password, target)
 }
 
 test.describe("Master Data › Metode Pembayaran", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   let created: string | undefined
   test.afterEach(async () => {
@@ -20,7 +22,7 @@ test.describe("Master Data › Metode Pembayaran", () => {
   })
 
   test("daftar metode sesuai desain", async ({ page }, info) => {
-    await login(page, admin.email!, admin.password!, "/master-data/metode-pembayaran")
+    await login(page, ownerEmail!, admin.password!, "/master-data/metode-pembayaran")
     const table = page.getByRole("table")
     // Metode lain bisa bertambah, mis. "Shopee" yang dibuat saat pesanan Shopee pertama disimpan.
     for (const text of [
@@ -40,7 +42,7 @@ test.describe("Master Data › Metode Pembayaran", () => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
     const name = `QA Metode ${Date.now()}`
     created = name
-    await login(page, admin.email!, admin.password!, "/master-data/metode-pembayaran")
+    await login(page, ownerEmail!, admin.password!, "/master-data/metode-pembayaran")
 
     await page.getByRole("button", { name: "Tambah Metode" }).click()
     const dialog = page.getByRole("dialog", { name: "Tambah metode" })
@@ -72,10 +74,13 @@ test.describe("Master Data › Metode Pembayaran", () => {
     await expect(row.getByText("Nonaktif", { exact: true })).toBeVisible()
   })
 
-  test("Kasir hanya bisa melihat", async ({ page }, info) => {
+  test("Admin dan Kasir tidak bisa membuka Metode Pembayaran (khusus Owner)", async ({
+    page,
+  }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
-    await login(page, kasirEmail!, admin.password!, "/master-data/metode-pembayaran")
-    await expect(page.getByRole("table").getByText("DANA")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Tambah Metode" })).toHaveCount(0)
+    for (const email of [admin.email!, kasirEmail!]) {
+      await login(page, email, admin.password!, "/master-data/metode-pembayaran")
+      await expectAccessDenied(page)
+    }
   })
 })

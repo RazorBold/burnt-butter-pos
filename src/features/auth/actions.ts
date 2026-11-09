@@ -42,7 +42,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
       error?.code === "invalid_credentials"
         ? "Email atau kata sandi salah."
         : error?.code === "user_banned"
-          ? "Akun ini sedang dinonaktifkan. Hubungi Admin."
+          ? "Akun ini sedang dinonaktifkan. Hubungi Owner."
           : error?.status === 429
             ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
             : "Belum bisa masuk. Coba lagi sebentar lagi."

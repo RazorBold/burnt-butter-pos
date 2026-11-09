@@ -9,8 +9,21 @@ import { type StockAlert, sortAlerts } from "./alerts"
  * Packaging dan bahan baku yang Menipis atau Habis, untuk lonceng notifikasi (BELL-33).
  * Dihitung dari stok saat ini, jadi peringatan hilang sendiri setelah stok diisi ulang.
  */
-export async function listStockAlerts(): Promise<StockAlert[]> {
-  const [packagings, materials] = await Promise.all([listPackagings(), listRawMaterials()])
+/**
+ * Peringatan stok menipis/habis. Admin & Produksi mengurus packaging (menu Stok Packaging);
+ * Owner mengurus bahan baku (Master Data). Masing-masing hanya melihat yang bisa ia restock.
+ */
+export async function listStockAlerts({
+  packaging,
+  rawMaterials,
+}: {
+  packaging: boolean
+  rawMaterials: boolean
+}): Promise<StockAlert[]> {
+  const [packagings, materials] = await Promise.all([
+    packaging ? listPackagings() : Promise.resolve([]),
+    rawMaterials ? listRawMaterials() : Promise.resolve([]),
+  ])
   return sortAlerts([
     ...packagings.flatMap((item): StockAlert[] =>
       item.status === "cukup"

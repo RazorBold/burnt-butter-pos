@@ -7,9 +7,6 @@ import { loginAs } from "./helpers/login"
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
 const ownerEmail = process.env.E2E_OWNER_EMAIL
-const READ_ONLY =
-  "Hanya Owner yang bisa menambah, mengubah, atau menghapus jenis stok dan kategorinya."
-
 async function login(page: Page, email: string, target: string) {
   await loginAs(page, email, admin.password!, target)
 }
@@ -27,7 +24,11 @@ test.describe("Stok Packaging", () => {
   })
 
   test("master data sesuai desain, halaman stok tampil", async ({ page }, info) => {
+    test.skip(!ownerEmail, "butuh E2E_OWNER_EMAIL")
+    // Master Data khusus Owner; Admin ditolak.
     await login(page, admin.email!, "/master-data/stok-packaging")
+    await expectAccessDenied(page)
+    await login(page, ownerEmail!, "/master-data/stok-packaging")
     const table = page.getByRole("table")
     // Sejak Nov 2026 hanya box hampers; packaging lama diarsipkan dan tidak tampil.
     await expect(table.getByRole("row", { name: /Classic Red \(Large\)/ })).toBeVisible()
@@ -39,16 +40,14 @@ test.describe("Stok Packaging", () => {
     const categories = page.getByRole("region", { name: "Kategori stok" })
     await expect(categories).toContainText("Size Large")
     await expect(categories).toContainText("Size Regular")
-    // Admin hanya melihat; jenis stok dan kategori diatur Owner.
-    await expect(page.getByRole("button", { name: "Tambah Packaging" })).toHaveCount(0)
-    await expect(categories.getByRole("button", { name: "Tambah kategori" })).toHaveCount(0)
-    await expect(page.getByText(READ_ONLY)).toBeVisible()
+    await expect(page.getByRole("button", { name: "Tambah Packaging" })).toBeVisible()
     await page.screenshot({
       path: `test-results/master-packaging-${info.project.name}.png`,
       fullPage: true,
     })
 
-    await page.goto("/stok-packaging")
+    // Menu Stok Packaging (catat stok) untuk Admin.
+    await login(page, admin.email!, "/stok-packaging")
     await expect(page.getByRole("heading", { name: "Stok Packaging", level: 1 })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Classic Red (Large)" })).toBeVisible()
     await expect(page.getByRole("heading", { name: /^Size Large/, level: 2 })).toBeVisible()

@@ -6,6 +6,7 @@ import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 
 async function login(page: Page, email: string, password: string, target: string) {
   await loginAs(page, email, password, target)
@@ -17,7 +18,7 @@ function randomPhone() {
 }
 
 test.describe("Master Data › Customer", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   const created: string[] = []
   test.afterEach(async () => {
@@ -30,7 +31,7 @@ test.describe("Master Data › Customer", () => {
     const other = `QA Customer ${stamp} B ${info.project.name}`
     created.push(name, other)
     const phone = randomPhone()
-    await login(page, admin.email!, admin.password!, "/master-data/customer")
+    await login(page, ownerEmail!, admin.password!, "/master-data/customer")
     // Di ponsel, chip bagian aktif harus tergulir ke dalam layar.
     await expect(
       page
@@ -76,27 +77,27 @@ test.describe("Master Data › Customer", () => {
     await expect(page.getByText("Tidak ada customer yang cocok.")).toBeVisible()
   })
 
-  test("Kasir bisa menambah customer tapi tidak melihat Pengaturan", async ({ page }, info) => {
+  test("Admin dan Kasir tidak bisa membuka Customer dan Pengaturan (khusus Owner)", async ({
+    page,
+  }, info) => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
-    await login(page, kasirEmail!, admin.password!, "/master-data/customer")
-    await expect(page.getByRole("button", { name: "Tambah Customer" })).toBeVisible()
-    const nav = page.getByRole("navigation", { name: "Bagian Master Data" })
-    await expect(nav.getByRole("link", { name: "Customer" })).toBeVisible()
-    await expect(nav.getByRole("link", { name: "Pengaturan" })).toHaveCount(0)
-
-    await page.goto("/master-data/pengaturan")
-    await expectAccessDenied(page)
+    for (const email of [admin.email!, kasirEmail!]) {
+      for (const path of ["/master-data/customer", "/master-data/pengaturan"]) {
+        await login(page, email, admin.password!, path)
+        await expectAccessDenied(page)
+      }
+    }
   })
 })
 
 test.describe("Master Data › Pengaturan", () => {
-  test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
+  test.skip(!ownerEmail || !admin.password, "E2E_OWNER_EMAIL / E2E_PASSWORD belum diisi")
 
   test("simpan profil toko, link Maps divalidasi", async ({ page }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
     const restore = await snapshotStoreSettings()
     try {
-      await login(page, admin.email!, admin.password!, "/master-data/pengaturan")
+      await login(page, ownerEmail!, admin.password!, "/master-data/pengaturan")
       const whatsapp = page.getByLabel(/No\. WhatsApp toko/)
       const maps = page.getByLabel(/Link Google Maps/)
       await whatsapp.fill("0812 1111 2222")
@@ -111,7 +112,7 @@ test.describe("Master Data › Pengaturan", () => {
       await maps.fill("https://maps.app.goo.gl/qa123")
       await page.getByRole("button", { name: "Simpan pengaturan" }).click()
       await expect(page.getByText("Pengaturan toko disimpan.")).toBeVisible()
-      await expect(page.getByText(/Terakhir diubah .* oleh QA Admin\./)).toBeVisible()
+      await expect(page.getByText(/Terakhir diubah .* oleh QA /)).toBeVisible()
       await page.screenshot({
         path: `test-results/pengaturan-${info.project.name}.png`,
         fullPage: true,

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 
 import { getDb } from "@/db"
 import { paymentMethods } from "@/db/schema"
+import { CAN_MANAGE_MASTER } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { fieldErrors } from "@/lib/form"
 
@@ -28,7 +29,7 @@ export async function savePaymentMethod(
   formData: FormData,
 ): Promise<PaymentMethodFormState> {
   try {
-    await requireRole(["admin"])
+    await requireRole(CAN_MANAGE_MASTER)
   } catch (error) {
     return { message: authMessage(error) }
   }
@@ -76,7 +77,7 @@ export async function setPaymentMethodActive(
   isActive: boolean,
 ): Promise<{ ok: boolean; message: string }> {
   try {
-    await requireRole(["admin"])
+    await requireRole(CAN_MANAGE_MASTER)
   } catch (error) {
     return { ok: false, message: authMessage(error) }
   }

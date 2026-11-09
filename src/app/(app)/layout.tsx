@@ -10,6 +10,7 @@ import { countNewOrders } from "@/features/orders/queries"
 import { UrgentWatcher } from "@/features/urgent/components/urgent-watcher"
 import { listStockAlerts } from "@/features/stock-alerts/queries"
 import {
+  CAN_EDIT_RAW_STOCK,
   CAN_EDIT_STOCK,
   CAN_INPUT_ORDER,
   canAccessPath,
@@ -77,8 +78,13 @@ async function Navbar() {
     canAccessPath(user.role, section),
   )
   const [stockAlerts, newOrderCount] = await Promise.all([
-    // Peringatan stok hanya untuk role yang bisa restock (Admin, Produksi).
-    CAN_EDIT_STOCK.includes(user.role) ? listStockAlerts() : Promise.resolve(null),
+    // Peringatan stok hanya untuk role yang bisa restock: packaging (Admin, Produksi), bahan baku (Owner).
+    CAN_EDIT_STOCK.includes(user.role) || CAN_EDIT_RAW_STOCK.includes(user.role)
+      ? listStockAlerts({
+          packaging: CAN_EDIT_STOCK.includes(user.role),
+          rawMaterials: CAN_EDIT_RAW_STOCK.includes(user.role),
+        })
+      : Promise.resolve(null),
     canAccessPath(user.role, "/pesanan") ? countNewOrders() : Promise.resolve(null),
   ])
 

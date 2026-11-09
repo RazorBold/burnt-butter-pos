@@ -7,6 +7,7 @@ import { authUsers } from "drizzle-orm/supabase"
 import { getDb } from "@/db"
 import { profiles } from "@/db/schema"
 import type { Role } from "@/lib/access"
+import { CAN_MANAGE_MASTER } from "@/lib/access"
 import { AuthorizationError, type CurrentUser, requireRole } from "@/lib/auth"
 import { fieldErrors } from "@/lib/form"
 import { generatePassword } from "@/lib/password"
@@ -32,7 +33,8 @@ type ActionResult = { ok: boolean; message: string }
 
 async function requireAdmin(): Promise<CurrentUser | string> {
   try {
-    return await requireRole(["admin"])
+    // Akun staf dikelola Owner sejak Nov 2026 (nama fungsi dipertahankan).
+    return await requireRole(CAN_MANAGE_MASTER)
   } catch (error) {
     if (error instanceof AuthorizationError) return error.message
     throw error
@@ -40,8 +42,8 @@ async function requireAdmin(): Promise<CurrentUser | string> {
 }
 
 /**
- * Aturan yang mencegah panel terkunci: Admin tidak bisa menurunkan role atau menonaktifkan
- * akunnya sendiri, dan harus selalu ada minimal satu Admin aktif.
+ * Aturan yang mencegah panel terkunci: Owner tidak bisa menurunkan role atau menonaktifkan
+ * akunnya sendiri, dan harus selalu ada minimal satu Owner aktif (pengelola akun staf).
  */
 async function guardChange(
   actor: CurrentUser,
@@ -50,18 +52,18 @@ async function guardChange(
 ): Promise<string | undefined> {
   if (target.id === actor.id) {
     if (!next.isActive) return "Kamu tidak bisa menonaktifkan akunmu sendiri."
-    if (next.role !== target.role) return "Role akunmu sendiri hanya bisa diubah Admin lain."
+    if (next.role !== target.role) return "Role akunmu sendiri hanya bisa diubah Owner lain."
   }
-  const losesAdmin = target.role === "admin" && target.isActive
-  if (losesAdmin && (next.role !== "admin" || !next.isActive)) {
+  const losesOwner = target.role === "owner" && target.isActive
+  if (losesOwner && (next.role !== "owner" || !next.isActive)) {
     const [other] = await getDb()
       .select({ id: profiles.id })
       .from(profiles)
       .where(
-        and(eq(profiles.role, "admin"), eq(profiles.isActive, true), ne(profiles.id, target.id)),
+        and(eq(profiles.role, "owner"), eq(profiles.isActive, true), ne(profiles.id, target.id)),
       )
       .limit(1)
-    if (!other) return "Harus ada minimal satu Admin aktif."
+    if (!other) return "Harus ada minimal satu Owner aktif."
   }
 }
 

@@ -24,9 +24,7 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
       "Produksi",
       "Packaging",
       "Pengiriman",
-      "Laporan",
       "Stok Packaging",
-      "Master Data",
     ])
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
       "aria-current",
@@ -42,10 +40,10 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
   } else {
     await page.getByRole("button", { name: "Buka menu" }).click()
     const sheet = page.getByRole("dialog")
-    await expect(sheet.getByRole("link")).toHaveCount(9)
+    await expect(sheet.getByRole("link")).toHaveCount(7)
     await page.screenshot({ path: `test-results/navbar-menu-${info.project.name}.png` })
-    await sheet.getByRole("link", { name: "Laporan" }).click()
-    await expect(page.getByRole("heading", { name: "Laporan" })).toBeVisible()
+    await sheet.getByRole("link", { name: "Pengiriman" }).click()
+    await expect(page.getByRole("heading", { name: "Pengiriman" })).toBeVisible()
     await expect(page.getByRole("dialog")).toBeHidden()
   }
 
@@ -94,7 +92,6 @@ test("Kasir hanya melihat menunya dan ditolak membuka Laporan", async ({ page },
     /^Pesanan(\d+\+? pesanan baru)?$/,
     "Pembayaran",
     "Pengiriman",
-    "Master Data",
   ])
 
   await page.goto("/laporan")

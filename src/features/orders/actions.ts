@@ -18,7 +18,7 @@ import {
   payments,
   shipments,
 } from "@/db/schema"
-import { CAN_INPUT_ORDER } from "@/lib/access"
+import { CAN_INPUT_ORDER, CAN_PRODUCE } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { BULK_LIMIT, type BulkResult, summarizeBulk } from "@/lib/bulk"
 import { formatRupiah, toJakartaDateString } from "@/lib/format"
@@ -364,7 +364,7 @@ export async function updateProductionStatus(
 ): Promise<ActionResult> {
   let userId: string
   try {
-    userId = (await requireRole(["admin", "produksi"])).id
+    userId = (await requireRole(CAN_PRODUCE)).id
   } catch (error) {
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error

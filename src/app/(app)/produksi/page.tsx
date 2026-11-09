@@ -18,6 +18,7 @@ import {
   stageOf,
   summarizeProduction,
 } from "@/features/production/summary"
+import { CAN_PRODUCE } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 import { formatHariTanggal, toJakartaDateString } from "@/lib/format"
 import { photoSrc } from "@/lib/photos"
@@ -46,7 +47,7 @@ export default function ProduksiPage({ searchParams }: PageProps<"/produksi">) {
 
 async function Production({ searchParams }: { searchParams: SearchParams }) {
   const user = await requirePageAccess(PATH)
-  const canEdit = user.role === "admin" || user.role === "produksi"
+  const canEdit = CAN_PRODUCE.includes(user.role)
   const today = toJakartaDateString(new Date())
   const params = await searchParams
   const date =

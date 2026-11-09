@@ -8,6 +8,7 @@ import { getDb } from "@/db"
 import { couriers, orders, shipments } from "@/db/schema"
 import { sentStatusFor } from "@/features/orders/status"
 import { changeStatuses } from "@/features/orders/status-change"
+import { CAN_MANAGE_SHIPMENT } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { BULK_LIMIT, type BulkResult, type BulkSkip, summarizeBulk } from "@/lib/bulk"
 
@@ -16,7 +17,7 @@ import { canSetTrackingLink, normalizeTrackingUrl, SLOT_LABEL, SLOTS } from "./l
 /** Pengiriman diatur Kasir dan Admin (PRD: peran Kasir). */
 async function requireShipper(): Promise<string | BulkResult> {
   try {
-    return (await requireRole(["admin", "kasir"])).id
+    return (await requireRole(CAN_MANAGE_SHIPMENT)).id
   } catch (error) {
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error

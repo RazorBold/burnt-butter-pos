@@ -36,14 +36,14 @@ Latar beige dengan ilustrasi box pasta ([design/bg-beige-brand.png](design/bg-be
 
 ## Pengguna & peran
 
-Master Data › User / Staff menampilkan empat peran: Admin, Kasir (Staff), Produksi (Staff), dan Owner. **Keputusan pemilik toko (Nov 2026): Laporan dan seluruh Master Data khusus Owner** (termasuk akun staf, pengaturan, customer, dan stok bahan baku).
+Master Data › User / Staff menampilkan empat peran: Admin, Kasir (Staff), Produksi (Staff), dan Owner. **Keputusan pemilik toko (Nov 2026): Owner melihat dan memakai semua menu; Laporan dan seluruh Master Data khusus Owner** (termasuk akun staf, pengaturan, customer, dan stok bahan baku).
 
 | Peran | Kebutuhan utama | Akses |
 | --- | --- | --- |
 | Admin | Input dan kelola pesanan harian, atur pengiriman | Dashboard, Pesanan, Pembayaran, Produksi, Packaging, Pengiriman, Stok Packaging (tanpa Laporan dan Master Data) |
 | Kasir (Staff) | Catat pesanan dari WA, konfirmasi pembayaran | Dashboard, Pesanan, Input Pesanan, Pembayaran, Pengiriman |
 | Produksi (Staff) | Tahu porsi per menu dan stok yang menipis | Dashboard (Rekap Produksi), Produksi, Packaging, Stok Packaging |
-| Owner | Pantau performa bisnis, atur data toko | Dashboard, Laporan, seluruh Master Data (menu, stok, kurir, metode bayar, customer, bahan baku, akun staf, pengaturan) |
+| Owner | Pantau performa bisnis, atur data toko | **Semua menu**: semua menu operasional (Pesanan sampai Stok Packaging, dengan hak aksi yang sama seperti Admin) + Laporan + seluruh Master Data (menu, stok, kurir, metode bayar, customer, bahan baku, akun staf, pengaturan) |
 
 Kurir (Andi, Budi) tercatat sebagai data di Master Data, bukan pengguna yang login.
 

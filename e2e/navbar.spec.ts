@@ -98,3 +98,24 @@ test("Kasir hanya melihat menunya dan ditolak membuka Laporan", async ({ page },
   await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByText("Halaman itu tidak tersedia untuk role kamu.")).toBeVisible()
 })
+
+test("Owner melihat semua menu", async ({ page }, info) => {
+  const ownerEmail = process.env.E2E_OWNER_EMAIL
+  test.skip(!ownerEmail || info.project.name !== "desktop", "butuh E2E_OWNER_EMAIL, desktop saja")
+  await login(page, ownerEmail!, admin.password!)
+  const nav = page.getByRole("navigation", { name: "Menu utama" })
+  await expect(nav.getByRole("link")).toHaveText([
+    "Dashboard",
+    /^Pesanan(\d+\+? pesanan baru)?$/,
+    "Pembayaran",
+    "Produksi",
+    "Packaging",
+    "Pengiriman",
+    "Laporan",
+    "Stok Packaging",
+    "Master Data",
+  ])
+  await expect(page.getByRole("button", { name: "Input Pesanan" })).toBeVisible()
+  await nav.getByRole("link", { name: "Packaging", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Packaging", level: 1 })).toBeVisible()
+})

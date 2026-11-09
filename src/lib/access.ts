@@ -16,7 +16,7 @@ export const ROLE_DESCRIPTION: Record<Role, string> = {
   admin: "Dashboard, Pesanan, Pembayaran, Produksi, Packaging, Pengiriman, dan Stok Packaging.",
   kasir: "Dashboard, Pesanan, Pembayaran, dan Pengiriman.",
   produksi: "Dashboard, Produksi, Packaging, dan Stok Packaging.",
-  owner: "Dashboard, Laporan, dan semua Master Data, termasuk akun staf dan pengaturan.",
+  owner: "Semua menu: operasional, Laporan, dan Master Data (termasuk akun staf dan pengaturan).",
 }
 
 const ALL: readonly Role[] = ROLES
@@ -24,14 +24,15 @@ const ALL: readonly Role[] = ROLES
 /** Halaman utama aplikasi dan role yang boleh membukanya. Urutan = urutan navbar. */
 export const SECTION_ACCESS = {
   "/dashboard": ALL,
-  "/pesanan": ["admin", "kasir"],
-  "/pembayaran": ["admin", "kasir"],
-  "/produksi": ["admin", "produksi"],
-  "/packaging": ["admin", "produksi"],
-  "/pengiriman": ["admin", "kasir"],
+  // Owner melihat dan memakai semua menu; Laporan dan Master Data khusus Owner
+  // (keputusan pemilik toko, Nov 2026).
+  "/pesanan": ["admin", "kasir", "owner"],
+  "/pembayaran": ["admin", "kasir", "owner"],
+  "/produksi": ["admin", "produksi", "owner"],
+  "/packaging": ["admin", "produksi", "owner"],
+  "/pengiriman": ["admin", "kasir", "owner"],
   "/laporan": ["owner"],
-  "/stok-packaging": ["admin", "produksi"],
-  // Laporan dan Master Data khusus Owner (keputusan pemilik toko, Nov 2026).
+  "/stok-packaging": ["admin", "produksi", "owner"],
   "/master-data": ["owner"],
 } as const satisfies Record<string, readonly Role[]>
 
@@ -52,7 +53,7 @@ export const SUBSECTION_ACCESS = {
 export const CAN_MANAGE_MASTER: readonly Role[] = ["owner"]
 
 /** Role yang boleh mencatat stok packaging (masuk, hitung ulang) di menu Stok Packaging. */
-export const CAN_EDIT_STOCK: readonly Role[] = ["admin", "produksi"]
+export const CAN_EDIT_STOCK: readonly Role[] = ["admin", "produksi", "owner"]
 
 /** Role yang boleh mencatat stok bahan baku (di Master Data, khusus Owner sejak Nov 2026). */
 export const CAN_EDIT_RAW_STOCK: readonly Role[] = ["owner"]
@@ -61,7 +62,7 @@ export const CAN_EDIT_RAW_STOCK: readonly Role[] = ["owner"]
 export const CAN_EDIT_CUSTOMER: readonly Role[] = ["owner"]
 
 /** Role yang boleh menandai pesanan selesai packing (memotong stok packaging). */
-export const CAN_PACK: readonly Role[] = ["admin", "produksi"]
+export const CAN_PACK: readonly Role[] = ["admin", "produksi", "owner"]
 
 /** Role yang boleh mengatur Produk & Menu dan kategorinya (keputusan pemilik toko, Nov 2026). */
 export const CAN_MANAGE_MENU: readonly Role[] = ["owner"]
@@ -73,7 +74,7 @@ export const CAN_MANAGE_MENU: readonly Role[] = ["owner"]
 export const CAN_MANAGE_PACKAGING: readonly Role[] = ["owner"]
 
 /** Role yang boleh membuat pesanan lewat tombol "Input Pesanan". */
-export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir"]
+export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir", "owner"]
 
 function sectionOf(pathname: string): Section | undefined {
   return (Object.keys(SECTION_ACCESS) as Section[]).find(
@@ -103,3 +104,9 @@ export function safeNextPath(next: string | null | undefined, fallback = "/dashb
   if (next === "/" || next.startsWith("/login")) return fallback
   return next
 }
+
+/** Role yang boleh mengubah status produksi (Baru ↔ Diproses ↔ Siap Packing). */
+export const CAN_PRODUCE: readonly Role[] = ["admin", "produksi", "owner"]
+
+/** Role yang boleh mengatur pengiriman (kurir, jadwal, link lacak, tandai dikirim/selesai). */
+export const CAN_MANAGE_SHIPMENT: readonly Role[] = ["admin", "kasir", "owner"]

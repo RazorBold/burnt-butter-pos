@@ -10,7 +10,7 @@ import { AuthorizationError, requireRole } from "@/lib/auth"
 import { BULK_LIMIT, type BulkResult, type BulkSkip, summarizeBulk } from "@/lib/bulk"
 
 /** Kasir mengonfirmasi pembayaran (PRD: peran Kasir), Admin bisa semua. */
-const CAN_RECORD_PAYMENT = ["admin", "kasir"] as const
+const CAN_RECORD_PAYMENT = ["admin", "kasir", "owner"] as const
 
 type ActionResult = { ok: boolean; message: string }
 

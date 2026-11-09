@@ -29,11 +29,28 @@ describe("canAccessPath", () => {
     expect(canAccessPath("owner", "/laporan/ringkasan")).toBe(true)
   })
 
-  it("Packaging untuk Admin dan Produksi saja", () => {
+  it("Packaging untuk Admin, Produksi, dan Owner", () => {
     expect(canAccessPath("admin", "/packaging")).toBe(true)
     expect(canAccessPath("produksi", "/packaging")).toBe(true)
+    expect(canAccessPath("owner", "/packaging")).toBe(true)
     expect(canAccessPath("kasir", "/packaging")).toBe(false)
-    expect(canAccessPath("owner", "/packaging")).toBe(false)
+  })
+
+  it("Owner melihat semua menu", () => {
+    for (const path of [
+      "/dashboard",
+      "/pesanan",
+      "/pesanan/baru",
+      "/pembayaran",
+      "/produksi",
+      "/packaging",
+      "/pengiriman",
+      "/laporan",
+      "/stok-packaging",
+      "/master-data/user-staff",
+    ]) {
+      expect(canAccessPath("owner", path)).toBe(true)
+    }
   })
 
   it("Laporan dan seluruh Master Data khusus Owner", () => {

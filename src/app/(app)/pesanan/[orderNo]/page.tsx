@@ -1,4 +1,4 @@
-import { ArrowLeft, MessageCircle } from "lucide-react"
+import { ArrowLeft, MessageCircle, PencilLine } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { OrderInfo } from "@/features/orders/components/order-detail-panel"
+import { EDIT_PART_LABEL } from "@/features/orders/edit-log"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
 import { ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { EditItemsDialog } from "@/features/orders/components/edit-items-dialog"
@@ -180,18 +181,37 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
               method={order.shipment.method}
               className="mt-3 w-full"
             />
-            <h3 className="mt-5 text-sm font-semibold text-text-strong">Riwayat</h3>
+            <h3 id="riwayat" className="mt-5 scroll-mt-28 text-sm font-semibold text-text-strong">
+              Riwayat
+            </h3>
             <ol className="mt-2 space-y-3 border-l-2 border-border pl-4">
               {history.map((entry) => (
                 <li key={entry.id} className="text-sm">
-                  <p className="text-text-strong">
-                    {entry.fromStatus
-                      ? `${ORDER_STATUS_LABEL[entry.fromStatus]} → ${ORDER_STATUS_LABEL[entry.toStatus]}`
-                      : `Dibuat sebagai ${ORDER_STATUS_LABEL[entry.toStatus]}`}
-                  </p>
+                  {entry.kind === "status" ? (
+                    <p className="text-text-strong">
+                      {entry.fromStatus
+                        ? `${ORDER_STATUS_LABEL[entry.fromStatus]} → ${ORDER_STATUS_LABEL[entry.toStatus]}`
+                        : `Dibuat sebagai ${ORDER_STATUS_LABEL[entry.toStatus]}`}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="flex items-center gap-1.5 font-medium text-text-strong">
+                        <PencilLine className="size-3.5 shrink-0 text-brand-ink" aria-hidden />
+                        {EDIT_PART_LABEL[entry.part]}
+                      </p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13px] text-text-strong">
+                        {entry.changes.map((change, index) => (
+                          <li key={index} className="break-words">
+                            {change}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                   <p className="text-[13px] text-text-body">
                     {formatWaktuDibuat(entry.changedAt)}
-                    {entry.changedByName && `, ${entry.changedByName}`}
+                    {entry.changedByName &&
+                      `${entry.kind === "edit" ? ", oleh " : ", "}${entry.changedByName}`}
                   </p>
                 </li>
               ))}

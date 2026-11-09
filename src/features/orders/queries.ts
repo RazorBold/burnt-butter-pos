@@ -34,6 +34,7 @@ import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 import type { CatalogVariant } from "./catalog"
 import type { OrderChannel } from "./constants"
 import type { OrderExportRow } from "./csv"
+import type { OrderEditPart } from "./edit-log"
 import { addDays, type OrderFilters, type OrderStatus } from "./filters"
 import type { DailyOrderStats } from "./kpis"
 import type { ShipmentStatus } from "./status"
@@ -209,6 +210,8 @@ export type OrderDetail = {
   note: string | null
   urgentAt: Date | null
   urgentNote: string | null
+  /** Edit terakhir setelah pesanan diinput; null = belum pernah diedit. */
+  lastEdit: { part: OrderEditPart; at: Date; byName: string | null } | null
   customer: { name: string; phone: string | null }
   /** Kosong = belum bayar. */
   payment: {
@@ -255,6 +258,11 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       customer: { columns: { phone: true } },
       shipment: { with: { courier: { columns: { name: true } } } },
       createdByProfile: { columns: { name: true } },
+      editLogs: {
+        orderBy: (log, { desc }) => [desc(log.editedAt)],
+        limit: 1,
+        with: { editedByProfile: { columns: { name: true } } },
+      },
       payments: {
         where: (payment, { eq }) => eq(payment.status, "lunas"),
         with: { method: { columns: { name: true } } },
@@ -280,6 +288,13 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     id: order.id,
     orderNo: order.orderNo,
     createdAt: order.createdAt,
+    lastEdit: order.editLogs[0]
+      ? {
+          part: order.editLogs[0].part,
+          at: order.editLogs[0].editedAt,
+          byName: order.editLogs[0].editedByProfile?.name ?? null,
+        }
+      : null,
     createdByName: order.createdByProfile?.name ?? null,
     type: order.type,
     kind: order.kind,
@@ -340,28 +355,56 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
   }
 }
 
-export type OrderHistoryEntry = {
-  id: string
-  fromStatus: OrderStatus | null
-  toStatus: OrderStatus
-  changedAt: Date
-  changedByName: string | null
-}
+export type OrderHistoryEntry =
+  | {
+      kind: "status"
+      id: string
+      fromStatus: OrderStatus | null
+      toStatus: OrderStatus
+      changedAt: Date
+      changedByName: string | null
+    }
+  | {
+      kind: "edit"
+      id: string
+      part: OrderEditPart
+      changes: string[]
+      changedAt: Date
+      changedByName: string | null
+    }
 
-/** Riwayat perubahan status, terbaru di atas. */
+/** Riwayat perubahan status dan edit pesanan, terbaru di atas. */
 export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntry[]> {
-  const logs = await getDb().query.orderStatusLogs.findMany({
-    where: (log, { eq }) => eq(log.orderId, orderId),
-    with: { changedByProfile: { columns: { name: true } } },
-    orderBy: (log, { desc }) => [desc(log.changedAt)],
-  })
-  return logs.map((log) => ({
-    id: log.id,
-    fromStatus: log.fromStatus,
-    toStatus: log.toStatus,
-    changedAt: log.changedAt,
-    changedByName: log.changedByProfile?.name ?? null,
-  }))
+  const db = getDb()
+  const [statusLogs, editLogs] = await Promise.all([
+    db.query.orderStatusLogs.findMany({
+      where: (log, { eq }) => eq(log.orderId, orderId),
+      with: { changedByProfile: { columns: { name: true } } },
+    }),
+    db.query.orderEditLogs.findMany({
+      where: (log, { eq }) => eq(log.orderId, orderId),
+      with: { editedByProfile: { columns: { name: true } } },
+    }),
+  ])
+  const entries: OrderHistoryEntry[] = [
+    ...statusLogs.map((log) => ({
+      kind: "status" as const,
+      id: log.id,
+      fromStatus: log.fromStatus,
+      toStatus: log.toStatus,
+      changedAt: log.changedAt,
+      changedByName: log.changedByProfile?.name ?? null,
+    })),
+    ...editLogs.map((log) => ({
+      kind: "edit" as const,
+      id: log.id,
+      part: log.part,
+      changes: log.changes,
+      changedAt: log.editedAt,
+      changedByName: log.editedByProfile?.name ?? null,
+    })),
+  ]
+  return entries.sort((a, b) => b.changedAt.getTime() - a.changedAt.getTime())
 }
 
 /** Pesanan terbaru pada rentang ini (termasuk dibatalkan), terbaru di atas. Untuk Dashboard. */

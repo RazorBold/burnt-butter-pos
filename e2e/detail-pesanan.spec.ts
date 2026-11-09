@@ -127,12 +127,21 @@ test.describe("Detail Pesanan", () => {
     await expect(panel.getByText("Ready Stock", { exact: true })).toBeVisible()
     await expect(panel.getByText("Jl. QA Baru No. 7, Bandung")).toBeVisible()
     await expect(panel.getByText("Titip di satpam")).toBeVisible()
+    // Log edit: siapa yang mengedit tampil di panel.
+    await expect(panel.getByText(/^Data pesanan diubah .+ oleh QA Admin/)).toBeVisible()
 
     await panel.getByRole("link", { name: "Lihat Detail Lengkap" }).click()
     await expect(page).toHaveURL(new RegExp(`/pesanan/${orderNo}$`))
     await expect(page.getByRole("heading", { name: orderNo })).toBeVisible()
     await expect(page.getByText("Diproses → Siap Packing")).toBeVisible()
     await expect(page.getByText("Dibuat sebagai Baru")).toBeVisible()
+    // Riwayat lengkap memuat rincian edit.
+    const history = page.getByRole("region", { name: "Status" })
+    await expect(history.getByText("Data pesanan diubah")).toBeVisible()
+    await expect(history.getByText("Alamat diubah")).toBeVisible()
+    await expect(history.getByText("Menu diubah")).toBeVisible()
+    await expect(history.getByText("Jenis: PO → Ready Stock")).toBeVisible()
+    await expect(history.getByText(/oleh QA Admin/).first()).toBeVisible()
     await expect(page.getByText(`Nama Lengkap: ${name}`)).toBeVisible()
     await page.screenshot({ path: "test-results/detail-lengkap.png", fullPage: true })
 

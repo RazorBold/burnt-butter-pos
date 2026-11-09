@@ -1,4 +1,4 @@
-import { ArrowRight, CircleAlert } from "lucide-react"
+import { ArrowRight, CircleAlert, PencilLine } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
@@ -17,6 +17,7 @@ import { OrderNoteButton } from "@/features/orders/components/order-note-dialog"
 import { EditOrderDialog } from "@/features/orders/components/edit-order-dialog"
 import { OrderStatusSelect } from "@/features/orders/components/order-status-select"
 import { EditItemsDialog } from "@/features/orders/components/edit-items-dialog"
+import { EDIT_PART_LABEL } from "@/features/orders/edit-log"
 import { getOrderCatalog, getOrderDetail, type OrderDetail } from "@/features/orders/queries"
 import { isEditable, isMenuEditable, isUrgent } from "@/features/orders/status"
 import { UrgentButton } from "@/features/orders/components/urgent-dialog"
@@ -65,6 +66,27 @@ export async function OrderDetailPanel({
           Dibuat {formatWaktuDibuat(order.createdAt)}
           {order.createdByName && ` oleh ${order.createdByName}`}
         </p>
+        {order.lastEdit && (
+          <p className="mt-0.5 flex items-start gap-1.5 text-[13px] text-text-strong">
+            <PencilLine className="mt-0.5 size-3.5 shrink-0 text-brand-ink" aria-hidden />
+            <span>
+              {EDIT_PART_LABEL[order.lastEdit.part]} {formatWaktuDibuat(order.lastEdit.at)}
+              {order.lastEdit.byName && (
+                <>
+                  {" "}
+                  oleh <span className="font-semibold">{order.lastEdit.byName}</span>
+                </>
+              )}
+              .{" "}
+              <Link
+                href={`/pesanan/${order.orderNo}#riwayat`}
+                className="font-medium text-brand-ink underline underline-offset-2"
+              >
+                Lihat riwayat
+              </Link>
+            </span>
+          </p>
+        )}
         {isUrgent(order) && order.urgentNote && (
           <p className="mt-2 text-sm font-medium break-words text-trend-down-fg">
             Urgent: {order.urgentNote}

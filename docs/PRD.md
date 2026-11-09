@@ -79,6 +79,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 - **F-22** Hasil parsing tampil di form yang bisa diedit; field yang tidak terbaca ditandai agar diisi manual. Form ada di halaman `/pesanan/baru` (pesan WA di kiri, form di kanan); Isi Otomatis di modal membawa pesan ke halaman ini. Desainnya diputuskan saat implementasi (lihat DESIGN.md).
 - **F-23** Simpan membuat pesanan berstatus **Baru** dengan nomor otomatis `BB` + `YYMMDD` + urutan 3 digit (contoh BB261021001).
 - **F-24** Total dihitung dari harga master menu sesuai ukuran.
+- **F-24b** Log edit pesanan (permintaan pemilik toko, Nov 2026): setiap simpan **Edit data**, **Ubah menu**, dan **catatan** mencatat siapa, kapan, dan ringkasan perubahannya (mis. "Alamat diubah", "Jenis: PO → Ready Stock", "Tambah 1x Choco Bon Bon"). Panel detail menampilkan edit terakhir ("Data pesanan diubah … oleh …" + tautan Lihat riwayat); Detail Lengkap menggabungkan log edit dengan riwayat status. Simpan tanpa perubahan tidak dicatat.
 - **F-24a** Jenis pesanan **PO / Ready Stock / Made to Order** (permintaan pemilik toko, Nov 2026): dipilih di header form Input Pesanan (WA dan Olshop, bawaan PO) dan bisa diubah lewat Edit di panel detail. Parser membaca label opsional `Jenis Pesanan : …` (PO/Pre Order, Ready, Made to Order/MTO); template WA customer tidak diubah. Tampil sebagai kolom **Jenis** di Daftar Pesanan, badge di panel detail dan Detail Lengkap, serta kolom di CSV. Pesanan lama terisi PO. Belum memengaruhi alur status (Ready Stock tetap lewat Produksi).
 
 ### Pesanan

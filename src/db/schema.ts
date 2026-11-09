@@ -67,6 +67,8 @@ export const paymentMethodType = pgEnum("payment_method_type", [
 export const paymentStatus = pgEnum("payment_status", ["menunggu", "lunas", "ditolak"])
 export const stockItemType = pgEnum("stock_item_type", ["packaging", "raw_material"])
 export const stockDirection = pgEnum("stock_direction", ["in", "out"])
+/** Bagian pesanan yang diedit: data (customer, kirim, dll.), menu, atau catatan staf. */
+export const orderEditPart = pgEnum("order_edit_part", ["data", "menu", "catatan"])
 
 // ── Kolom bersama ───────────────────────────────────────────────────────────
 
@@ -253,6 +255,23 @@ export const orderStatusLogs = pgTable(
     changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("order_status_logs_order_idx").on(t.orderId)],
+).enableRLS()
+
+/** Log edit pesanan setelah diinput: siapa, kapan, dan apa saja yang berubah. */
+export const orderEditLogs = pgTable(
+  "order_edit_logs",
+  {
+    id: id(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    part: orderEditPart("part").notNull(),
+    /** Ringkasan perubahan yang bisa dibaca, mis. "Alamat diubah", "Jenis: PO → Ready Stock". */
+    changes: text("changes").array().notNull(),
+    editedBy: uuid("edited_by").references(() => profiles.id, { onDelete: "set null" }),
+    editedAt: timestamp("edited_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("order_edit_logs_order_idx").on(t.orderId, t.editedAt)],
 ).enableRLS()
 
 // ── Pengiriman ──────────────────────────────────────────────────────────────
@@ -509,6 +528,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   shipment: one(shipments),
   payments: many(payments),
   statusLogs: many(orderStatusLogs),
+  editLogs: many(orderEditLogs),
 }))
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -522,6 +542,11 @@ export const orderStatusLogsRelations = relations(orderStatusLogs, ({ one }) => 
     fields: [orderStatusLogs.changedBy],
     references: [profiles.id],
   }),
+}))
+
+export const orderEditLogsRelations = relations(orderEditLogs, ({ one }) => ({
+  order: one(orders, { fields: [orderEditLogs.orderId], references: [orders.id] }),
+  editedByProfile: one(profiles, { fields: [orderEditLogs.editedBy], references: [profiles.id] }),
 }))
 
 export const shipmentsRelations = relations(shipments, ({ one }) => ({

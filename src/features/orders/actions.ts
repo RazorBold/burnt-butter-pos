@@ -10,6 +10,7 @@ import {
   menus,
   menuVariants,
   orderCounters,
+  orderEditLogs,
   orderItems,
   orders,
   orderStatusLogs,
@@ -25,6 +26,13 @@ import { normalizePhone } from "@/lib/phone"
 
 import { isMarketplace, ORDER_CHANNEL_LABEL, type OrderChannel } from "./constants"
 import { type DraftField, draftIssues, parseRupiahInput } from "./draft"
+import {
+  type DetailSnapshot,
+  describeDetailChanges,
+  describeItemChanges,
+  describeNoteChange,
+  type ItemSnapshot,
+} from "./edit-log"
 import { ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from "./filters"
 import { ordersToCsv } from "./csv"
 import { formatOrderNo } from "./order-number"
@@ -389,8 +397,9 @@ const orderNoteSchema = z.string().trim().max(300, "Catatan terlalu panjang (mak
 
 /** Catatan pesanan, mis. add-on pembeli (Admin, Kasir). Kosong = catatan dihapus. */
 export async function updateOrderNote(orderId: unknown, note: unknown): Promise<ActionResult> {
+  let userId: string
   try {
-    await requireOrderEditor()
+    userId = await requireOrderEditor()
   } catch (error) {
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error
@@ -402,11 +411,23 @@ export async function updateOrderNote(orderId: unknown, note: unknown): Promise<
     return { ok: false, message: text.error.issues[0]?.message ?? "Catatan belum benar." }
   }
 
-  const [order] = await getDb()
-    .update(orders)
-    .set({ note: text.data || null })
-    .where(eq(orders.id, id.data))
-    .returning({ orderNo: orders.orderNo })
+  const order = await getDb().transaction(async (tx) => {
+    const [current] = await tx
+      .select({ orderNo: orders.orderNo, note: orders.note })
+      .from(orders)
+      .where(eq(orders.id, id.data))
+      .for("update")
+    if (!current) return null
+    const next = text.data || null
+    await tx.update(orders).set({ note: next }).where(eq(orders.id, id.data))
+    const changes = describeNoteChange(current.note, next)
+    if (changes.length > 0) {
+      await tx
+        .insert(orderEditLogs)
+        .values({ orderId: id.data, part: "catatan", changes, editedBy: userId })
+    }
+    return current
+  })
   if (!order) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
 
   revalidateOrders([order.orderNo])
@@ -425,8 +446,9 @@ export type UpdateOrderResult =
  * dikirim. No. HP baru menautkan pesanan ke customer dengan nomor itu (dibuat bila belum ada).
  */
 export async function updateOrderDetails(input: unknown): Promise<UpdateOrderResult> {
+  let userId: string
   try {
-    await requireOrderEditor()
+    userId = await requireOrderEditor()
   } catch (error) {
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error
@@ -444,8 +466,24 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       orderNo: orders.orderNo,
       deliveryDate: orders.deliveryDate,
       channel: orders.channel,
+      // Untuk log edit: nilai sebelum diubah.
+      name: orders.customerName,
+      phone: customers.phone,
+      address: shipments.address,
+      kind: orders.kind,
+      type: orders.type,
+      method: shipments.method,
+      request: orders.request,
+      senderName: orders.senderName,
+      cardTo: orders.cardTo,
+      cardWishes: orders.cardWishes,
+      cardFrom: orders.cardFrom,
+      marketplaceOrderNo: orders.marketplaceOrderNo,
+      total: orders.total,
     })
     .from(orders)
+    .innerJoin(customers, eq(customers.id, orders.customerId))
+    .innerJoin(shipments, eq(shipments.orderId, orders.id))
     .where(eq(orders.id, orderId))
   if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
   if (!isEditable(current.status)) {
@@ -485,6 +523,38 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
   const address = optional(draft.address)
   // Total dikosongkan saat edit = total lama tetap dipakai.
   const total = marketplace ? (parseRupiahInput(draft.marketplaceTotal) ?? undefined) : undefined
+  const before: DetailSnapshot = {
+    name: current.name,
+    phone: current.phone,
+    address: current.address,
+    deliveryDate: current.deliveryDate,
+    kind: current.kind,
+    type: current.type,
+    method: current.method,
+    request: current.request,
+    senderName: current.senderName,
+    cardTo: current.cardTo,
+    cardWishes: current.cardWishes,
+    cardFrom: current.cardFrom,
+    marketplaceOrderNo: current.marketplaceOrderNo,
+    total: current.total,
+  }
+  const changes = describeDetailChanges(before, {
+    name: draft.name.trim(),
+    phone: phone ?? current.phone,
+    address,
+    deliveryDate: draft.deliveryDate,
+    kind: draft.kind,
+    type: marketplace ? "personal" : draft.type,
+    method,
+    request: optional(draft.request),
+    senderName: isHadiah ? optional(draft.senderName) : null,
+    cardTo: isHadiah ? optional(draft.cardTo) : null,
+    cardWishes: isHadiah ? optional(draft.cardWishes) : null,
+    cardFrom: isHadiah ? optional(draft.cardFrom) : null,
+    marketplaceOrderNo,
+    total: total ?? current.total,
+  })
 
   await db.transaction(async (tx) => {
     // Tanpa no. HP (disamarkan marketplace), pesanan tetap memakai customer yang sekarang.
@@ -515,6 +585,9 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       .where(eq(shipments.orderId, orderId))
     if (total !== undefined) {
       await tx.update(payments).set({ amount: total }).where(eq(payments.orderId, orderId))
+    }
+    if (changes.length > 0) {
+      await tx.insert(orderEditLogs).values({ orderId, part: "data", changes, editedBy: userId })
     }
   })
 
@@ -548,8 +621,9 @@ export type UpdateOrderItemsResult =
  * dilaporkan supaya bisa ditagih atau dikembalikan.
  */
 export async function updateOrderItems(input: unknown): Promise<UpdateOrderItemsResult> {
+  let userId: string
   try {
-    await requireOrderEditor()
+    userId = await requireOrderEditor()
   } catch (error) {
     if (error instanceof AuthorizationError) return { ok: false, message: error.message }
     throw error
@@ -590,7 +664,12 @@ export async function updateOrderItems(input: unknown): Promise<UpdateOrderItems
       }
 
       const existing = await tx
-        .select({ menuVariantId: orderItems.menuVariantId, unitPrice: orderItems.unitPrice })
+        .select({
+          menuVariantId: orderItems.menuVariantId,
+          unitPrice: orderItems.unitPrice,
+          qty: orderItems.qty,
+          note: orderItems.note,
+        })
         .from(orderItems)
         .where(eq(orderItems.orderId, orderId))
       const oldPrice = new Map(existing.map((item) => [item.menuVariantId, item.unitPrice]))
@@ -627,6 +706,33 @@ export async function updateOrderItems(input: unknown): Promise<UpdateOrderItems
       })
       await tx.delete(orderItems).where(eq(orderItems.orderId, orderId))
       await tx.insert(orderItems).values(rows)
+
+      // Log edit: nama menu + ukuran untuk semua varian yang terlibat.
+      const variantIds = [...new Set([...oldPrice.keys(), ...merged.keys()])]
+      const names = await tx
+        .select({ id: menuVariants.id, name: menus.name, size: menuVariants.size })
+        .from(menuVariants)
+        .innerJoin(menus, eq(menus.id, menuVariants.menuId))
+        .where(inArray(menuVariants.id, variantIds))
+      const labelOf = new Map(
+        names.map((row) => [
+          row.id,
+          row.size === "single"
+            ? row.name
+            : `${row.name} (${row.size === "large" ? "Large" : "Regular"})`,
+        ]),
+      )
+      const snapshot = (item: { menuVariantId: string; qty: number; note: string | null }) =>
+        ({
+          menuVariantId: item.menuVariantId,
+          label: labelOf.get(item.menuVariantId) ?? "Menu",
+          qty: item.qty,
+          note: item.note,
+        }) satisfies ItemSnapshot
+      const changes = describeItemChanges(existing.map(snapshot), rows.map(snapshot))
+      if (changes.length > 0) {
+        await tx.insert(orderEditLogs).values({ orderId, part: "menu", changes, editedBy: userId })
+      }
 
       const total = isMarketplace(order.channel)
         ? order.total

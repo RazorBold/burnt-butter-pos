@@ -3,7 +3,8 @@ import type { ReactNode } from "react"
 
 import { Skeleton } from "@/components/ui/skeleton"
 
-export const PAGE_CONTAINER = "mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-8"
+/** Isi halaman memenuhi area di samping sidebar (tanpa batas lebar, permintaan pemilik toko). */
+export const PAGE_CONTAINER = "w-full px-4 py-8 sm:px-6 xl:px-8 2xl:px-10"
 
 export function PageHeader({
   title,

@@ -46,6 +46,12 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
+  /* Nada kartu (redesign Nov 2026): kelas .tone-* / .kpi-grid mengisi --tone-*. */
+  --color-tone-soft: var(--tone-soft);
+  --color-tone-ring: var(--tone-ring);
+  --color-tone-ink: var(--tone-ink);
+  --shadow-card: 0 1px 2px rgb(76 28 4 / 0.04), 0 14px 32px -20px rgb(76 28 4 / 0.22);
+
   /* Brand */
   --color-page: var(--bg-page);
   --color-nav: var(--bg-nav);
@@ -91,7 +97,29 @@
 
 :root {
   --bg-page: #f6f0ea;
-  --bg-card: #fbf7f3;
+  --bg-card: #fffcf9;
+
+  /* Empat nada pastel dari foto brand. Teks *-ink di atas *-soft kontras ≥ 4.5:1. */
+  --caramel-soft: #fbeee2;
+  --caramel-ring: #f0d8c1;
+  --caramel-ink: #8a4a1c;
+  --caramel-spark: #e9b98d;
+  --sage-soft: #eaf2e6;
+  --sage-ring: #d2e2ca;
+  --sage-ink: #3d6833;
+  --sage-spark: #a9c99c;
+  --rose-soft: #fcebea;
+  --rose-ring: #f4d1cd;
+  --rose-ink: #a1362f;
+  --rose-spark: #f0a49c;
+  --sky-soft: #e8f0f6;
+  --sky-ring: #cddeea;
+  --sky-ink: #2d5a78;
+  --sky-spark: #9cc0da;
+  --tone-soft: var(--caramel-soft);
+  --tone-ring: var(--caramel-ring);
+  --tone-ink: var(--caramel-ink);
+  --tone-spark: var(--caramel-spark);
   --bg-nav: #fcf9f4;
   --bg-nav-active: #f9ede1;
   --bg-icon: #f9e6d3;
@@ -151,4 +179,34 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Nada kartu. Kartu KPI di dalam .kpi-grid bergantian karamel → sage → rose → sky. */
+.tone-caramel,
+.kpi-grid > :nth-child(4n + 1) {
+  --tone-soft: var(--caramel-soft);
+  --tone-ring: var(--caramel-ring);
+  --tone-ink: var(--caramel-ink);
+  --tone-spark: var(--caramel-spark);
+}
+.tone-sage,
+.kpi-grid > :nth-child(4n + 2) {
+  --tone-soft: var(--sage-soft);
+  --tone-ring: var(--sage-ring);
+  --tone-ink: var(--sage-ink);
+  --tone-spark: var(--sage-spark);
+}
+.tone-rose,
+.kpi-grid > :nth-child(4n + 3) {
+  --tone-soft: var(--rose-soft);
+  --tone-ring: var(--rose-ring);
+  --tone-ink: var(--rose-ink);
+  --tone-spark: var(--rose-spark);
+}
+.tone-sky,
+.kpi-grid > :nth-child(4n + 4) {
+  --tone-soft: var(--sky-soft);
+  --tone-ring: var(--sky-ring);
+  --tone-ink: var(--sky-ink);
+  --tone-spark: var(--sky-spark);
 }

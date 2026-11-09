@@ -1,8 +1,11 @@
-import { Lightbulb, TrendingDown, TrendingUp, TriangleAlert } from "lucide-react"
+import { Lightbulb, Sparkles, TrendingDown, TrendingUp, TriangleAlert } from "lucide-react"
 
 import type { GrowthRow, Insight, InsightTone, Metric } from "@/features/dashboard/evaluation"
 import { formatRupiah } from "@/lib/format"
 import { cn } from "@/lib/utils"
+
+/** Harian, Mingguan, Bulanan memakai nada berbeda supaya mudah dibedakan. */
+const GROWTH_TONE = { hari: "tone-caramel", minggu: "tone-sage", bulan: "tone-sky" } as const
 
 const TONE = {
   naik: { icon: TrendingUp, label: "Naik", className: "bg-trend-up text-trend-up-fg" },
@@ -37,10 +40,15 @@ export function EvaluationCard({
   return (
     <section
       aria-label="Evaluasi & Masukan"
-      className="mt-4 min-w-0 rounded-2xl border border-border bg-card p-5"
+      className="tone-sky mt-4 min-w-0 rounded-2xl border border-border bg-card p-5 shadow-card"
     >
       <div className="mb-4">
-        <h2 className="text-lg font-bold text-brand-ink">Evaluasi &amp; Masukan</h2>
+        <h2 className="flex items-center gap-2.5 text-lg font-bold text-brand-ink">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-tone-soft text-tone-ink ring-1 ring-tone-ring">
+            <Sparkles className="size-[18px]" aria-hidden />
+          </span>
+          Evaluasi &amp; Masukan
+        </h2>
         <p className="mt-0.5 text-[13px] text-text-body">
           Per {dateLabel}, dibanding periode sebelumnya. Pesanan dibatalkan tidak dihitung.
         </p>
@@ -54,9 +62,12 @@ export function EvaluationCard({
               <li
                 key={row.key}
                 aria-label={`Pertumbuhan ${row.label}`}
-                className="rounded-xl border border-border bg-white p-4"
+                className={cn(
+                  GROWTH_TONE[row.key],
+                  "rounded-xl border border-tone-ring bg-[linear-gradient(160deg,var(--tone-soft)_0%,white_65%)] p-4",
+                )}
               >
-                <p className="font-semibold text-brand-ink">{row.label}</p>
+                <p className="font-semibold text-tone-ink">{row.label}</p>
                 <p className="text-[12px] leading-snug text-text-body">{row.compare}</p>
                 <dl className="mt-3 space-y-3">
                   <MetricRow label="Pesanan" metric={row.orders} format={String} />

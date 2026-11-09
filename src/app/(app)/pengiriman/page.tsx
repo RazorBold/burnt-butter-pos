@@ -104,7 +104,7 @@ async function Summary({ searchParams }: { searchParams: SearchParams }) {
   const day = filters.date === today ? " Hari Ini" : ""
 
   return (
-    <div className="relative mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+    <div className="kpi-grid relative mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
       <KpiCard icon={Truck} label={`Perlu Dikirim${day}`} value={String(summary.perlu)} />
       <KpiCard icon={UserRound} label="Kurir Internal" value={String(summary.kurirInternal)} />
       <KpiCard icon={Bike} label="Instant" value={String(summary.instant)} />

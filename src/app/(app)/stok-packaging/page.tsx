@@ -64,7 +64,7 @@ async function StockOverview() {
 
   return (
     <>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard icon={Box} label="Jenis Packaging" value={String(items.length)} />
         <KpiCard
           icon={needRestock ? TriangleAlert : PackageCheck}
@@ -207,7 +207,7 @@ async function StockHistory({ searchParams }: { searchParams: SearchParams }) {
 function StockSkeleton() {
   return (
     <div aria-hidden>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <KpiCardSkeleton key={index} />
         ))}

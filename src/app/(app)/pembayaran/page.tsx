@@ -70,7 +70,7 @@ async function Summary({ searchParams }: { searchParams: SearchParams }) {
   const summary = await getPaymentSummary(filters.from, filters.to)
 
   return (
-    <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard icon={Clock} label="Belum Bayar" value={`${summary.unpaid.count} pesanan`} />
       <KpiCard
         icon={Banknote}

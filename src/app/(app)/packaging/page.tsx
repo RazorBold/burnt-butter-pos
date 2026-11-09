@@ -65,7 +65,7 @@ async function Packing({
         actions={<DeliveryDatePicker date={date} today={today} />}
       />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-3">
         <KpiCard icon={PackageOpen} label="Menunggu Packing" value={`${waiting.length} pesanan`} />
         <KpiCard icon={PackageCheck} label="Selesai Packing" value={`${packed.length} pesanan`} />
         <KpiCard icon={ChefHat} label="Masih Dimasak" value={`${cooking} pesanan`} />

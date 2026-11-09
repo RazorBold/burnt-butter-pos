@@ -73,7 +73,7 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
         actions={<DeliveryDatePicker date={date} today={today} />}
       />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           icon={UtensilsCrossed}
           label="Total Porsi"

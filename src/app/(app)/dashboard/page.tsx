@@ -1,6 +1,10 @@
 import {
   ArrowRight,
   Bike,
+  ChartColumn,
+  ChartPie,
+  ClipboardList,
+  CookingPot,
   FileText,
   Gift,
   Package,
@@ -9,6 +13,7 @@ import {
   StickyNote,
   Truck,
   Wallet,
+  type LucideIcon,
 } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
@@ -137,7 +142,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
         </div>
       </header>
 
-      <div className="relative mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="kpi-grid relative mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           icon={FileText}
           label={`Total Pesanan${suffix}`}
@@ -181,6 +186,8 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)_minmax(0,1fr)]">
         {showOrders && (
           <Card
+            icon={ClipboardList}
+            tone="caramel"
             title="Daftar Pesanan Terbaru"
             className="xl:row-span-2"
             link={{ href: "/pesanan", label: "Lihat Semua" }}
@@ -268,7 +275,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           </Card>
         )}
 
-        <Card title="Pesanan per Tipe">
+        <Card icon={ChartPie} tone="rose" title="Pesanan per Tipe">
           <ShareDonut
             caption="Pesanan per tipe"
             centerLabel="pesanan"
@@ -289,7 +296,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           />
         </Card>
 
-        <Card title={`Status Pesanan ${periodText}`}>
+        <Card icon={ChartColumn} tone="sky" title={`Status Pesanan ${periodText}`}>
           <StatusBarChart
             data={report.status.map(({ key, value }) => ({
               key,
@@ -301,6 +308,8 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
 
         {showMoney && (
           <Card
+            icon={Wallet}
+            tone="sage"
             title="Total Pembayaran"
             link={paymentLink ? { href: paymentLink, label: "Lihat Detail" } : undefined}
           >
@@ -317,7 +326,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           </Card>
         )}
 
-        <Card title="Pesanan per Metode Pengiriman">
+        <Card icon={Truck} tone="caramel" title="Pesanan per Metode Pengiriman">
           <ul className="space-y-4">
             {(["pick_up", "instant", "kurir_internal", "ekspedisi"] as const).map((method) => {
               const value = report.shipping.find((row) => row.key === method)?.value ?? 0
@@ -349,6 +358,8 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]">
         <Card
+          icon={CookingPot}
+          tone="sage"
           title={
             anchor === today
               ? "Rekap Produksi Hari Ini"
@@ -399,6 +410,8 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
         </Card>
 
         <Card
+          icon={Package}
+          tone="rose"
           title="Stok Packaging (Ringkas)"
           link={
             canAccessPath(role, "/stok-packaging")
@@ -500,13 +513,21 @@ async function Evaluation({
   )
 }
 
+/**
+ * Kartu Dashboard: ikon judul berwarna sesuai nada (karamel, sage, rose, sky) supaya kartu-kartu
+ * tidak seragam; isi kartu tetap putih bersih.
+ */
 function Card({
   title,
+  icon: Icon,
+  tone,
   link,
   className,
   children,
 }: {
   title: string
+  icon: LucideIcon
+  tone: "caramel" | "sage" | "rose" | "sky"
   link?: { href: string; label: string }
   className?: string
   children: ReactNode
@@ -514,10 +535,18 @@ function Card({
   return (
     <section
       aria-label={title}
-      className={cn("min-w-0 rounded-2xl border border-border bg-card p-5", className)}
+      className={cn(
+        `tone-${tone} min-w-0 rounded-2xl border border-border bg-card p-5 shadow-card`,
+        className,
+      )}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
-        <h2 className="min-w-0 text-lg leading-snug font-bold text-brand-ink">{title}</h2>
+        <h2 className="flex min-w-0 items-center gap-2.5 text-lg leading-snug font-bold text-brand-ink">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-tone-soft text-tone-ink ring-1 ring-tone-ring">
+            <Icon className="size-[18px]" aria-hidden />
+          </span>
+          <span className="min-w-0">{title}</span>
+        </h2>
         {link && (
           <Link
             href={link.href}

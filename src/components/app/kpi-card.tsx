@@ -33,16 +33,21 @@ export function KpiCard({ icon: Icon, label, value, trend, series, className }: 
   const direction = !trend || trend.percent === 0 ? "flat" : trend.percent > 0 ? "up" : "down"
   const good = direction === "flat" || direction === (trend?.goodWhen ?? "up")
   const paths = series ? sparklinePaths(series, { width: SPARK_W, height: SPARK_H }) : null
-  const sparkColor = good ? "#f3c9a4" : "#f9b2ad"
+  const sparkColor = good ? "var(--tone-spark)" : "#f9b2ad"
 
   return (
     <div
       className={cn(
         // @container: kartu menyesuaikan lebarnya sendiri (4 kolom di samping sidebar 1280 px).
-        "@container relative isolate flex min-h-[108px] items-center gap-3 overflow-hidden rounded-2xl border border-border bg-card px-4 py-5 @[16.5rem]:gap-4 @[16.5rem]:px-6",
+        "@container relative isolate flex min-h-[108px] items-center gap-3 overflow-hidden rounded-2xl border border-tone-ring bg-[linear-gradient(135deg,var(--tone-soft)_0%,var(--bg-card)_78%)] px-4 py-5 shadow-card @[16.5rem]:gap-4 @[16.5rem]:px-6",
         className,
       )}
     >
+      {/* Pola cincin tipis di pojok kanan atas, warnanya mengikuti nada kartu. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-12 -right-12 -z-10 size-28 rounded-full border-[12px] border-tone-ring/60"
+      />
       {paths && (
         <svg
           aria-hidden
@@ -52,15 +57,15 @@ export function KpiCard({ icon: Icon, label, value, trend, series, className }: 
         >
           <defs>
             <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor={sparkColor} stopOpacity="0.55" />
-              <stop offset="100%" stopColor={sparkColor} stopOpacity="0.05" />
+              <stop offset="0%" style={{ stopColor: sparkColor, stopOpacity: 0.6 }} />
+              <stop offset="100%" style={{ stopColor: sparkColor, stopOpacity: 0.05 }} />
             </linearGradient>
           </defs>
           <path d={paths.area} fill={`url(#${gradientId})`} />
         </svg>
       )}
 
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink @[16.5rem]:size-14">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-tone-ink ring-1 ring-tone-ring @[16.5rem]:size-14">
         <Icon className="size-6 @[16.5rem]:size-7" strokeWidth={1.75} aria-hidden />
       </span>
 

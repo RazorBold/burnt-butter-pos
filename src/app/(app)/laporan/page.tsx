@@ -98,7 +98,7 @@ async function Report({ searchParams }: { searchParams: SearchParams }) {
         dengan panjang yang sama.
       </p>
 
-      <div className="relative mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="kpi-grid relative mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           icon={FileText}
           label="Total Pesanan"

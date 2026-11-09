@@ -20,6 +20,8 @@ test.describe("Pengiriman: selesaikan dari daftar dan link lacak", () => {
     page,
   }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    // Alur panjang (kirim, link, selesai, Pick Up, Kurir Internal) melewati batas 30 detik di dev.
+    test.setTimeout(90_000)
     code = `${Date.now()}`
     const no = (n: number) => `QA${code}${String(n).padStart(2, "0")}`
     const date = new Date(Date.now() + (2400 + (Number(code) % 100)) * 86_400_000)
@@ -120,7 +122,7 @@ test.describe("Pengiriman: selesaikan dari daftar dan link lacak", () => {
     // Selesaikan dari baris Pengiriman, tanpa kembali ke Pesanan.
     await page.goto(`/pengiriman?tanggal=${date}`)
     await page.getByRole("button", { name: `Tandai Selesai ${no(1)}` }).click()
-    await expect(page.getByText(`Status ${no(1)} jadi Selesai.`)).toBeVisible()
+    await expect(page.getByText(`Status ${no(1)} jadi Selesai.`)).toBeVisible({ timeout: 20_000 })
     await expect(page).toHaveURL(/\/pengiriman/)
     expect(await readOrder(no(1))).toMatchObject({ status: "selesai", shipment_status: "selesai" })
     await expect(

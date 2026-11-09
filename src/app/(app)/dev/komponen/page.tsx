@@ -44,7 +44,10 @@ async function Preview() {
       />
 
       <h2 className="mt-8 text-lg font-semibold text-brand-ink">Kartu KPI: dashboard</h2>
-      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="kpi-dashboard">
+      <div
+        className="kpi-grid mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        data-testid="kpi-dashboard"
+      >
         <KpiCard
           icon={FileText}
           label="Total Pesanan Hari Ini"
@@ -76,7 +79,10 @@ async function Preview() {
       </div>
 
       <h2 className="mt-8 text-lg font-semibold text-brand-ink">Kartu KPI: pengiriman</h2>
-      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="kpi-pengiriman">
+      <div
+        className="kpi-grid mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        data-testid="kpi-pengiriman"
+      >
         <KpiCard
           icon={Truck}
           label="Perlu Dikirim Hari Ini"

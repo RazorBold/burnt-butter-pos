@@ -1,6 +1,5 @@
 import { Bike, CircleCheck, PackageCheck, Store, Truck, UserRound } from "lucide-react"
 import type { Metadata } from "next"
-import Image from "next/image"
 import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
@@ -61,15 +60,6 @@ export default function PengirimanPage({ searchParams }: PageProps<"/pengiriman"
         <p className="mt-1.5 max-w-[70ch] text-[15px] text-text-body">
           Kelola pesanan yang akan dikirim, pantau status, dan atur rute kurir.
         </p>
-        {/* Hiasan seperti 04-pengiriman.png: box pasta di pojok kanan atas. */}
-        <Image
-          src="/images/brand/header-pasta.webp"
-          alt=""
-          width={553}
-          height={307}
-          priority={false}
-          className="pointer-events-none absolute -top-8 right-0 hidden h-[150px] w-auto [mask-image:linear-gradient(to_right,transparent,black_35%),linear-gradient(to_bottom,black_70%,transparent)] [mask-composite:intersect] select-none lg:block"
-        />
       </header>
       <Suspense fallback={<SummarySkeleton />}>
         <Summary searchParams={searchParams} />
@@ -150,7 +140,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
       <div
         className={cn(
           "mt-6 grid items-start gap-6",
-          selected && "xl:grid-cols-[minmax(0,1fr)_440px]",
+          selected && "2xl:grid-cols-[minmax(0,1fr)_440px]",
         )}
       >
         <section

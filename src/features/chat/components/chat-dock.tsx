@@ -117,6 +117,7 @@ export function ChatDock({ me, members }: { me: Me; members: ChatMemberRow[] }) 
     <>
       {!open && (
         <button
+          suppressHydrationWarning
           type="button"
           onClick={() => setPanel(true)}
           aria-label={`Buka Chat Tim${unread ? `, ${unread} pesan belum dibaca` : ""}${unreadMentions ? `, ${unreadMentions} menandai kamu` : ""}`}
@@ -150,6 +151,7 @@ export function ChatDock({ me, members }: { me: Me; members: ChatMemberRow[] }) 
               </p>
             </div>
             <button
+              suppressHydrationWarning
               type="button"
               onClick={() => setPanel(false)}
               aria-label="Sembunyikan Chat Tim"
@@ -420,6 +422,7 @@ function Composer({
           className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm text-text-strong outline-none placeholder:text-text-body/70 focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-ring/50"
         />
         <button
+          suppressHydrationWarning
           type="button"
           onClick={() => void send()}
           disabled={sending || !draft.trim()}

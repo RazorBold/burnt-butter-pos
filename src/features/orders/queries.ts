@@ -373,6 +373,15 @@ export type OrderHistoryEntry =
       changedByName: string | null
     }
 
+/** Jumlah pesanan berstatus Baru (badge menu Pesanan di sidebar). */
+export async function countNewOrders(): Promise<number> {
+  const [row] = await getDb()
+    .select({ total: count() })
+    .from(orders)
+    .where(eq(orders.status, "baru"))
+  return row?.total ?? 0
+}
+
 /** Riwayat perubahan status dan edit pesanan, terbaru di atas. */
 export async function getOrderHistory(orderId: string): Promise<OrderHistoryEntry[]> {
   const db = getDb()

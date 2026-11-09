@@ -89,16 +89,9 @@ async function Report({ searchParams }: { searchParams: SearchParams }) {
             Pantau performa bisnis, penjualan, produksi, dan operasional dalam satu tempat.
           </p>
         </div>
-        <div className="relative z-10 flex flex-wrap items-center gap-3 xl:mr-[300px]">
+        <div className="relative z-10 flex flex-wrap items-center gap-3">
           <ReportRangeFilter from={from} to={to} defaultFrom={monthStart} defaultTo={today} />
         </div>
-        <Image
-          src="/images/brand/header-pasta.webp"
-          alt=""
-          width={553}
-          height={307}
-          className="pointer-events-none absolute -top-8 right-0 hidden h-[150px] w-auto [mask-image:linear-gradient(to_right,transparent,black_35%),linear-gradient(to_bottom,black_70%,transparent)] [mask-composite:intersect] select-none xl:block"
-        />
       </header>
       <p className="mt-3 text-sm text-text-body">
         Ringkasan {formatTanggal(from)} sampai {formatTanggal(to)}, dibanding periode sebelumnya

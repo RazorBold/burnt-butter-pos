@@ -131,20 +131,10 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
         <h1 className="text-[28px] leading-tight font-bold text-brand-ink sm:text-[32px]">
           Halo, {user.name}!
         </h1>
-        <p className="mt-1.5 text-[15px] text-text-body">
-          Selamat datang di Burnt Butter.
-        </p>
+        <p className="mt-1.5 text-[15px] text-text-body">Selamat datang di Burnt Butter.</p>
         <div className="relative z-10 mt-5">
           <PeriodPicker anchor={anchor} period={period} today={today} />
         </div>
-        <Image
-          src="/images/brand/header-pasta.webp"
-          alt=""
-          width={553}
-          height={307}
-          priority
-          className="pointer-events-none absolute -top-8 right-0 hidden h-[190px] w-auto [mask-image:linear-gradient(to_right,transparent,black_35%),linear-gradient(to_bottom,black_70%,transparent)] [mask-composite:intersect] select-none lg:block"
-        />
       </header>
 
       <div className="relative mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -335,9 +325,9 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
               return (
                 <li
                   key={method}
-                  className="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] items-center gap-3 text-sm"
+                  className="grid grid-cols-[minmax(0,1.3fr)_64px_minmax(0,1fr)] items-center gap-3 text-sm"
                 >
-                  <span className="flex items-center gap-2.5 text-text-strong">
+                  <span className="flex items-center gap-2.5 whitespace-nowrap text-text-strong">
                     <Icon className="size-5 shrink-0 text-brand-ink" aria-hidden />
                     {SHIPPING_METHOD_LABEL[method]}
                   </span>
@@ -526,12 +516,12 @@ function Card({
       aria-label={title}
       className={cn("min-w-0 rounded-2xl border border-border bg-card p-5", className)}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-brand-ink">{title}</h2>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h2 className="min-w-0 text-lg leading-snug font-bold text-brand-ink">{title}</h2>
         {link && (
           <Link
             href={link.href}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-[13px] font-medium text-text-strong hover:bg-nav-active"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-text-strong hover:bg-nav-active"
           >
             {link.label}
             <ArrowRight className="size-3.5" aria-hidden />

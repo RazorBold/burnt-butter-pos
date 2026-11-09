@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { Suspense, type ReactNode } from "react"
 
 import { AppNavbar } from "@/components/app/app-navbar"
@@ -5,6 +6,7 @@ import { Wordmark } from "@/components/app/wordmark"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChatDock } from "@/features/chat/components/chat-dock"
 import { listChatMembers } from "@/features/chat/queries"
+import { countNewOrders } from "@/features/orders/queries"
 import { UrgentWatcher } from "@/features/urgent/components/urgent-watcher"
 import { listStockAlerts } from "@/features/stock-alerts/queries"
 import {
@@ -16,9 +18,29 @@ import {
 } from "@/lib/access"
 import { requireUser } from "@/lib/auth"
 
+import packageJson from "../../../package.json"
+
+/**
+ * Kerangka aplikasi (mockup Nov 2026): sidebar kiri 248 px mulai 1280 px (xl), topbar, lalu isi
+ * halaman di atas latar ilustrasi (box di kanan atas) yang menempel di layar.
+ */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-page">
+    <div className="relative isolate flex min-h-dvh flex-col bg-page xl:pl-[248px]">
+      {/* Ponsel/tablet: latar polos supaya ilustrasi tidak menimpa judul halaman. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 hidden lg:block xl:left-[248px]"
+      >
+        <Image
+          src="/images/brand/bg-app.webp"
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1280px) calc(100vw - 248px), 100vw"
+          className="object-cover object-[right_top]"
+        />
+      </div>
       {/* Navbar membaca sesi, jadi berada di dalam Suspense; konten halaman tidak ikut menunggu. */}
       <Suspense fallback={<NavbarSkeleton />}>
         <Navbar />
@@ -54,8 +76,11 @@ async function Navbar() {
   const allowedSections = (Object.keys(SECTION_ACCESS) as Section[]).filter((section) =>
     canAccessPath(user.role, section),
   )
-  // Peringatan stok hanya untuk role yang bisa restock (Admin, Produksi).
-  const stockAlerts = CAN_EDIT_STOCK.includes(user.role) ? await listStockAlerts() : null
+  const [stockAlerts, newOrderCount] = await Promise.all([
+    // Peringatan stok hanya untuk role yang bisa restock (Admin, Produksi).
+    CAN_EDIT_STOCK.includes(user.role) ? listStockAlerts() : Promise.resolve(null),
+    canAccessPath(user.role, "/pesanan") ? countNewOrders() : Promise.resolve(null),
+  ])
 
   return (
     <AppNavbar
@@ -63,23 +88,31 @@ async function Navbar() {
       allowedSections={allowedSections}
       canInputOrder={CAN_INPUT_ORDER.includes(user.role)}
       stockAlerts={stockAlerts}
+      newOrderCount={newOrderCount}
+      version={packageJson.version}
     />
   )
 }
 
 function NavbarSkeleton() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-nav/95">
-      <div className="mx-auto flex h-[76px] max-w-[1536px] items-center gap-4 px-4 sm:px-8">
-        <Wordmark />
-        <div className="hidden flex-1 justify-center gap-3 xl:flex" aria-hidden>
-          {Array.from({ length: 8 }, (_, index) => (
-            <Skeleton key={index} className="h-5 w-24" />
-          ))}
+    <>
+      <aside
+        aria-hidden
+        className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col gap-2 border-r border-border bg-nav px-4 xl:flex"
+      >
+        <Wordmark className="mx-2 mt-7 mb-7" />
+        {Array.from({ length: 9 }, (_, index) => (
+          <Skeleton key={index} className="h-11 w-full rounded-[10px]" />
+        ))}
+      </aside>
+      <header className="sticky top-0 z-30 border-b border-border bg-nav/95">
+        <div className="flex h-[76px] items-center gap-4 px-4 sm:px-8">
+          <Wordmark className="xl:hidden" />
+          <Skeleton className="ml-auto h-11 w-40" aria-hidden />
+          <Skeleton className="size-11 rounded-full" aria-hidden />
         </div>
-        <Skeleton className="ml-auto h-11 w-40 xl:ml-0" aria-hidden />
-        <Skeleton className="size-11 rounded-full" aria-hidden />
-      </div>
-    </header>
+      </header>
+    </>
   )
 }

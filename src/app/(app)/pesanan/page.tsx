@@ -157,7 +157,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
       <div
         className={cn(
           "mt-6 grid items-start gap-6",
-          selected && "xl:grid-cols-[minmax(0,1fr)_420px]",
+          selected && "2xl:grid-cols-[minmax(0,1fr)_420px]",
         )}
       >
         <section
@@ -314,7 +314,7 @@ function PanelSkeleton() {
   return (
     <div
       aria-hidden
-      className="fixed inset-y-0 right-0 z-50 w-full max-w-[460px] space-y-4 bg-card p-6 xl:static xl:max-w-none xl:rounded-2xl xl:border xl:border-border"
+      className="fixed inset-y-0 right-0 z-50 w-full max-w-[460px] space-y-4 bg-card p-6 2xl:static 2xl:max-w-none 2xl:rounded-2xl 2xl:border 2xl:border-border"
     >
       <Skeleton className="h-7 w-48" />
       <Skeleton className="h-40 w-full" />

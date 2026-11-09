@@ -11,6 +11,7 @@ import {
   Cell,
   LabelList,
   XAxis,
+  type XAxisTickContentProps,
   YAxis,
 } from "recharts"
 
@@ -26,6 +27,26 @@ import { formatRupiah } from "@/lib/format"
 const SURFACE = "#fbf7f3"
 const GRID = "#ece3da"
 
+/** Label sumbu yang dipendekkan; nama lengkap tetap di tooltip dan tabel pembaca layar. */
+const AXIS_SHORT: Record<string, string> = { Diproses: "Proses", "Siap Packing": "Packing" }
+
+/** Label sumbu X dua baris ("Siap" / "Packing") supaya muat di kartu sempit. */
+function WrappedTick(props: XAxisTickContentProps) {
+  const x = Number(props.x)
+  const y = Number(props.y)
+  const label = String(props.payload?.value ?? "")
+  const words = (AXIS_SHORT[label] ?? label).split(" ")
+  return (
+    <text x={x} y={y + 4} textAnchor="middle" fontSize={10.5} fill="#596068">
+      {words.map((word, index) => (
+        <tspan key={index} x={x} dy={index === 0 ? 8 : 12}>
+          {word}
+        </tspan>
+      ))}
+    </text>
+  )
+}
+
 type StatusKey = "baru" | "diproses" | "siap_packing" | "siap_kirim" | "dikirim" | "selesai"
 
 /**
@@ -40,10 +61,17 @@ export function StatusBarChart({
   const config = { value: { label: "Pesanan" } } satisfies ChartConfig
   return (
     <>
-      <ChartContainer config={config} className="aspect-auto h-[170px] w-full overflow-hidden">
+      <ChartContainer config={config} className="aspect-auto h-[184px] w-full overflow-hidden">
         <BarChart data={data} margin={{ top: 18, right: 4, left: -24, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={GRID} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} fontSize={11} />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            interval={0}
+            height={34}
+            tick={WrappedTick}
+          />
           <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={40} />
           <ChartTooltip
             cursor={{ fill: "#f3e6d8", opacity: 0.6 }}

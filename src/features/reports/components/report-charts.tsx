@@ -235,59 +235,61 @@ export function ShareDonut({
   const percent = (value: number) => (total ? Math.round((value / total) * 100) : 0)
 
   return (
-    <div className="flex flex-col items-center gap-5 sm:flex-row">
-      <div className="relative size-[168px] shrink-0">
-        <ChartContainer config={config} className="aspect-square size-[168px] overflow-hidden">
-          <PieChart>
-            <ChartTooltip content={<ChartTooltipContent nameKey="key" hideLabel />} />
-            <Pie
-              data={
-                total ? slices.filter((slice) => slice.value > 0) : [{ key: "kosong", value: 1 }]
-              }
-              dataKey="value"
-              nameKey="key"
-              innerRadius={54}
-              outerRadius={80}
-              stroke={SURFACE}
-              strokeWidth={2}
-              startAngle={90}
-              endAngle={-270}
-              isAnimationActive={false}
-            >
-              {(total ? slices.filter((slice) => slice.value > 0) : [{ key: "kosong" }]).map(
-                (slice) => (
-                  <Cell key={slice.key} fill={"color" in slice ? slice.color : "#ece3da"} />
-                ),
-              )}
-            </Pie>
-          </PieChart>
-        </ChartContainer>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-text-strong tabular-nums">{total}</span>
-          <span className="text-[13px] text-text-body">{centerLabel}</span>
+    <div className="@container">
+      <div className="flex flex-col items-center gap-5 @[22rem]:flex-row">
+        <div className="relative size-[168px] shrink-0">
+          <ChartContainer config={config} className="aspect-square size-[168px] overflow-hidden">
+            <PieChart>
+              <ChartTooltip content={<ChartTooltipContent nameKey="key" hideLabel />} />
+              <Pie
+                data={
+                  total ? slices.filter((slice) => slice.value > 0) : [{ key: "kosong", value: 1 }]
+                }
+                dataKey="value"
+                nameKey="key"
+                innerRadius={54}
+                outerRadius={80}
+                stroke={SURFACE}
+                strokeWidth={2}
+                startAngle={90}
+                endAngle={-270}
+                isAnimationActive={false}
+              >
+                {(total ? slices.filter((slice) => slice.value > 0) : [{ key: "kosong" }]).map(
+                  (slice) => (
+                    <Cell key={slice.key} fill={"color" in slice ? slice.color : "#ece3da"} />
+                  ),
+                )}
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-bold text-text-strong tabular-nums">{total}</span>
+            <span className="text-[13px] text-text-body">{centerLabel}</span>
+          </div>
         </div>
+        <ul className="w-full max-w-[260px] min-w-0 space-y-2 text-sm @[22rem]:max-w-none">
+          {slices.map((slice) => (
+            <li key={slice.key} className="flex items-center gap-2 whitespace-nowrap">
+              <span
+                aria-hidden
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ background: slice.color }}
+              />
+              <span className="min-w-0 flex-1 text-text-strong">{slice.label}</span>
+              <span className="font-semibold text-text-strong tabular-nums">{slice.value}</span>
+              <span className="w-12 text-right text-text-body tabular-nums">
+                ({percent(slice.value)}%)
+              </span>
+            </li>
+          ))}
+        </ul>
+        <DataTable
+          caption={caption}
+          head={["Kategori", "Jumlah", "Persen"]}
+          rows={slices.map((slice) => [slice.label, slice.value, `${percent(slice.value)}%`])}
+        />
       </div>
-      <ul className="w-full min-w-0 space-y-2 text-sm">
-        {slices.map((slice) => (
-          <li key={slice.key} className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="size-2.5 shrink-0 rounded-full"
-              style={{ background: slice.color }}
-            />
-            <span className="min-w-0 flex-1 text-text-strong">{slice.label}</span>
-            <span className="font-semibold text-text-strong tabular-nums">{slice.value}</span>
-            <span className="w-12 text-right text-text-body tabular-nums">
-              ({percent(slice.value)}%)
-            </span>
-          </li>
-        ))}
-      </ul>
-      <DataTable
-        caption={caption}
-        head={["Kategori", "Jumlah", "Persen"]}
-        rows={slices.map((slice) => [slice.label, slice.value, `${percent(slice.value)}%`])}
-      />
     </div>
   )
 }

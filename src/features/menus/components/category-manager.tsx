@@ -135,6 +135,7 @@ function IconButton({
 }: { label: string } & React.ComponentProps<"button">) {
   return (
     <button
+      suppressHydrationWarning
       type="button"
       aria-label={label}
       title={label}

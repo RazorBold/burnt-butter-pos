@@ -18,7 +18,8 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
     const nav = page.getByRole("navigation", { name: "Menu utama" })
     await expect(nav.getByRole("link")).toHaveText([
       "Dashboard",
-      "Pesanan",
+      // Sidebar: badge jumlah pesanan Baru ikut di teks link.
+      /^Pesanan(\d+\+? pesanan baru)?$/,
       "Pembayaran",
       "Produksi",
       "Packaging",
@@ -69,13 +70,15 @@ test("navbar tidak membuat halaman melebar ke samping", async ({ page }, info) =
   await expect(page.getByRole("button", { name: /^Akun / })).toBeInViewport()
 
   if (info.project.name === "desktop") {
-    // Laptop 1280 px: batas terkecil navbar penuh (breakpoint xl).
+    // Laptop 1280 px: batas terkecil sidebar (breakpoint xl).
     await page.setViewportSize({ width: 1280, height: 800 })
     const laptopOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     )
     expect(laptopOverflow, "lebar berlebih di 1280 px").toBeLessThanOrEqual(0)
     await expect(page.getByRole("button", { name: /^Akun / })).toBeInViewport()
+    await expect(page.getByRole("navigation", { name: "Menu utama" })).toBeInViewport()
+    await expect(page.getByRole("button", { name: "Buka menu" })).toBeHidden()
     await page.screenshot({ path: "test-results/navbar-1280.png" })
   }
 })
@@ -88,7 +91,7 @@ test("Kasir hanya melihat menunya dan ditolak membuka Laporan", async ({ page },
   const nav = page.getByRole("navigation", { name: "Menu utama" })
   await expect(nav.getByRole("link")).toHaveText([
     "Dashboard",
-    "Pesanan",
+    /^Pesanan(\d+\+? pesanan baru)?$/,
     "Pembayaran",
     "Pengiriman",
     "Master Data",

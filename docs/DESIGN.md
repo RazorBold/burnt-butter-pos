@@ -98,7 +98,7 @@ Angka uang memakai `tabular-nums` dengan format `Rp 4.780.000`.
 ## Layout & bentuk
 
 - Frame desain: desktop 1536 × 1024. Konten penuh lebar dengan padding sisi ±32 px.
-- Navbar: tinggi ±76 px. Logo di kiri, menu di tengah, lalu tombol **+ Input Pesanan**, notifikasi, dan profil di kanan. Urutan menu: Dashboard, Pesanan, Pembayaran, Produksi, Pengiriman, Laporan, Stok Packaging, Master Data (Stok Packaging dipindah ke kiri Master Data atas permintaan pemilik toko). Menu aktif = pill `--bg-nav-active` + garis bawah `--brand`.
+- **Kerangka (redesign Nov 2026, mockup pemilik toko):** mulai 1280 px (xl) ada **sidebar kiri 248 px** (`bg-nav`, garis kanan): logo di atas, menu vertikal ikon + label (tinggi 44 px, sudut 10 px), menu aktif = isian `--brand` dengan teks putih dan bayangan halus, badge jumlah pesanan **Baru** di menu Pesanan, garis pemisah, lalu kartu info "Burnt Butter · Order Management · v{versi}" di bawah. **Topbar** 76 px di kanan berisi + Input Pesanan, notifikasi, dan profil. Di bawah 1280 px sidebar diganti tombol menu (laci kiri, isi sama) dan logo pindah ke topbar. Isi halaman berada di atas latar `public/images/brand/bg-app.webp` (box pasta di kanan atas, menempel di layar) mulai 1024 px; ponsel/tablet memakai latar polos. Panel detail Pesanan/Pengiriman ada di samping tabel mulai 1536 px (2xl); 1280–1535 px menjadi laci kanan. Urutan menu tetap: Dashboard, Pesanan, Pembayaran, Produksi, Packaging, Pengiriman, Laporan, Stok Packaging, Master Data.
 - Kartu: radius ±16 px, border tipis `--border-subtle`, bayangan sangat halus atau tanpa bayangan. Jarak antar kartu ±16 px.
 - Tombol, input, badge: radius ±8 px. Badge berbentuk pill.
 - Baris tabel ±48 px dengan garis pemisah tipis; baris terpilih diberi latar `--bg-nav-active`.
@@ -162,7 +162,7 @@ Pakai shadcn/ui sebagai dasar (Button, Dialog, Sheet, Select, Popover + Calendar
   - Papan Pesanan: 3 kolom (Belum mulai, Sedang dimasak, Selesai masak), bertumpuk di ponsel. Kartu pesanan berisi daftar "2× Menu (Large)", request (latar kuning), badge "Hadiah + kartu" untuk packing, metode kirim, dan jam masuk.
   - Tombol: Mulai masak / Selesai masak, plus tombol teks untuk mundur satu langkah bila salah klik.
 - **Pengiriman** (04-pengiriman.png):
-  - Hiasan header berupa potongan `public/images/brand/header-pasta.webp` dari bg-beige-brand, memudar ke kiri/bawah, hanya di lg ke atas. Teks tulisan tangan di desain tidak dibuat.
+  - Hiasan header: tidak ada gambar terpisah lagi; box pasta berasal dari latar `bg-app.webp` (redesign Nov 2026).
   - 5 KPI untuk tanggal kirim terpilih, tanpa tren.
   - Tab segmen berupa grup tombol `aria-pressed`, bukan tablist, karena tombolnya menyaring tabel.
   - Filter tanggal kirim memakai komponen bersama `DeliveryDatePicker` (Hari ini/Besok/tanggal), sama dengan Produksi.
@@ -210,7 +210,7 @@ Hampir semua statis. Cukup satu momen: angka KPI dan chart muncul halus saat hal
 ## Aset yang belum ada
 
 - [x] Logo: wordmark "burntbutter" dari pemilik toko (Nov 2026), PNG transparan `public/images/brand/logo-burnt-butter.png` lewat `Wordmark` (navbar 30 px, 34 px di 2xl; login 44/56 px). "Segelas Awan" tidak dipakai lagi di teks aplikasi; ilustrasi header dan latar login masih memuat tulisan lama di gambar box.
-- [ ] Ilustrasi box pasta untuk hero (bisa di-crop dari [bg-beige-brand.png](design/bg-beige-brand.png), lebih baik file aslinya).
+- [x] Latar aplikasi dan login dari pemilik toko (Nov 2026): `bg-app.webp`, `bg-login.webp`. Login = foto box pasta di kiri, kartu masuk di kanan dengan logo di dalam kartu.
 - [x] Foto menu: di-crop dari kolase ke `public/images/menu/*.webp` (±300 px, cukup untuk thumbnail). Pakai lewat `next/image` dengan `object-fit: cover`.
 - [ ] Foto menu resolusi penuh (opsional, untuk tampilan besar) dan foto packaging.
 - [ ] Desain: form hasil Isi Otomatis, Detail Lengkap pesanan, Pembayaran, Stok Packaging, Produksi, login, tab laporan lain, tampilan tablet.

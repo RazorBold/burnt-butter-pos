@@ -38,7 +38,8 @@ export function KpiCard({ icon: Icon, label, value, trend, series, className }: 
   return (
     <div
       className={cn(
-        "relative isolate flex min-h-[108px] items-center gap-4 overflow-hidden rounded-2xl border border-border bg-card px-5 py-5 sm:px-6",
+        // @container: kartu menyesuaikan lebarnya sendiri (4 kolom di samping sidebar 1280 px).
+        "@container relative isolate flex min-h-[108px] items-center gap-3 overflow-hidden rounded-2xl border border-border bg-card px-4 py-5 @[16.5rem]:gap-4 @[16.5rem]:px-6",
         className,
       )}
     >
@@ -59,15 +60,15 @@ export function KpiCard({ icon: Icon, label, value, trend, series, className }: 
         </svg>
       )}
 
-      <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink">
-        <Icon className="size-7" strokeWidth={1.75} aria-hidden />
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink @[16.5rem]:size-14">
+        <Icon className="size-6 @[16.5rem]:size-7" strokeWidth={1.75} aria-hidden />
       </span>
 
       <div className="min-w-0 flex-1">
         <p className="text-[13px] leading-snug font-medium text-text-body">{label}</p>
         {/* Nilai tidak pernah dipotong; bila sempit, badge turun ke baris berikutnya. */}
         <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
-          <p className="text-[26px] leading-tight font-bold tracking-[-0.01em] whitespace-nowrap text-text-strong tabular-nums">
+          <p className="text-[22px] leading-tight font-bold tracking-[-0.01em] whitespace-nowrap text-text-strong tabular-nums @[16.5rem]:text-[26px]">
             {value}
           </p>
           {trend && <TrendBadge trend={trend} direction={direction} good={good} />}

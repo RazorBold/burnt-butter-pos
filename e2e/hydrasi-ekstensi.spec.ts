@@ -10,8 +10,9 @@ function injectLikeExtension(page: Page) {
   return page.addInitScript(() => {
     const mark = (node: Node) => {
       if (!(node instanceof Element)) return
-      // <select aria-hidden> adalah elemen internal Radix Select yang tidak bisa diberi prop.
-      const selector = "button, input, textarea, select:not([aria-hidden])"
+      // <select aria-hidden> (Radix Select) dan <input aria-hidden> (Radix Checkbox) adalah elemen
+      // internal yang tidak bisa diberi prop.
+      const selector = "button, input:not([aria-hidden]), textarea, select:not([aria-hidden])"
       if (node.matches(selector)) node.setAttribute("fdprocessedid", "qa123")
       node.querySelectorAll(selector).forEach((el) => el.setAttribute("fdprocessedid", "qa123"))
     }

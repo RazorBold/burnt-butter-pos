@@ -164,7 +164,7 @@ export function BulkActionBar({ noun, children }: { noun: string; children: Reac
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: offset }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-4 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1 rounded-2xl bg-brand-ink p-2 pl-4 text-white shadow-[0_12px_32px_rgb(76_28_4_/_0.3)]"
+            className="fixed inset-x-4 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1 rounded-2xl bg-brand-ink p-2 pl-4 text-white shadow-[0_12px_32px_rgb(76_28_4_/_0.3)] xl:left-[calc(248px+1rem)]"
           >
             <span className="mr-2 text-sm font-semibold whitespace-nowrap tabular-nums">
               {count} {noun} dipilih

@@ -17,35 +17,34 @@ const NOTICES: Record<string, string> = {
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main className="relative isolate flex min-h-dvh items-start overflow-hidden bg-page lg:items-center">
+    <main className="relative isolate flex min-h-dvh items-end overflow-hidden bg-page sm:items-center">
+      {/* Mockup login Nov 2026: foto box pasta di kiri, kartu masuk di kanan. */}
       <Image
-        src="/images/brand/bg-beige.webp"
+        src="/images/brand/bg-login.webp"
         alt=""
         fill
         priority
         sizes="100vw"
-        className="-z-10 object-cover object-[right_top]"
+        className="-z-10 object-cover object-[18%_center]"
       />
 
-      {/* Di layar tegak, gambar diperbesar mengikuti tinggi layar sehingga box pasta mengisi
-          ±30% bagian atas; konten dimulai di bawahnya supaya wordmark tidak menimpa ilustrasi. */}
-      <div className="w-full px-4 pt-[31vh] pb-12 sm:px-10 lg:py-12 lg:pl-[9vw]">
-        <div className="mx-auto w-full max-w-[380px] lg:mx-0">
-          <Wordmark size="lg" />
+      <div className="w-full px-4 pt-[38vh] pb-8 sm:px-10 sm:py-12 lg:flex lg:justify-end lg:pr-[8vw]">
+        <section className="mx-auto w-full max-w-[460px] rounded-[28px] border border-white/70 bg-card/95 px-6 py-8 shadow-[0_24px_60px_-28px_rgb(76_28_4/0.45)] backdrop-blur-sm sm:px-11 sm:py-11 lg:mx-0">
+          <div className="flex justify-center">
+            <Wordmark size="lg" />
+          </div>
 
-          <section className="mt-6 rounded-2xl border border-border bg-card/95 p-6 sm:p-8 lg:mt-8">
-            <h1 className="text-xl font-semibold text-brand-ink">Masuk</h1>
-            <p className="mt-1 text-sm text-text-body">Pakai email dan kata sandi dari Admin.</p>
+          <h1 className="mt-9 text-[28px] leading-tight font-bold text-brand">Masuk</h1>
+          <p className="mt-1 text-[15px] text-text-body">Pakai email dan kata sandi dari Admin.</p>
 
-            <Suspense fallback={<LoginFormSkeleton />}>
-              <LoginGate searchParams={searchParams} />
-            </Suspense>
+          <Suspense fallback={<LoginFormSkeleton />}>
+            <LoginGate searchParams={searchParams} />
+          </Suspense>
 
-            <p className="mt-5 border-t border-border pt-4 text-[13px] leading-relaxed text-text-body">
-              Lupa kata sandi? Minta Admin mengatur ulang di Master Data, menu User / Staff.
-            </p>
-          </section>
-        </div>
+          <p className="mt-6 border-t border-border pt-5 text-center text-[13px] leading-relaxed text-text-body">
+            Lupa kata sandi? Minta Admin mengatur ulang di Master Data, menu User / Staff.
+          </p>
+        </section>
       </div>
     </main>
   )

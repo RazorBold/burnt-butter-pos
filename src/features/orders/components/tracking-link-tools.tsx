@@ -53,6 +53,7 @@ export function TrackingLinkTools({
     <span className="inline-flex flex-wrap items-center gap-1.5">
       <TrackingLink url={url} orderNo={orderNo} />
       <button
+        suppressHydrationWarning
         type="button"
         onClick={copy}
         aria-label={`Salin link lacak ${orderNo}`}
@@ -63,6 +64,7 @@ export function TrackingLinkTools({
         Salin
       </button>
       <button
+        suppressHydrationWarning
         type="button"
         onClick={toggleSent}
         disabled={pending}

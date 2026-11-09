@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { updateOrderDetails } from "@/features/orders/actions"
-import { isMarketplace, ORDER_CHANNEL_LABEL } from "@/features/orders/constants"
+import { isMarketplace, ORDER_CHANNEL_LABEL, ORDER_KIND_OPTIONS } from "@/features/orders/constants"
 import { Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
 import {
   type DraftField,
@@ -42,6 +42,7 @@ function draftOf(order: OrderDetail): EditDraft {
     marketplaceOrderNo: order.marketplaceOrderNo ?? "",
     marketplaceTotal: formatRupiah(order.total).replace("Rp ", ""),
     type: order.type,
+    kind: order.kind,
     name: order.customer.name,
     phone: order.customer.phone ? formatPhone(order.customer.phone) : "",
     address: order.shipment.address ?? "",
@@ -127,6 +128,12 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
         </DialogHeader>
 
         <div className="mt-6 space-y-5">
+          <SegmentedControl
+            label="Jenis pesanan"
+            options={ORDER_KIND_OPTIONS}
+            value={draft.kind}
+            onChange={(value) => update("kind", value)}
+          />
           {marketplace ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field

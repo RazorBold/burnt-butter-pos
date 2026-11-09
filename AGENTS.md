@@ -89,6 +89,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 | Pesanan                                                                                      | `order` / `orders`                                                                         |
 | Item menu pesanan                                                                            | `order_items`                                                                              |
 | Tipe: Personal / Hadiah                                                                      | `type`: `personal` / `hadiah`                                                              |
+| Jenis pesanan: PO / Ready Stock / Made to Order                                              | `kind`: `po` / `ready_stock` / `made_to_order`                                             |
 | Status: Baru, Diproses, Siap Packing, Siap Kirim, Dikirim, Selesai, Dibatalkan               | `baru`, `diproses`, `siap_packing`, `siap_kirim`, `dikirim`, `selesai`, `dibatalkan`       |
 | Pengiriman                                                                                   | `shipment` / `shipments`                                                                   |
 | Metode: Kurir Internal, Instant, Pick Up                                                     | `kurir_internal`, `instant`, `pick_up`                                                     |
@@ -97,6 +98,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 | Kategori menu (diatur Owner)                                                                 | `menu_categories` (`sized`, `sort_order`), `menus.category_id`                             |
 | Produk & Menu, ukuran Large / Regular                                                        | `menus`, `menu_variants.size`: `large` / `regular` / `single`                              |
 | Stok Packaging                                                                               | `packagings`                                                                               |
+| Kategori stok (diatur Owner)                                                                 | `packaging_categories` (`sort_order`), `packagings.category_id`                            |
 | Packaging (menu packing)                                                                     | `src/features/packing`                                                                     |
 | Chat Tim                                                                                     | `src/features/chat`, `chat_messages`, `chat_mentions`, `chat_reads`                        |
 | Bahan Baku                                                                                   | `raw_materials`                                                                            |

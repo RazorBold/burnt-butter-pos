@@ -3,7 +3,12 @@ import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { OrderStatusBadge, PaymentBadge, UrgentBadge } from "@/components/app/order-badges"
+import {
+  KindBadge,
+  OrderStatusBadge,
+  PaymentBadge,
+  UrgentBadge,
+} from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
 import { ORDER_CHANNEL_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
@@ -53,6 +58,7 @@ export async function OrderDetailPanel({
         <div className="flex flex-wrap items-center gap-2.5">
           <p className="text-xl font-bold text-brand-ink tabular-nums">{order.orderNo}</p>
           <OrderStatusBadge status={order.status} />
+          <KindBadge kind={order.kind} />
           {isUrgent(order) && <UrgentBadge />}
         </div>
         <p className="mt-1 text-[13px] text-text-body">

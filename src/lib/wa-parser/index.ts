@@ -12,6 +12,9 @@
 import { normalizePhone } from "@/lib/phone"
 
 export type OrderType = "personal" | "hadiah"
+
+/** Jenis pesanan: Pre-Order, Ready Stock, atau Made to Order. */
+export type OrderKind = "po" | "ready_stock" | "made_to_order"
 export type ShippingMethod = "kurir_internal" | "instant" | "pick_up" | "ekspedisi"
 export type ParsedSize = "large" | "regular" | "single"
 
@@ -42,6 +45,8 @@ export type ParsedOrder = {
   marketplace: ParsedMarketplace | null
   /** Nomor invoice / no. pesanan marketplace. */
   invoiceNo: string | null
+  /** Dari label "Jenis Pesanan"; null bila kosong atau semua pilihan masih tertulis. */
+  kind: OrderKind | null
 }
 
 type Field =
@@ -56,6 +61,7 @@ type Field =
   | "request"
   | "marketplace"
   | "invoice"
+  | "kind"
 
 // Urutan penting: "Nama Pengirim" dicek sebelum pola nama umum.
 const FIELD_LABELS: [Field, RegExp][] = [
@@ -70,6 +76,7 @@ const FIELD_LABELS: [Field, RegExp][] = [
   ["request", /^(jika\s*ada\s*)?(notes?\s*\/?\s*)?request\b|^(jika\s*ada\s*)?notes?\b/],
   ["marketplace", /^marketplace\b/],
   ["invoice", /^(no\.?|nomor|nmr)\s*(invoice|inv|pesanan|order)\b/],
+  ["kind", /^jenis(\s*(pesanan|order))?\b/],
 ]
 
 /** Field yang nilainya boleh lebih dari satu baris. */
@@ -342,7 +349,21 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
     isMarketplace,
     marketplace: marketplaceFrom(value("marketplace") ?? ""),
     invoiceNo: value("invoice"),
+    kind: kindFrom(value("kind") ?? ""),
   }
+}
+
+/**
+ * "PO" / "Pre Order" → po, "Ready" → ready_stock, "Made to order" / "MTO" → made_to_order.
+ * Lebih dari satu pilihan (template belum diisi) atau kosong → null.
+ */
+export function kindFrom(text: string): OrderKind | null {
+  const lower = text.toLowerCase()
+  const found: OrderKind[] = []
+  if (/\bpo\b|pre[\s-]*order/.test(lower)) found.push("po")
+  if (/ready/.test(lower)) found.push("ready_stock")
+  if (/ma[dy]e?\s*to\s*order|\bmto\b/.test(lower)) found.push("made_to_order")
+  return found.length === 1 ? found[0] : null
 }
 
 /** "Shopee" → shopee, "Tokped" → tokopedia. Keduanya atau kosong (template belum diisi) → null. */

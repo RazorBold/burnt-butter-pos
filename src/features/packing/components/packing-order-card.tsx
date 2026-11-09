@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
+import { groupByCategory } from "@/features/packagings/categories"
 import { packOrder, unpackOrder } from "@/features/packing/actions"
 import type { PackagingUse } from "@/features/packing/needs"
 import type { PackingOrder, PackingPackaging } from "@/features/packing/queries"
@@ -188,12 +189,6 @@ const TYPE_OPTIONS = [
   { value: "hampers", label: "Hampers" },
 ] as const
 
-const SIZE_GROUPS = [
-  { key: "large", title: "Size Large" },
-  { key: "regular", title: "Size Regular" },
-  { key: "lain", title: "Lainnya" },
-] as const
-
 /**
  * Konfirmasi packing: Normal (packaging biasa, stok tidak dicatat) atau Hampers (isi jumlah
  * tiap box hampers; stoknya terpotong).
@@ -245,14 +240,7 @@ function PackingForm({
   const hampers = type === "hampers"
   const short = hampers ? packagings.filter((item) => (qty[item.id] ?? 0) > item.stock) : []
   const picked = Object.values(qty).reduce((sum, value) => sum + value, 0)
-  const groups = SIZE_GROUPS.map((group) => ({
-    ...group,
-    items: packagings.filter((item) =>
-      group.key === "lain"
-        ? item.size !== "large" && item.size !== "regular"
-        : item.size === group.key,
-    ),
-  })).filter((group) => group.items.length > 0)
+  const groups = groupByCategory(packagings)
 
   function save() {
     startTransition(async () => {

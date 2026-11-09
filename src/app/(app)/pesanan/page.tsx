@@ -8,6 +8,7 @@ import {
   ChannelBadge,
   OrderNoteLine,
   OrderStatusBadge,
+  KindBadge,
   TypeBadge,
 } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
@@ -203,7 +204,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
               methods={paymentMethods}
             >
               <div className="overflow-x-auto">
-                <Table className="min-w-[1060px]">
+                <Table className="min-w-[1180px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <SelectAllHead label="Pilih semua pesanan di halaman ini" />
@@ -211,6 +212,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                       <TableHead>Waktu</TableHead>
                       <TableHead>Nama Customer</TableHead>
                       <TableHead>Sumber</TableHead>
+                      <TableHead>Jenis</TableHead>
                       <TableHead>Tipe</TableHead>
                       <TableHead>Tgl Kirim</TableHead>
                       <TableHead>Pengiriman</TableHead>
@@ -249,6 +251,9 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         </TableCell>
                         <TableCell>
                           <ChannelBadge channel={order.channel} />
+                        </TableCell>
+                        <TableCell>
+                          <KindBadge kind={order.kind} />
                         </TableCell>
                         <TableCell>
                           <TypeBadge type={order.type} />

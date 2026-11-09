@@ -27,6 +27,8 @@ export const menuSize = pgEnum("menu_size", ["large", "regular", "single"])
 /** Lama (sebelum kategori bisa diatur Owner). Tidak dipakai lagi; dihapus di migrasi berikutnya. */
 export const menuCategory = pgEnum("menu_category", ["pasta", "dessert", "bundle"])
 export const orderType = pgEnum("order_type", ["personal", "hadiah"])
+/** Jenis pesanan: PO / Ready Stock / Made to Order. */
+export const orderKind = pgEnum("order_kind", ["po", "ready_stock", "made_to_order"])
 export const orderChannel = pgEnum("order_channel", ["whatsapp", "shopee", "tokopedia"])
 export const orderStatus = pgEnum("order_status", [
   "baru",
@@ -177,6 +179,8 @@ export const orders = pgTable(
     /** No. pesanan di Shopee/Tokopedia; unik per marketplace supaya tidak terinput dua kali. */
     marketplaceOrderNo: text("marketplace_order_no"),
     type: orderType("type").notNull(),
+    /** Jenis pesanan (PO / Ready Stock / Made to Order). Pesanan lama terisi PO. */
+    kind: orderKind("kind").notNull().default("po"),
     status: orderStatus("status").notNull().default("baru"),
     /** Kapan ditandai urgent (pesanan dadakan); null = tidak urgent. */
     urgentAt: timestamp("urgent_at", { withTimezone: true }),
@@ -336,6 +340,18 @@ export const payments = pgTable(
 
 // ── Stok ────────────────────────────────────────────────────────────────────
 
+/**
+ * Kategori stok packaging (diatur Owner), mis. "Size Large", "Size Regular". Urutan = urutan
+ * kelompok di Stok Packaging dan dialog packing Hampers.
+ */
+export const packagingCategories = pgTable("packaging_categories", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}).enableRLS()
+
 export const packagings = pgTable("packagings", {
   id: id(),
   name: text("name").notNull().unique(),
@@ -345,7 +361,11 @@ export const packagings = pgTable("packagings", {
   capacity: integer("capacity"),
   minStock: integer("min_stock"),
   unit: text("unit").notNull().default("pcs"),
-  /** Box hampers per ukuran (Large/Regular); null = tanpa ukuran. */
+  /** Kategori stok; null = tanpa kategori (tampil di "Lainnya"). */
+  categoryId: uuid("category_id").references(() => packagingCategories.id, {
+    onDelete: "set null",
+  }),
+  /** Lama: pengelompokan sebelum ada kategori stok. Tidak dipakai lagi. */
   size: menuSize("size"),
   /** false = diarsipkan: tidak tampil di Stok Packaging, Dashboard, maupun dialog packing. */
   isActive: boolean("is_active").notNull().default(true),

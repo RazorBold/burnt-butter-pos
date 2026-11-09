@@ -121,8 +121,10 @@ test.describe("Detail Pesanan", () => {
     const edit = page.getByRole("dialog", { name: `Ubah data ${orderNo}` })
     await edit.getByLabel(/^Alamat lengkap/).fill("Jl. QA Baru No. 7, Bandung")
     await edit.getByLabel(/^Request/).fill("Titip di satpam")
+    await edit.getByRole("radio", { name: "Ready Stock" }).click()
     await edit.getByRole("button", { name: "Simpan perubahan" }).click()
     await expect(page.getByText(`Data ${orderNo} disimpan.`)).toBeVisible()
+    await expect(panel.getByText("Ready Stock", { exact: true })).toBeVisible()
     await expect(panel.getByText("Jl. QA Baru No. 7, Bandung")).toBeVisible()
     await expect(panel.getByText("Titip di satpam")).toBeVisible()
 

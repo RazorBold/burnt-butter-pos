@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, eq, gt, inArray } from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { packagings, stockMovements } from "@/db/schema"
+import { packagingCategories, packagings, stockMovements } from "@/db/schema"
 import type { OrderStatus } from "@/features/orders/filters"
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 
@@ -14,7 +14,9 @@ export type PackingPackaging = {
   name: string
   unit: string
   stock: number
-  size: "large" | "regular" | "single" | null
+  categoryId: string | null
+  categoryName: string | null
+  categorySort: number | null
 }
 
 export type PackingOrder = {
@@ -50,9 +52,12 @@ export async function listPackingPackagings(): Promise<PackingPackaging[]> {
       name: packagings.name,
       unit: packagings.unit,
       stock: packagings.stock,
-      size: packagings.size,
+      categoryId: packagings.categoryId,
+      categoryName: packagingCategories.name,
+      categorySort: packagingCategories.sortOrder,
     })
     .from(packagings)
+    .leftJoin(packagingCategories, eq(packagingCategories.id, packagings.categoryId))
     .where(eq(packagings.isActive, true))
     .orderBy(asc(packagings.createdAt), asc(packagings.name))
 }

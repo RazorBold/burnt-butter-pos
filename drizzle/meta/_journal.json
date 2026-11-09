@@ -120,6 +120,20 @@
       "when": 1794149209356,
       "tag": "0016_menu_category_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794152071433,
+      "tag": "0017_packaging_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794227350841,
+      "tag": "0018_order_kind",
+      "breakpoints": true
     }
   ]
 }

@@ -20,8 +20,10 @@ export const packagingFormSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(2, "Nama minimal 2 huruf.").max(60, "Nama terlalu panjang."),
   unit: z.string().trim().min(1, "Satuan wajib diisi.").max(20, "Satuan terlalu panjang."),
-  /** Ukuran box hampers; kosong = tanpa ukuran. */
-  size: z.enum(["", "large", "regular"]).transform((value) => (value === "" ? null : value)),
+  /** Kategori stok (diatur Owner); kosong = tanpa kategori ("Lainnya"). */
+  categoryId: z
+    .union([z.literal(""), z.uuid({ error: "Pilih kategori dari daftar." })])
+    .transform((value) => value || null),
   minStock: optionalCount("Stok minimum harus angka bulat, 0 atau lebih."),
   capacity: optionalCount("Kapasitas harus angka bulat, 0 atau lebih."),
   /** Hanya untuk packaging baru; dicatat sebagai pergerakan "Stok awal". */
@@ -37,12 +39,21 @@ export function packagingFormFromData(formData: FormData) {
     id: text("id") || undefined,
     name: text("name"),
     unit: text("unit"),
-    size: text("size"),
+    categoryId: text("categoryId"),
     minStock: text("minStock"),
     capacity: text("capacity"),
     initialStock: text("initialStock"),
   }
 }
+
+export const packagingCategoryFormSchema = z.object({
+  id: z.uuid().optional(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Nama kategori minimal 2 huruf.")
+    .max(40, "Nama kategori terlalu panjang."),
+})
 
 export const stockMovementSchema = z.object({
   packagingId: z.uuid(),

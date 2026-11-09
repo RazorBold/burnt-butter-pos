@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { marketplaceFrom, parseDeliveryDate, parseWaOrder } from "./index"
+import { kindFrom, marketplaceFrom, parseDeliveryDate, parseWaOrder } from "./index"
 import {
   HADIAH_SAMPLE,
   HADIAH_TEMPLATE,
@@ -170,6 +170,34 @@ describe("marketplaceFrom", () => {
     ["", null],
   ] as const)("%s → %s", (text, expected) => {
     expect(marketplaceFrom(text)).toBe(expected)
+  })
+})
+
+describe("jenis pesanan", () => {
+  it.each([
+    ["PO", "po"],
+    ["Pre Order", "po"],
+    ["pre-order tgl 20", "po"],
+    ["Ready Stock", "ready_stock"],
+    ["ready", "ready_stock"],
+    ["Made to Order", "made_to_order"],
+    ["may to order", "made_to_order"],
+    ["MTO", "made_to_order"],
+    ["PO / Ready Stock / Made to Order", null],
+    ["", null],
+  ] as const)("%s → %s", (text, expected) => {
+    expect(kindFrom(text)).toBe(expected)
+  })
+
+  it("dibaca dari label Jenis Pesanan; tanpa label = null", () => {
+    expect(
+      parseWaOrder(
+        `Jenis Pesanan : Ready Stock
+${PERSONAL_SAMPLE}`,
+        TODAY,
+      ).kind,
+    ).toBe("ready_stock")
+    expect(parseWaOrder(PERSONAL_SAMPLE, TODAY).kind).toBeNull()
   })
 })
 

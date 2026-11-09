@@ -29,7 +29,7 @@ import {
   payments,
   shipments,
 } from "@/db/schema"
-import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 import type { CatalogVariant } from "./catalog"
 import type { OrderChannel } from "./constants"
@@ -86,6 +86,7 @@ export type OrderListRow = {
   /** Pesanan Hadiah: customer = penerima, ini yang memesan. */
   senderName: string | null
   type: OrderType
+  kind: OrderKind
   deliveryDate: string
   shippingMethod: ShippingMethod
   total: number
@@ -145,6 +146,7 @@ export async function listOrders(filters: OrderFilters) {
       customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,
+      kind: orders.kind,
       deliveryDate: orders.deliveryDate,
       shippingMethod: shipments.method,
       total: orders.total,
@@ -192,6 +194,7 @@ export type OrderDetail = {
   createdAt: Date
   createdByName: string | null
   type: OrderType
+  kind: OrderKind
   status: OrderStatus
   deliveryDate: string
   request: string | null
@@ -279,6 +282,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     createdAt: order.createdAt,
     createdByName: order.createdByProfile?.name ?? null,
     type: order.type,
+    kind: order.kind,
     status: order.status,
     deliveryDate: order.deliveryDate,
     request: order.request,
@@ -373,6 +377,7 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
       customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,
+      kind: orders.kind,
       deliveryDate: orders.deliveryDate,
       shippingMethod: shipments.method,
       total: orders.total,
@@ -399,6 +404,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
         orderNo: orders.orderNo,
         createdAt: orders.createdAt,
         type: orders.type,
+        kind: orders.kind,
         customerName: orders.customerName,
         phone: customers.phone,
         address: shipments.address,

@@ -17,15 +17,18 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { type PackagingFormState, savePackaging } from "@/features/packagings/actions"
+import type { PackagingCategoryRef } from "@/features/packagings/categories"
 import type { PackagingRow } from "@/features/packagings/queries"
 import { useActionForm } from "@/hooks/use-action-form"
 import { useFieldErrors } from "@/hooks/use-field-errors"
 
 export function PackagingFormDialog({
   packaging,
+  categories,
   trigger,
 }: {
   packaging?: PackagingRow
+  categories: PackagingCategoryRef[]
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -47,17 +50,30 @@ export function PackagingFormDialog({
           </DialogTitle>
           <DialogDescription className="text-text-body">
             {packaging
-              ? "Stok diubah lewat menu Stok Packaging (masuk, keluar, hitung ulang)."
+              ? "Stok diubah lewat menu Stok Packaging (masuk, hitung ulang)."
               : "Stok awal dicatat di riwayat stok."}
           </DialogDescription>
         </DialogHeader>
-        <PackagingForm key={session} packaging={packaging} onSaved={() => setOpen(false)} />
+        <PackagingForm
+          key={session}
+          packaging={packaging}
+          categories={categories}
+          onSaved={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   )
 }
 
-function PackagingForm({ packaging, onSaved }: { packaging?: PackagingRow; onSaved: () => void }) {
+function PackagingForm({
+  packaging,
+  categories,
+  onSaved,
+}: {
+  packaging?: PackagingRow
+  categories: PackagingCategoryRef[]
+  onSaved: () => void
+}) {
   const { state, pending, onSubmit } = useActionForm<PackagingFormState>(savePackaging, {})
   const { errors, hasErrors, onFormChange } = useFieldErrors(state)
   const id = useId()
@@ -126,24 +142,33 @@ function PackagingForm({ packaging, onSaved }: { packaging?: PackagingRow; onSav
         })}
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={`${id}-size`} className="text-text-strong">
-          Ukuran box
+        <Label htmlFor={`${id}-categoryId`} className="text-text-strong">
+          Kategori
         </Label>
         <select
-          id={`${id}-size`}
-          name="size"
-          defaultValue={
-            packaging?.size === "large" || packaging?.size === "regular" ? packaging.size : ""
-          }
-          className="h-11 w-full rounded-lg border border-input bg-white px-3 text-sm text-text-strong outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-[220px]"
+          id={`${id}-categoryId`}
+          name="categoryId"
+          defaultValue={packaging ? (packaging.categoryId ?? "") : (categories[0]?.id ?? "")}
+          aria-invalid={Boolean(errors.categoryId)}
+          aria-describedby={errors.categoryId ? `${id}-categoryId-error` : `${id}-categoryId-hint`}
+          className="h-11 w-full rounded-lg border border-input bg-white px-3 text-sm text-text-strong outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive sm:w-[260px]"
         >
-          <option value="large">Large</option>
-          <option value="regular">Regular</option>
-          <option value="">Tanpa ukuran</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+          <option value="">Tanpa kategori (Lainnya)</option>
         </select>
-        <p className="text-[13px] text-text-body">
-          Mengelompokkan box hampers di dialog packing (Size Large / Size Regular).
-        </p>
+        {errors.categoryId ? (
+          <p id={`${id}-categoryId-error`} className="text-sm text-trend-down-fg">
+            {errors.categoryId}
+          </p>
+        ) : (
+          <p id={`${id}-categoryId-hint`} className="text-[13px] text-text-body">
+            Kelompok di Stok Packaging dan dialog packing Hampers.
+          </p>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {field(

@@ -2,15 +2,21 @@
 
 import { formatJam, toJakartaDateString } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
-import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
-import { ORDER_CHANNEL_LABEL, type OrderChannel, SHIPPING_METHOD_LABEL } from "./constants"
+import {
+  ORDER_CHANNEL_LABEL,
+  ORDER_KIND_LABEL,
+  type OrderChannel,
+  SHIPPING_METHOD_LABEL,
+} from "./constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "./filters"
 
 export type OrderExportRow = {
   orderNo: string
   createdAt: Date
   type: OrderType
+  kind: OrderKind
   customerName: string
   phone: string | null
   address: string | null
@@ -34,6 +40,7 @@ const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
 const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ["No. Pesanan", (row) => row.orderNo],
   ["Dibuat (WIB)", (row) => `${toJakartaDateString(row.createdAt)} ${formatJam(row.createdAt)}`],
+  ["Jenis", (row) => ORDER_KIND_LABEL[row.kind]],
   ["Tipe", (row) => ORDER_TYPE_LABEL[row.type]],
   ["Nama Customer", (row) => row.customerName],
   // Dengan spasi supaya Excel membacanya sebagai teks dan tidak membuang angka 0 di depan.

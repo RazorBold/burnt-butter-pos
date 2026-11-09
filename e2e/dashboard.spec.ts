@@ -61,6 +61,21 @@ test.describe("Dashboard", () => {
     await expect(page.getByRole("region", { name: "Stok Packaging (Ringkas)" })).toContainText(
       /Classic Red|Mac & Joy|Melted Cheese|Holy E Olio/,
     )
+
+    // Evaluasi & Masukan: 2 Mar (2 pesanan, lunas 40.000) vs 1 Mar (1 pesanan, lunas 130.000).
+    const evaluation = page.getByRole("region", { name: "Evaluasi & Masukan" })
+    const daily = evaluation.getByRole("listitem", { name: "Pertumbuhan Harian" })
+    await expect(daily).toContainText("vs kemarin")
+    await expect(daily).toContainText("Naik ↑ 100%")
+    await expect(daily).toContainText("Rp 40.000")
+    await expect(daily).toContainText("Turun ↓ 69%")
+    await expect(daily).toContainText("sebelumnya Rp 130.000")
+    // 17-23 Feb kosong: tidak ada pembanding mingguan.
+    await expect(evaluation.getByRole("listitem", { name: "Pertumbuhan Mingguan" })).toContainText(
+      "belum ada pembanding",
+    )
+    await expect(evaluation).toContainText("Terlaris 7 hari: Spaghetti Classico Bologna Brulee")
+    await evaluation.scrollIntoViewIfNeeded()
     await page.screenshot({
       path: `test-results/dashboard-${info.project.name}.png`,
       fullPage: true,
@@ -79,6 +94,9 @@ test.describe("Dashboard", () => {
     await expect(page.getByText("Total Porsi Hari Ini")).toBeVisible()
     await expect(page.getByText("Total Pembayaran Hari Ini")).toHaveCount(0)
     await expect(page.getByRole("region", { name: "Daftar Pesanan Terbaru" })).toHaveCount(0)
+    const evaluation = page.getByRole("region", { name: "Evaluasi & Masukan" })
+    await expect(evaluation.getByText("Porsi", { exact: true }).first()).toBeVisible()
+    await expect(evaluation.getByText("Omzet (lunas)")).toHaveCount(0)
 
     const kasir = await browser.newPage()
     await login(kasir, kasirEmail!, "/dashboard")

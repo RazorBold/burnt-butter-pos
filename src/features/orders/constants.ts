@@ -1,4 +1,28 @@
-import type { ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, ShippingMethod } from "@/lib/wa-parser"
+
+export const ORDER_KINDS = [
+  "po",
+  "ready_stock",
+  "made_to_order",
+] as const satisfies readonly OrderKind[]
+
+export const ORDER_KIND_LABEL: Record<OrderKind, string> = {
+  po: "PO",
+  ready_stock: "Ready Stock",
+  made_to_order: "Made to Order",
+}
+
+export const ORDER_KIND_OPTIONS = ORDER_KINDS.map((value) => ({
+  value,
+  label: ORDER_KIND_LABEL[value],
+}))
+
+/** Keterangan singkat di form dan tooltip. */
+export const ORDER_KIND_NOTE: Record<OrderKind, string> = {
+  po: "Pre-Order: dipesan jauh hari, dibuat sesuai tanggal kirim.",
+  ready_stock: "Ambil dari stok yang sudah jadi.",
+  made_to_order: "Dibuat khusus setelah pesanan masuk.",
+}
 
 export const SHIPPING_METHODS = ["pick_up", "instant", "kurir_internal", "ekspedisi"] as const
 

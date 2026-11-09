@@ -17,7 +17,7 @@ export const ROLE_DESCRIPTION: Record<Role, string> = {
   kasir: "Dashboard, Pesanan, Pembayaran, Pengiriman, Customer, dan lihat Master Data.",
   produksi:
     "Dashboard, Produksi, Packaging, Stok Packaging, dan lihat Master Data (tanpa Customer).",
-  owner: "Dashboard, Laporan, dan lihat Master Data.",
+  owner: "Dashboard, Laporan, dan Master Data (atur Produk & Menu serta jenis Stok Packaging).",
 }
 
 const ALL: readonly Role[] = ROLES
@@ -58,6 +58,12 @@ export const CAN_PACK: readonly Role[] = ["admin", "produksi"]
 
 /** Role yang boleh mengatur Produk & Menu dan kategorinya (keputusan pemilik toko, Nov 2026). */
 export const CAN_MANAGE_MENU: readonly Role[] = ["owner"]
+
+/**
+ * Role yang boleh mengatur jenis stok packaging dan kategorinya di Master Data (keputusan pemilik
+ * toko, Nov 2026). Pencatatan stok masuk / hitung ulang tetap di menu Stok Packaging (CAN_EDIT_STOCK).
+ */
+export const CAN_MANAGE_PACKAGING: readonly Role[] = ["owner"]
 
 /** Role yang boleh membuat pesanan lewat tombol "Input Pesanan". */
 export const CAN_INPUT_ORDER: readonly Role[] = ["admin", "kasir"]

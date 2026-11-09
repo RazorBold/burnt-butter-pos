@@ -19,9 +19,12 @@ import {
   SectionCardHeader,
   SectionCardSkeleton,
 } from "@/features/master-data/components/section-card"
+import { UNCATEGORIZED } from "@/features/packagings/categories"
+import { PackagingCategoryManager } from "@/features/packagings/components/packaging-category-manager"
 import { PackagingFormDialog } from "@/features/packagings/components/packaging-form-dialog"
 import { PackagingRowActions } from "@/features/packagings/components/packaging-row-actions"
-import { listPackagings } from "@/features/packagings/queries"
+import { listPackagingCategories, listPackagings } from "@/features/packagings/queries"
+import { CAN_MANAGE_PACKAGING } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 import { photoSrc } from "@/lib/photos"
 
@@ -39,18 +42,20 @@ export default function MasterStokPackagingPage() {
 
 async function PackagingSection() {
   const user = await requirePageAccess("/master-data")
-  const canEdit = user.role === "admin"
-  const items = await listPackagings()
+  const canEdit = CAN_MANAGE_PACKAGING.includes(user.role)
+  const [items, categories] = await Promise.all([listPackagings(), listPackagingCategories()])
+  const categoryRefs = categories.map(({ id, name }) => ({ id, name }))
 
   return (
     <>
       <SectionCardHeader
         icon={Box}
         title="Stok Packaging"
-        description="Kelola box hampers (per ukuran) dan stok yang tersedia."
+        description="Jenis stok packaging dan kategorinya. Stok masuk / hitung ulang dicatat di menu Stok Packaging."
         actions={
           canEdit && (
             <PackagingFormDialog
+              categories={categoryRefs}
               trigger={
                 <Button className="h-10 rounded-lg px-4 font-semibold">
                   <Plus className="size-[18px]" aria-hidden />
@@ -62,6 +67,8 @@ async function PackagingSection() {
         }
       />
 
+      <PackagingCategoryManager categories={categories} canEdit={canEdit} />
+
       {items.length === 0 ? (
         <div className="px-6 py-12">
           <p className="font-semibold text-brand-ink">Belum ada packaging.</p>
@@ -71,11 +78,12 @@ async function PackagingSection() {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[620px]">
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="pl-6">Foto</TableHead>
                 <TableHead>Nama Packaging</TableHead>
+                <TableHead>Kategori</TableHead>
                 <TableHead className="text-right">Stok Saat Ini</TableHead>
                 <TableHead>Satuan</TableHead>
                 <TableHead>Status</TableHead>
@@ -103,6 +111,9 @@ async function PackagingSection() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium text-text-strong">{item.name}</TableCell>
+                    <TableCell className={item.categoryName ? undefined : "text-text-body"}>
+                      {item.categoryName ?? UNCATEGORIZED}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{item.stock}</TableCell>
                     <TableCell>{item.unit}</TableCell>
                     <TableCell>
@@ -110,7 +121,7 @@ async function PackagingSection() {
                     </TableCell>
                     {canEdit && (
                       <TableCell className="pr-6">
-                        <PackagingRowActions packaging={item} />
+                        <PackagingRowActions packaging={item} categories={categoryRefs} />
                       </TableCell>
                     )}
                   </TableRow>
@@ -123,8 +134,8 @@ async function PackagingSection() {
 
       {!canEdit && (
         <ReadOnlyNote>
-          Hanya Admin yang bisa menambah atau mengubah packaging. Stok masuk/keluar dicatat di menu
-          Stok Packaging.
+          Hanya Owner yang bisa menambah, mengubah, atau menghapus jenis stok dan kategorinya. Stok
+          masuk / hitung ulang dicatat di menu Stok Packaging.
         </ReadOnlyNote>
       )}
     </>

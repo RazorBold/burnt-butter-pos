@@ -40,6 +40,7 @@ import {
   isMarketplace,
   ORDER_CHANNEL_LABEL,
   ORDER_CHANNELS,
+  ORDER_KIND_OPTIONS,
   type OrderChannel,
   type StoredDraft,
   WA_DRAFT_EVENT,
@@ -290,6 +291,7 @@ export function NewOrderWorkspace({
     marketplaceOrderNo: "Nomor invoice",
     marketplaceTotal: "Total pembayaran",
     type: "Tipe",
+    kind: "Jenis pesanan",
     name: marketplace || isHadiah ? "Nama penerima" : "Nama",
     phone: "No. telp",
     address: "Alamat",
@@ -418,14 +420,22 @@ export function NewOrderWorkspace({
             <h2 id="order-form-title" className="text-lg font-bold text-brand-ink">
               {marketplace ? `Data pesanan ${channelLabel}` : "Data pesanan"}
             </h2>
-            {!marketplace && (
+            <div className="flex flex-wrap items-center gap-2">
               <SegmentedControl
-                label="Tipe pesanan"
-                options={TYPE_OPTIONS}
-                value={draft.type}
-                onChange={(value) => update("type", value)}
+                label="Jenis pesanan"
+                options={ORDER_KIND_OPTIONS}
+                value={draft.kind}
+                onChange={(value) => update("kind", value)}
               />
-            )}
+              {!marketplace && (
+                <SegmentedControl
+                  label="Tipe pesanan"
+                  options={TYPE_OPTIONS}
+                  value={draft.type}
+                  onChange={(value) => update("type", value)}
+                />
+              )}
+            </div>
           </div>
 
           <div className="divide-y divide-border">

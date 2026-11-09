@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { MovementFilter } from "@/features/packagings/components/movement-filter"
+import { groupByCategory } from "@/features/packagings/categories"
 import { PackagingStockCard } from "@/features/packagings/components/packaging-stock-card"
 import {
   getTodayPackagingFlow,
@@ -31,12 +32,6 @@ export const metadata: Metadata = { title: "Stok Packaging" }
 
 const PATH = "/stok-packaging"
 
-/** Box hampers dikelompokkan per ukuran, sama dengan template "PESANAN BOX HAMPERS". */
-const SIZE_GROUPS = [
-  { key: "large", title: "Size Large" },
-  { key: "regular", title: "Size Regular" },
-  { key: "lain", title: "Lainnya" },
-] as const
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type SearchParams = PageProps<"/stok-packaging">["searchParams"]
@@ -82,17 +77,13 @@ async function StockOverview() {
 
       {items.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-dashed border-border px-6 py-10 text-sm text-text-body">
-          Belum ada packaging. Admin bisa menambahkannya di Master Data › Stok Packaging.
+          Belum ada packaging. Owner bisa menambahkannya di Master Data › Stok Packaging.
         </p>
       ) : (
         <div className="mt-6 space-y-8">
-          {SIZE_GROUPS.map((group) => {
-            const inGroup = items.filter((item) =>
-              group.key === "lain"
-                ? item.size !== "large" && item.size !== "regular"
-                : item.size === group.key,
-            )
-            if (inGroup.length === 0) return null
+          {/* Dikelompokkan per kategori stok (diatur Owner di Master Data). */}
+          {groupByCategory(items).map((group) => {
+            const inGroup = group.items
             return (
               <section key={group.key} aria-labelledby={`stok-${group.key}`}>
                 <h2

@@ -8,7 +8,7 @@ describe("packagingFormSchema", () => {
       packagingFormSchema.parse({
         name: " Classic Red (Large) ",
         unit: "pcs",
-        size: "large",
+        categoryId: "3f2a8c1e-6b4d-4e8a-9c7f-1d2e3f4a5b6c",
         minStock: "50",
         capacity: "1.000",
         initialStock: "",
@@ -16,7 +16,7 @@ describe("packagingFormSchema", () => {
     ).toEqual({
       name: "Classic Red (Large)",
       unit: "pcs",
-      size: "large",
+      categoryId: "3f2a8c1e-6b4d-4e8a-9c7f-1d2e3f4a5b6c",
       minStock: 50,
       capacity: 1000,
       initialStock: null,
@@ -27,7 +27,7 @@ describe("packagingFormSchema", () => {
     const result = packagingFormSchema.safeParse({
       name: "Box",
       unit: "pcs",
-      size: "",
+      categoryId: "",
       minStock: "-1",
       capacity: "2,5",
       initialStock: "",
@@ -35,10 +35,13 @@ describe("packagingFormSchema", () => {
     expect(result.error?.issues.map((issue) => issue.path[0])).toEqual(["minStock", "capacity"])
   })
 
-  it("ukuran kosong = tanpa ukuran; selain Large/Regular ditolak", () => {
+  it("kategori kosong = tanpa kategori; selain uuid ditolak", () => {
     const base = { name: "Box", unit: "pcs", minStock: "", capacity: "", initialStock: "" }
-    expect(packagingFormSchema.parse({ ...base, size: "" }).size).toBeNull()
-    expect(packagingFormSchema.parse({ ...base, size: "regular" }).size).toBe("regular")
-    expect(packagingFormSchema.safeParse({ ...base, size: "jumbo" }).success).toBe(false)
+    expect(packagingFormSchema.parse({ ...base, categoryId: "" }).categoryId).toBeNull()
+    expect(
+      packagingFormSchema.parse({ ...base, categoryId: "3f2a8c1e-6b4d-4e8a-9c7f-1d2e3f4a5b6c" })
+        .categoryId,
+    ).toBe("3f2a8c1e-6b4d-4e8a-9c7f-1d2e3f4a5b6c")
+    expect(packagingFormSchema.safeParse({ ...base, categoryId: "large" }).success).toBe(false)
   })
 })

@@ -119,7 +119,7 @@ test.describe("Aksi massal", () => {
     expect(download.suggestedFilename()).toMatch(/^pesanan-\d{4}-\d{2}-\d{2}\.csv$/)
     const csv = await readFile((await download.path())!, "utf-8")
     const lines = csv.replace(/^﻿/, "").trimEnd().split("\r\n")
-    expect(lines[0]).toMatch(/^No\. Pesanan,Dibuat \(WIB\),Tipe,Nama Customer/)
+    expect(lines[0]).toMatch(/^No\. Pesanan,Dibuat \(WIB\),Jenis,Tipe,Nama Customer/)
     expect(lines).toHaveLength(7)
     expect(lines[1]).toContain(`${no(1)},`)
     expect(lines[1]).toContain(",Dibatalkan,Lunas,")

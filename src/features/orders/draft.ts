@@ -1,7 +1,7 @@
 // Draf pesanan di form Input Pesanan: dibuat dari hasil parser WA, lalu diedit kasir.
 
 import { normalizePhone } from "@/lib/phone"
-import type { OrderType, ParsedOrder, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ParsedOrder, ShippingMethod } from "@/lib/wa-parser"
 
 import { isMarketplace, type OrderChannel } from "./constants"
 
@@ -12,6 +12,8 @@ export type OrderDraft = {
   /** Total sesuai marketplace, seperti diketik ("210.000"). Kosong = total dari harga menu. */
   marketplaceTotal: string
   type: OrderType
+  /** Jenis pesanan; bawaan PO. */
+  kind: OrderKind
   name: string
   phone: string
   address: string
@@ -33,6 +35,7 @@ export const EMPTY_DRAFT: OrderDraft = {
   marketplaceOrderNo: "",
   marketplaceTotal: "",
   type: "personal",
+  kind: "po",
   name: "",
   phone: "",
   address: "",
@@ -54,6 +57,7 @@ export function draftFromParsed(
     ...EMPTY_DRAFT,
     marketplaceOrderNo: parsed.invoiceNo ?? "",
     type: parsed.type,
+    kind: parsed.kind ?? "po",
     name: parsed.name ?? "",
     // Nomor yang tidak valid tetap ditampilkan apa adanya supaya kasir bisa membetulkan.
     phone: parsed.phone ?? parsed.phoneRaw ?? "",

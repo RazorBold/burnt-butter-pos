@@ -11,6 +11,8 @@ config({ path: ".env.local", quiet: true })
 
 export type SavedOrder = {
   type: string
+  /** po / ready_stock / made_to_order */
+  kind: string
   status: string
   total: number
   /** Nama customer di data customer (terbaru untuk no. HP itu). */
@@ -41,7 +43,7 @@ export async function readOrder(orderNo: string): Promise<SavedOrder | undefined
   const sql = postgres(url, { max: 1 })
   try {
     const [row] = await sql<SavedOrder[]>`
-      select o.type, o.status, o.total, c.name as customer, o.customer_name as order_name,
+      select o.type, o.kind, o.status, o.total, c.name as customer, o.customer_name as order_name,
         o.sender_name, o.card_wishes,
         o.raw_wa_text, s.method, s.status as shipment_status, o.channel, o.marketplace_order_no,
         s.expedition, s.tracking_no, s.tracking_url, s.tracking_link_sent_at, o.note,
@@ -519,6 +521,20 @@ export async function removeMenuCategoryByName(name: string) {
     await sql`delete from menus m using menu_categories c
       where c.id = m.category_id and c.name = ${name} and m.name like 'QA Menu %'`
     await sql`delete from menu_categories where name = ${name}`
+  } finally {
+    await sql.end()
+  }
+}
+
+/** Hapus kategori stok packaging uji (nama diawali "QA Kategori Stok "). */
+export async function removePackagingCategoryByName(name: string) {
+  if (!name.startsWith("QA Kategori Stok "))
+    throw new Error("Hanya kategori uji (QA Kategori Stok …)")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from packaging_categories where name = ${name}`
   } finally {
     await sql.end()
   }

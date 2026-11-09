@@ -5,7 +5,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
-import { OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
+import { KindBadge, OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeaderSkeleton } from "@/components/app/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -68,6 +68,7 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
           {order.orderNo}
         </h1>
         <OrderStatusBadge status={order.status} />
+        <KindBadge kind={order.kind} />
         <TypeBadge type={order.type} />
       </div>
       <p className="mt-1.5 text-[15px] text-text-body">

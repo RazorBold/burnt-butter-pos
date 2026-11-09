@@ -1,8 +1,11 @@
 import {
+  CalendarClock,
   Check,
+  ChefHat,
   Clock,
   MessageCircle,
   Package,
+  PackageCheck,
   ShoppingBag,
   Siren,
   StickyNote,
@@ -10,10 +13,15 @@ import {
   X,
 } from "lucide-react"
 
-import { ORDER_CHANNEL_LABEL, type OrderChannel } from "@/features/orders/constants"
+import {
+  ORDER_CHANNEL_LABEL,
+  ORDER_KIND_LABEL,
+  ORDER_KIND_NOTE,
+  type OrderChannel,
+} from "@/features/orders/constants"
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, type OrderStatus } from "@/features/orders/filters"
 import { cn } from "@/lib/utils"
-import type { OrderType } from "@/lib/wa-parser"
+import type { OrderKind, OrderType } from "@/lib/wa-parser"
 
 const BADGE =
   "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] font-medium whitespace-nowrap"
@@ -29,6 +37,25 @@ export function TypeBadge({ type, className }: { type: OrderType; className?: st
       )}
     >
       {ORDER_TYPE_LABEL[type]}
+    </span>
+  )
+}
+
+const KIND_ICON = { po: CalendarClock, ready_stock: PackageCheck, made_to_order: ChefHat } as const
+
+/**
+ * Badge jenis pesanan (PO / Ready Stock / Made to Order): garis tepi + ikon, tanpa isi warna,
+ * supaya tidak tertukar dengan badge status yang berwarna.
+ */
+export function KindBadge({ kind, className }: { kind: OrderKind; className?: string }) {
+  const Icon = KIND_ICON[kind]
+  return (
+    <span
+      title={ORDER_KIND_NOTE[kind]}
+      className={cn(BADGE, "border border-border bg-white text-text-strong", className)}
+    >
+      <Icon className="size-3.5 text-brand-ink" aria-hidden />
+      {ORDER_KIND_LABEL[kind]}
     </span>
   )
 }

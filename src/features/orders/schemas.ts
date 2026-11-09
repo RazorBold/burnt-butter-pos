@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { ORDER_CHANNELS, SHIPPING_METHODS } from "./constants"
+import { ORDER_CHANNELS, ORDER_KINDS, SHIPPING_METHODS } from "./constants"
 
 const text = (max: number) => z.string().max(max)
 
@@ -14,6 +14,7 @@ export const orderSubmitSchema = z.object({
     marketplaceOrderNo: text(60),
     marketplaceTotal: text(20),
     type: z.enum(["personal", "hadiah"]),
+    kind: z.enum(ORDER_KINDS),
     name: text(80),
     phone: text(30),
     address: text(300),

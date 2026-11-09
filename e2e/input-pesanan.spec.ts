@@ -150,6 +150,8 @@ test.describe("Input Pesanan › Simpan", () => {
     const order = await readOrder(orderNo)
     expect(order).toMatchObject({
       type: "personal",
+      // Tanpa label "Jenis Pesanan" di pesan WA: bawaan PO.
+      kind: "po",
       status: "baru",
       total: 325000,
       customer: name,
@@ -169,6 +171,9 @@ test.describe("Input Pesanan › Simpan", () => {
         .getByText(orderNo, { exact: true }),
     ).toBeVisible()
     await page.screenshot({ path: "test-results/input-pesanan-redirect-desktop.png" })
+    await expect(
+      page.getByRole("row", { name: new RegExp(orderNo) }).getByText("PO", { exact: true }),
+    ).toBeVisible()
 
     // Ringkasan customer ikut terisi.
     await page.goto(`/master-data/customer?q=${phone}`)
@@ -183,7 +188,10 @@ test.describe("Input Pesanan › Simpan", () => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
     const name = `QA Customer ${Date.now()} Hadiah`
     await login(page, "/pesanan/baru")
-    const text = HADIAH_SAMPLE.replace("Alya Putri", name)
+    // Label "Jenis Pesanan" ditambahkan admin di atas pesan WA.
+    const text = `Jenis Pesanan : Made to Order
+${HADIAH_SAMPLE}`
+      .replace("Alya Putri", name)
       .replace("+62 813 2345 6789", randomPhone())
       .replace("Tanggal kirim: 28/10", "Tanggal kirim: besok")
       .replace("- Pick Up", "- Pick Up ✅")
@@ -192,6 +200,7 @@ test.describe("Input Pesanan › Simpan", () => {
 
     expect(await readOrder(orderNo)).toMatchObject({
       type: "hadiah",
+      kind: "made_to_order",
       customer: name,
       sender_name: "Rizky",
       card_wishes: "Happy birthday sayang!\nSemoga suka pastanya",

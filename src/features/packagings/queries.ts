@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, count, desc, eq, gte, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { packagings, profiles, stockMovements } from "@/db/schema"
+import { packagingCategories, packagings, profiles, stockMovements } from "@/db/schema"
 import { toJakartaDateString } from "@/lib/format"
 
 import { type StockStatus, stockStatus } from "./stock"
@@ -16,12 +16,41 @@ export type PackagingRow = {
   capacity: number | null
   minStock: number | null
   unit: string
-  size: "large" | "regular" | "single" | null
+  categoryId: string | null
+  categoryName: string | null
+  categorySort: number | null
   status: StockStatus
 }
 
+export type PackagingCategoryRow = {
+  id: string
+  name: string
+  sortOrder: number
+  /** Jenis stok aktif di kategori ini. */
+  itemCount: number
+}
+
+/** Kategori stok packaging, urut sesuai pengaturan Owner. */
+export async function listPackagingCategories(): Promise<PackagingCategoryRow[]> {
+  return getDb()
+    .select({
+      id: packagingCategories.id,
+      name: packagingCategories.name,
+      sortOrder: packagingCategories.sortOrder,
+      itemCount: count(packagings.id),
+    })
+    .from(packagingCategories)
+    .leftJoin(
+      packagings,
+      and(eq(packagings.categoryId, packagingCategories.id), eq(packagings.isActive, true)),
+    )
+    .groupBy(packagingCategories.id)
+    .orderBy(asc(packagingCategories.sortOrder), asc(packagingCategories.name))
+}
+
 /**
- * Packaging aktif (yang diarsipkan tidak ikut), urut dibuat. Status dihitung dari stok minimum.
+ * Packaging aktif (yang diarsipkan tidak ikut): urut kategori (tanpa kategori paling bawah), lalu
+ * urut dibuat. Status dihitung dari stok minimum.
  */
 export async function listPackagings(): Promise<PackagingRow[]> {
   const rows = await getDb()
@@ -33,11 +62,18 @@ export async function listPackagings(): Promise<PackagingRow[]> {
       capacity: packagings.capacity,
       minStock: packagings.minStock,
       unit: packagings.unit,
-      size: packagings.size,
+      categoryId: packagings.categoryId,
+      categoryName: packagingCategories.name,
+      categorySort: packagingCategories.sortOrder,
     })
     .from(packagings)
+    .leftJoin(packagingCategories, eq(packagingCategories.id, packagings.categoryId))
     .where(eq(packagings.isActive, true))
-    .orderBy(asc(packagings.createdAt), asc(packagings.name))
+    .orderBy(
+      sql`${packagingCategories.sortOrder} asc nulls last`,
+      asc(packagings.createdAt),
+      asc(packagings.name),
+    )
   return rows.map((row) => ({ ...row, status: stockStatus(row.stock, row.minStock) }))
 }
 

@@ -22,8 +22,20 @@ import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { STOCK_BAR_COLOR } from "@/components/app/stock-badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PaymentLineChart, StatusBarChart } from "@/features/dashboard/components/dashboard-charts"
+import { EvaluationCard } from "@/features/dashboard/components/evaluation-card"
 import { PeriodPicker } from "@/features/dashboard/components/period-picker"
+import {
+  buildGrowth,
+  buildInsights,
+  evaluationRanges,
+  evaluationStart,
+} from "@/features/dashboard/evaluation"
 import { parseDashboardPeriod, PERIOD_LABEL } from "@/features/dashboard/period"
+import {
+  getEvaluationOrders,
+  getEvaluationPayments,
+  getMenuQty,
+} from "@/features/dashboard/queries"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { addDays, ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { listLatestOrders } from "@/features/orders/queries"
@@ -37,7 +49,13 @@ import { getReportOrders, getReportPayments } from "@/features/reports/queries"
 import { buildReport } from "@/features/reports/summary"
 import { canAccessPath } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
-import { formatJam, formatRupiah, formatTanggalPendek, toJakartaDateString } from "@/lib/format"
+import {
+  formatHariTanggal,
+  formatJam,
+  formatRupiah,
+  formatTanggalPendek,
+  toJakartaDateString,
+} from "@/lib/format"
 import { photoSrc } from "@/lib/photos"
 import { cn } from "@/lib/utils"
 
@@ -448,7 +466,47 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           )}
         </Card>
       </div>
+
+      <Suspense fallback={<Skeleton className="mt-4 h-[420px] rounded-2xl" />}>
+        <Evaluation anchor={anchor} today={today} showMoney={showMoney} />
+      </Suspense>
     </>
+  )
+}
+
+/** Kartu Evaluasi & Masukan; di-stream terpisah supaya kartu lain tidak menunggu. */
+async function Evaluation({
+  anchor,
+  today,
+  showMoney,
+}: {
+  anchor: string
+  today: string
+  showMoney: boolean
+}) {
+  const week = evaluationRanges(anchor).minggu
+  const [orders, payments, menusNow, menusBefore] = await Promise.all([
+    getEvaluationOrders(evaluationStart(anchor), anchor),
+    showMoney ? getEvaluationPayments(evaluationStart(anchor), anchor) : Promise.resolve([]),
+    getMenuQty(week.now.from, week.now.to),
+    getMenuQty(week.before.from, week.before.to),
+  ])
+  return (
+    <EvaluationCard
+      growth={buildGrowth(orders, payments, anchor)}
+      insights={buildInsights({
+        orders,
+        payments,
+        anchor,
+        menusNow,
+        menusBefore,
+        showMoney,
+        isToday: anchor === today,
+        formatMoney: formatRupiah,
+      })}
+      showMoney={showMoney}
+      dateLabel={formatHariTanggal(anchor)}
+    />
   )
 }
 

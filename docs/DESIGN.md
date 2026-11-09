@@ -209,7 +209,7 @@ Hampir semua statis. Cukup satu momen: angka KPI dan chart muncul halus saat hal
 
 ## Aset yang belum ada
 
-- [ ] Logo "Burnt Butter & Segelas Awan" sebagai SVG/PNG transparan.
+- [x] Logo: wordmark "burntbutter" dari pemilik toko (Nov 2026), PNG transparan `public/images/brand/logo-burnt-butter.png` lewat `Wordmark` (navbar 30 px, 34 px di 2xl; login 44/56 px). "Segelas Awan" tidak dipakai lagi di teks aplikasi; ilustrasi header dan latar login masih memuat tulisan lama di gambar box.
 - [ ] Ilustrasi box pasta untuk hero (bisa di-crop dari [bg-beige-brand.png](design/bg-beige-brand.png), lebih baik file aslinya).
 - [x] Foto menu: di-crop dari kolase ke `public/images/menu/*.webp` (±300 px, cukup untuk thumbnail). Pakai lewat `next/image` dengan `object-fit: cover`.
 - [ ] Foto menu resolusi penuh (opsional, untuk tampilan besar) dan foto packaging.

@@ -12,10 +12,10 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Burnt Butter & Segelas Awan",
+    default: "Burnt Butter",
     template: "%s · Burnt Butter",
   },
-  description: "Panel admin pesanan, produksi, dan pengiriman Burnt Butter & Segelas Awan.",
+  description: "Panel admin pesanan, produksi, dan pengiriman Burnt Butter.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

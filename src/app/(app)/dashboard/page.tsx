@@ -132,7 +132,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           Halo, {user.name}!
         </h1>
         <p className="mt-1.5 text-[15px] text-text-body">
-          Selamat datang di Burnt Butter &amp; Segelas Awan.
+          Selamat datang di Burnt Butter.
         </p>
         <div className="relative z-10 mt-5">
           <PeriodPicker anchor={anchor} period={period} today={today} />

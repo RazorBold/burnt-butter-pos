@@ -1,28 +1,24 @@
+import Image from "next/image"
+
 import { cn } from "@/lib/utils"
 
 /**
- * Wordmark teks sementara sampai file logo asli tersedia (lihat DESIGN.md › Aset yang belum ada).
- * Susunannya mengikuti logo di navbar desain: "Burnt Butter" besar, "& Segelas Awan" di bawahnya.
+ * Logo Burnt Butter (wordmark "burntbutter": "burnt" hitam, "butter" cokelat). File PNG transparan
+ * di public/images/brand, dipotong rapat dari logo asli pemilik toko (Nov 2026).
  */
 export function Wordmark({ size = "md", className }: { size?: "md" | "lg"; className?: string }) {
   return (
-    <div className={cn("text-brand-ink select-none", className)}>
-      <p
-        className={cn(
-          "leading-none font-extrabold tracking-[-0.02em]",
-          size === "lg" ? "text-[36px] lg:text-[44px]" : "text-[22px]",
-        )}
-      >
-        Burnt Butter
-      </p>
-      <p
-        className={cn(
-          "font-semibold text-brand",
-          size === "lg" ? "mt-1.5 text-base lg:text-lg" : "mt-0.5 text-[13px]",
-        )}
-      >
-        &amp; Segelas Awan
-      </p>
-    </div>
+    <Image
+      src="/images/brand/logo-burnt-butter.png"
+      alt="Burnt Butter"
+      width={992}
+      height={184}
+      priority
+      className={cn(
+        "w-auto select-none",
+        size === "lg" ? "h-11 lg:h-14" : "h-[30px] 2xl:h-[34px]",
+        className,
+      )}
+    />
   )
 }

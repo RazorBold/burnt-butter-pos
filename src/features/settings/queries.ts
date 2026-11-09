@@ -14,7 +14,7 @@ export type StoreSettings = {
   updatedByName: string | null
 }
 
-export const DEFAULT_STORE_NAME = "Burnt Butter & Segelas Awan"
+export const DEFAULT_STORE_NAME = "Burnt Butter"
 
 /** Profil toko. Sebelum pernah disimpan, yang dikembalikan adalah nilai bawaan. */
 export async function getStoreSettings(): Promise<StoreSettings> {

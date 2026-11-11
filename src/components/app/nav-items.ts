@@ -27,7 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/packaging", label: "Packaging", icon: PackageOpen },
   { href: "/pengiriman", label: "Pengiriman", icon: Truck },
   { href: "/laporan", label: "Laporan", icon: ChartColumnBig },
-  { href: "/stok-packaging", label: "Stok Packaging", icon: Package },
+  { href: "/stok-packaging", label: "Packaging & Loyang", icon: Package },
   { href: "/master-data", label: "Master Data", icon: Database },
 ]
 

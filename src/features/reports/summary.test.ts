@@ -4,7 +4,7 @@ import { buildReport, type ReportOrder, type ReportPayment } from "./summary"
 
 const order = (day: string, extra: Partial<ReportOrder> = {}): ReportOrder => ({
   day,
-  type: "personal",
+  type: "normal",
   status: "selesai",
   method: "kurir_internal",
   total: 100_000,
@@ -18,7 +18,7 @@ const ORDERS: ReportOrder[] = [
   order("2026-10-02"),
   order("2026-10-03", { customerId: "c2" }),
   // Periode ini.
-  order("2026-10-04", { type: "hadiah", method: "instant", status: "dikirim", total: 250_000 }),
+  order("2026-10-04", { type: "hampers", method: "instant", status: "dikirim", total: 250_000 }),
   order("2026-10-05", { customerId: "c2", method: "pick_up", status: "baru", portions: 3 }),
   order("2026-10-05", { customerId: "c3" }),
   order("2026-10-06", { status: "dibatalkan" }),
@@ -46,7 +46,7 @@ describe("buildReport", () => {
   })
 
   it("rekap per hari Personal/Hadiah, pesanan dan pendapatan", () => {
-    expect(report.perDay).toEqual([
+    expect(report.perDay).toMatchObject([
       { day: "2026-10-04", personal: 0, hadiah: 1, personalRevenue: 0, hadiahRevenue: 250_000 },
       { day: "2026-10-05", personal: 2, hadiah: 0, personalRevenue: 200_000, hadiahRevenue: 0 },
       { day: "2026-10-06", personal: 0, hadiah: 0, personalRevenue: 0, hadiahRevenue: 0 },

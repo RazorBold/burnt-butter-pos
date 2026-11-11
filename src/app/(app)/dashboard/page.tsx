@@ -45,7 +45,9 @@ import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { addDays, ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { listLatestOrders } from "@/features/orders/queries"
 import { isUrgent } from "@/features/orders/status"
+import { summarizeCategories } from "@/features/packagings/categories"
 import { listPackagings } from "@/features/packagings/queries"
+import { getLoyangSummary } from "@/features/packagings/loyang"
 import { listProductionOrders } from "@/features/production/queries"
 import { summarizeProduction } from "@/features/production/summary"
 import { REPORT_COLORS } from "@/features/reports/colors"
@@ -103,14 +105,16 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
       : null
 
   const weekFrom = addDays(anchor, -6)
-  const [orders, payments, weekPayments, latest, production, packagings] = await Promise.all([
-    getReportOrders(from, to),
-    getReportPayments(from, to),
-    getReportPayments(weekFrom, anchor),
-    showOrders ? listLatestOrders(from, to) : Promise.resolve([]),
-    listProductionOrders(anchor),
-    listPackagings(),
-  ])
+  const [orders, payments, weekPayments, latest, production, packagings, loyang] =
+    await Promise.all([
+      getReportOrders(from, to),
+      getReportPayments(from, to),
+      getReportPayments(weekFrom, anchor),
+      showOrders ? listLatestOrders(from, to) : Promise.resolve([]),
+      listProductionOrders(anchor),
+      listPackagings(),
+      getLoyangSummary(),
+    ])
   const report = buildReport(orders, payments, from, to)
   const week = buildReport([], weekPayments, weekFrom, anchor).kpis.payments
   const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekFrom, index))
@@ -121,14 +125,10 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   const trend = (percent: number | null) => (percent === null ? undefined : { percent })
   const totalOrders = kpis.orders.value
   const pct = (value: number) => (totalOrders ? Math.round((value / totalOrders) * 100) : 0)
-  // Packaging yang perlu restock dulu, lalu yang punya kapasitas (bisa digambar bar-nya).
-  const stock = [...packagings]
-    .sort(
-      (a, b) =>
-        Number(a.status === "cukup") - Number(b.status === "cukup") ||
-        Number(a.capacity === null) - Number(b.capacity === null),
-    )
-    .slice(0, 4)
+  // Ringkasan stok box hampers per kategori agar ringkas di dashboard.
+  const hampersCategories = summarizeCategories(
+    packagings.filter((item) => !item.name.toLowerCase().includes("loyang")),
+  )
 
   return (
     <>
@@ -152,17 +152,17 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
         />
         <KpiCard
           icon={Package}
-          label="Pesanan Personal"
-          value={String(kpis.personal.value)}
-          trend={trend(kpis.personal.percent)}
-          series={kpis.personal.series}
+          label="Pesanan Normal"
+          value={String(kpis.normal.value)}
+          trend={trend(kpis.normal.percent)}
+          series={kpis.normal.series}
         />
         <KpiCard
           icon={Gift}
-          label="Pesanan Hadiah"
-          value={String(kpis.hadiah.value)}
-          trend={trend(kpis.hadiah.percent)}
-          series={kpis.hadiah.series}
+          label="Pesanan Hampers"
+          value={String(kpis.hampers.value)}
+          trend={trend(kpis.hampers.percent)}
+          series={kpis.hampers.series}
         />
         {showMoney ? (
           <KpiCard
@@ -281,15 +281,15 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
             centerLabel="pesanan"
             slices={[
               {
-                key: "personal",
-                label: "Personal",
-                value: kpis.personal.value,
+                key: "normal",
+                label: "Normal",
+                value: kpis.normal.value,
                 color: REPORT_COLORS.personal,
               },
               {
-                key: "hadiah",
-                label: "Hadiah",
-                value: kpis.hadiah.value,
+                key: "hampers",
+                label: "Hampers",
+                value: kpis.hampers.value,
                 color: REPORT_COLORS.hadiah,
               },
             ]}
@@ -412,54 +412,104 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
         <Card
           icon={Package}
           tone="rose"
-          title="Stok Packaging (Ringkas)"
+          title="Packaging & Loyang"
           link={
             canAccessPath(role, "/stok-packaging")
               ? { href: "/stok-packaging", label: "Lihat Semua" }
               : undefined
           }
         >
-          {stock.length === 0 ? (
-            <Empty>Belum ada packaging.</Empty>
+          {/* Sorotan Sisa Loyang Hari Ini (Large & Regular) */}
+          <div className="mb-4 grid gap-2.5 sm:grid-cols-2">
+            {[loyang.large, loyang.regular].map((item) => (
+              <div key={item.size} className="rounded-xl border border-border bg-nav-active/60 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-text-body uppercase">
+                    <CookingPot className="size-3.5 text-brand-ink" aria-hidden />
+                    {item.name}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      item.status === "cukup"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : item.status === "menipis"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-rose-100 text-rose-800",
+                    )}
+                  >
+                    {item.status === "cukup"
+                      ? "Cukup"
+                      : item.status === "menipis"
+                        ? "Menipis"
+                        : "Habis"}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-baseline justify-between">
+                  <span className="text-xl font-bold text-brand-ink tabular-nums">
+                    {item.stock}{" "}
+                    <span className="text-xs font-medium text-text-body">{item.unit}</span>
+                  </span>
+                  <span className="text-xs text-text-body">
+                    Pakai:{" "}
+                    <strong className="font-semibold text-text-strong tabular-nums">
+                      {item.outToday}
+                    </strong>{" "}
+                    · Masuk:{" "}
+                    <strong className="font-semibold text-text-strong tabular-nums">
+                      {item.inToday}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {hampersCategories.length === 0 ? (
+            <Empty>Belum ada packaging hampers.</Empty>
           ) : (
             <ul className="space-y-3.5">
-              {stock.map((item) => {
-                const percent = item.capacity
-                  ? Math.min(100, Math.round((item.stock / item.capacity) * 100))
+              {hampersCategories.map((cat) => {
+                const percent = cat.capacity
+                  ? Math.min(100, Math.round((cat.stock / cat.capacity) * 100))
                   : null
                 return (
                   <li
-                    key={item.id}
-                    className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
+                    key={cat.key}
+                    className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
                   >
-                    <span className="flex items-center gap-2 text-text-strong">
+                    <span className="flex min-w-0 items-center gap-2 text-text-strong">
                       <Package className="size-4 shrink-0 text-brand-ink" aria-hidden />
-                      {item.name}
+                      {/* Tidak dipotong: "Box Hampers Large" dan "… Regular" harus terbaca. */}
+                      <span className="leading-snug">{cat.title}</span>
+                      <span className="shrink-0 text-xs font-normal text-text-body">
+                        ({cat.itemCount})
+                      </span>
                     </span>
                     {percent !== null ? (
                       <span
                         role="img"
-                        aria-label={`${item.stock} dari ${item.capacity} ${item.unit}, ${item.status}`}
+                        aria-label={`${cat.stock} dari ${cat.capacity} pcs, ${cat.status}`}
                         className="h-2.5 overflow-hidden rounded-full bg-nav-active"
                       >
                         <span
-                          className={cn("block h-full rounded-full", STOCK_BAR_COLOR[item.status])}
+                          className={cn("block h-full rounded-full", STOCK_BAR_COLOR[cat.status])}
                           style={{ width: `${percent}%` }}
                         />
                       </span>
                     ) : (
                       <span className="text-[13px] text-text-body">
-                        {item.status === "cukup"
+                        {cat.status === "cukup"
                           ? "Cukup"
-                          : item.status === "menipis"
+                          : cat.status === "menipis"
                             ? "Menipis"
                             : "Habis"}
                       </span>
                     )}
                     <span className="text-right font-semibold text-text-strong tabular-nums">
-                      {item.stock}
-                      {item.capacity !== null && (
-                        <span className="font-normal text-text-body"> / {item.capacity}</span>
+                      {cat.stock}
+                      {cat.capacity !== null && (
+                        <span className="font-normal text-text-body"> / {cat.capacity}</span>
                       )}
                     </span>
                   </li>

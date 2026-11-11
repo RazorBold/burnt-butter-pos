@@ -106,17 +106,17 @@ async function OrderKpis({ searchParams }: { searchParams: SearchParams }) {
       />
       <KpiCard
         icon={Package}
-        label="Pesanan Personal"
-        value={String(kpis.personal.value)}
-        trend={trend(kpis.personal.percent)}
-        series={kpis.personal.series}
+        label="Pesanan Normal"
+        value={String(kpis.normal.value)}
+        trend={trend(kpis.normal.percent)}
+        series={kpis.normal.series}
       />
       <KpiCard
         icon={Gift}
-        label="Pesanan Hadiah"
-        value={String(kpis.hadiah.value)}
-        trend={trend(kpis.hadiah.percent)}
-        series={kpis.hadiah.series}
+        label="Pesanan Hampers"
+        value={String(kpis.hampers.value)}
+        trend={trend(kpis.hampers.percent)}
+        series={kpis.hampers.series}
       />
       {/* Desain: "Total Pembayaran". Modul Pembayaran belum ada, jadi yang dihitung nilai pesanan. */}
       <KpiCard
@@ -140,7 +140,12 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
   const listParams = { ...filterParams(filters, today), hal: page > 1 ? String(page) : undefined }
   const singleDay = filters.from === filters.to
   const filtered = Boolean(
-    filters.q || filters.type || filters.status || filters.method || filters.channel,
+    filters.q ||
+    filters.kind ||
+    filters.type ||
+    filters.status ||
+    filters.method ||
+    filters.channel,
   )
   const rangeText = singleDay
     ? filters.from === today
@@ -242,7 +247,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                           <span className="block font-medium text-text-strong">
                             {order.customerName}
                           </span>
-                          {order.type === "hadiah" && order.senderName && (
+                          {order.senderName && (
                             <span className="block text-[13px] text-text-body">
                               dari {order.senderName}
                             </span>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { kindFrom, marketplaceFrom, parseDeliveryDate, parseWaOrder } from "./index"
 import {
+  FO1_TEMPLATE,
   HADIAH_SAMPLE,
   HADIAH_TEMPLATE,
   OLSHOP_SAMPLE,
@@ -16,7 +17,7 @@ describe("parseWaOrder: pesanan Personal", () => {
   const parsed = parseWaOrder(PERSONAL_SAMPLE, TODAY)
 
   it("membaca data customer, alamat dua baris, dan tanggal kirim", () => {
-    expect(parsed.type).toBe("personal")
+    expect(parsed.type).toBe("normal")
     expect(parsed.name).toBe("Siti Nurhaliza")
     expect(parsed.phone).toBe("081234567890")
     expect(parsed.address).toBe("Jl. Melati No. 12, RT 03/RW 05\nKel. Sukajadi, Bandung")
@@ -43,7 +44,7 @@ describe("parseWaOrder: pesanan Hadiah", () => {
   const parsed = parseWaOrder(HADIAH_SAMPLE, TODAY)
 
   it("membaca penerima, pengirim, dan kartu ucapan", () => {
-    expect(parsed.type).toBe("hadiah")
+    expect(parsed.type).toBe("hampers")
     expect(parsed.name).toBe("Alya Putri")
     expect(parsed.phone).toBe("081323456789")
     expect(parsed.senderName).toBe("Rizky")
@@ -68,8 +69,8 @@ describe("parseWaOrder: pesanan Hadiah", () => {
 
 describe("parseWaOrder: template kosong dan variasi", () => {
   it.each([
-    [PERSONAL_TEMPLATE, "personal"],
-    [HADIAH_TEMPLATE, "hadiah"],
+    [PERSONAL_TEMPLATE, "normal"],
+    [HADIAH_TEMPLATE, "hampers"],
   ] as const)("template kosong tidak menebak apa pun (%#)", (template, type) => {
     const parsed = parseWaOrder(template, TODAY)
     expect(parsed.type).toBe(type)
@@ -87,11 +88,11 @@ describe("parseWaOrder: template kosong dan variasi", () => {
 
   it("metode kirim ditulis setelah label, format tebal WA dibuang", () => {
     const text = PERSONAL_TEMPLATE.replace(
-      "Pilih Metode Pengiriman :\n",
+      /Pilih Metode Pengiriman\s*:\s*\n/,
       "Pilih Metode Pengiriman : Pick up\n",
     )
-      .replace("Nama Lengkap:", "*Nama Lengkap:* Budi")
-      .replace("No.Telp:\n", "No. HP: 0857 1234 5678\n")
+      .replace(/Nama (Lengkap|Penerima):/, "*Nama Penerima:* Budi")
+      .replace(/No\.Telp:\s*\n/, "No. HP: 0857 1234 5678\n")
     const parsed = parseWaOrder(text, TODAY)
     expect(parsed.shippingMethod).toBe("pick_up")
     expect(parsed.name).toBe("Budi")
@@ -99,19 +100,19 @@ describe("parseWaOrder: template kosong dan variasi", () => {
   })
 
   it("opsi kirim yang ditebalkan dianggap dipilih", () => {
-    const parsed = parseWaOrder(PERSONAL_TEMPLATE.replace("- Instant\n", "- *Instant*\n"), TODAY)
+    const parsed = parseWaOrder(PERSONAL_TEMPLATE.replace(/- Instant\s*\n/, "- *Instant*\n"), TODAY)
     expect(parsed.shippingMethod).toBe("instant")
   })
 
   it("nomor yang bukan nomor HP tetap disimpan mentah untuk dicek", () => {
-    const parsed = parseWaOrder(PERSONAL_TEMPLATE.replace("No.Telp:\n", "No.Telp: 12345\n"), TODAY)
+    const parsed = parseWaOrder(PERSONAL_TEMPLATE.replace(/No\.Telp:\s*\n/, "No.Telp: 12345\n"), TODAY)
     expect(parsed.phone).toBeNull()
     expect(parsed.phoneRaw).toBe("12345")
   })
 
   it("isian di baris berikutnya setelah label kosong", () => {
     const parsed = parseWaOrder(
-      PERSONAL_TEMPLATE.replace("Nama Lengkap:\n", "Nama Lengkap:\nDewi Lestari\n"),
+      PERSONAL_TEMPLATE.replace(/Nama (Lengkap|Penerima):\s*\n/, "Nama Penerima:\nDewi Lestari\n"),
       TODAY,
     )
     expect(parsed.name).toBe("Dewi Lestari")
@@ -131,7 +132,7 @@ describe("parseWaOrder: template Olshop", () => {
   })
 
   it("Nama Penerima di template Olshop bukan pesanan Hadiah", () => {
-    expect(parsed.type).toBe("personal")
+    expect(parsed.type).toBe("normal")
     expect(parsed.senderName).toBeNull()
   })
 
@@ -232,5 +233,229 @@ describe("parseWaOrder: kategori menu baru dari Owner", () => {
     expect(parsed.items).toContainEqual({ name: "Pasta Natal", size: "large", qty: 1 })
     // Menu lama tetap terbaca seperti biasa.
     expect(parsed.items).toContainEqual({ name: "Choco Bon Bon", size: "single", qty: 2 })
+  })
+})
+
+describe("parseWaOrder: Template Baru FO1, FO2, FO3", () => {
+  const FO1_TEXT = `#DetailFO1
+Tanggal Pengiriman: 15/12/2026
+Jenis: PO
+Tipe Box: NORMAL
+
+Untuk pemesanan boleh dilengkapi ya kak 🤗
+
+Nama Penerima: Bima Santoso
+Nama Pengirim (Jika ada): Anita
+No.Telp: 081234567890
+Alamat Lengkap: Jl Riau No 45 Bandung
+Tanggal kirim: 15/12/2026
+
+Kartu Ucapan (Jika ada)
+To: Bima
+Wishes: Selamat ulang tahun!
+From: Anita
+
+Pilih Metode Pengiriman : 
+- Instant ✅
+
+Request (Jika ada): Jangan terlalu pedas
+
+——
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Spaghetti Classico Bologna Brulee : 2
+B. Not Your Mac and Cheese  : 
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee : 1
+B. Not Your Mac and Cheese  : 
+
+Dessert
+Choco Bon Bon : 1
+
+Special Bundle
+Bundle of 3 : `
+
+  it("FO1 (NORMAL): membaca tipe normal, jenis PO, customer, ucapan, dan menu", () => {
+    const parsed = parseWaOrder(FO1_TEXT, TODAY)
+    expect(parsed.type).toBe("normal")
+    expect(parsed.kind).toBe("po")
+    expect(parsed.name).toBe("Bima Santoso")
+    expect(parsed.senderName).toBe("Anita")
+    expect(parsed.phone).toBe("081234567890")
+    expect(parsed.address).toBe("Jl Riau No 45 Bandung")
+    expect(parsed.deliveryDate).toBe("2026-12-15")
+    expect(parsed.cardTo).toBe("Bima")
+    expect(parsed.cardWishes).toBe("Selamat ulang tahun!")
+    expect(parsed.cardFrom).toBe("Anita")
+    expect(parsed.shippingMethod).toBe("instant")
+    expect(parsed.request).toBe("Jangan terlalu pedas")
+    expect(parsed.items).toEqual([
+      { name: "Spaghetti Classico Bologna Brulee", size: "large", qty: 2 },
+      { name: "Spaghetti Classico Bologna Brulee", size: "regular", qty: 1 },
+      { name: "Choco Bon Bon", size: "single", qty: 1 },
+    ])
+  })
+
+  const FO2_TEXT = `#DetailFO2
+Tanggal Pengiriman: 24/12/2026
+Jenis: RS
+Tipe Box: HAMPERS
+
+Untuk pemesanan boleh dilengkapi ya kak 🤗
+
+Nama Penerima: Sarah Jessica
+Nama Pengirim: Dimas
+No.Telp: 081987654321
+Alamat Lengkap: Jl Juanda No 10 Bandung
+Tanggal kirim: 24/12/2026
+
+Kartu Ucapan (Template Christmas)
+To: Sarah
+From: Dimas
+
+Pilih Metode Pengiriman : 
+- Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir) ✅
+
+Request (Jika ada): Pita warna merah
+
+——
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Classico Red : 2
+B. Mac & Joy  :  1
+C. Melted Cheese  : 
+E. Holy E Olio  : 1
+
+Size Regular
+A. Classico Red : 
+B. Mac & Joy  :  
+C. Melted Cheese  : 
+E. Holy E Olio  : `
+
+  it("FO2 (HAMPERS): membaca tipe hampers, jenis ready_stock dari RS, menu hampers", () => {
+    const parsed = parseWaOrder(FO2_TEXT, TODAY)
+    expect(parsed.type).toBe("hampers")
+    expect(parsed.kind).toBe("ready_stock")
+    expect(parsed.name).toBe("Sarah Jessica")
+    expect(parsed.senderName).toBe("Dimas")
+    expect(parsed.phone).toBe("081987654321")
+    expect(parsed.deliveryDate).toBe("2026-12-24")
+    expect(parsed.cardTo).toBe("Sarah")
+    expect(parsed.cardFrom).toBe("Dimas")
+    expect(parsed.shippingMethod).toBe("kurir_internal")
+    expect(parsed.request).toBe("Pita warna merah")
+    expect(parsed.items).toEqual([
+      { name: "Classico Red", size: "large", qty: 2 },
+      { name: "Mac & Joy", size: "large", qty: 1 },
+      { name: "Holy E Olio", size: "large", qty: 1 },
+    ])
+  })
+
+  const FO3_TEXT = `#DetailFO3
+Tanggal Pengiriman: 25/12/2026
+Jenis: MTO
+Tipe Box: NORMAL & HAMPERS
+
+Untuk pemesanan boleh dilengkapi ya kak 🤗
+
+Nama Penerima: Keluarga Hartono
+Nama Pengirim: Hendra
+No.Telp: 081333444555
+Alamat Lengkap: Komplek Dago Asri No 8
+Tanggal kirim: 25/12/2026
+
+Kartu Ucapan (Template Christmas)
+To: Hartono Family
+From: Hendra
+
+Pilih Metode Pengiriman : 
+- Pick Up ✅
+
+Request (Jika ada): Ambil jam 11 siang
+
+——
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+#BOX NORMAL
+
+Size Large
+A. Spaghetti Classico Bologna Brulee: 1
+B. Not Your Mac and Cheese: 
+C. Potato Gratin Lasagna: 
+D. Melt My Mac and Cheese: 
+E. Spaghetti Aglio E Olio: 
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee: 
+B. Not Your Mac and Cheese: 
+C. Potato Gratin Lasagna: 
+D. Melt My Mac and Cheese: 
+E. Spaghetti Aglio E Olio: 
+
+Dessert
+Choco Bon Bon: 2
+
+Special Bundle
+Bundle of 3: 
+
+#BOX CHRISTMAS
+
+Size Large
+A. Classico Red : 1
+B. Mac & Joy  :  
+C. Melted Cheese  : 1
+E. Holy E Olio  : 
+
+Size Regular
+A. Classico Red : 
+B. Mac & Joy  :  1
+C. Melted Cheese  : 
+E. Holy E Olio  : `
+
+  it("FO3 (NORMAL & HAMPERS): membaca tipe normal_hampers, jenis MTO, menu gabungan", () => {
+    const parsed = parseWaOrder(FO3_TEXT, TODAY)
+    expect(parsed.type).toBe("normal_hampers")
+    expect(parsed.kind).toBe("made_to_order")
+    expect(parsed.name).toBe("Keluarga Hartono")
+    expect(parsed.senderName).toBe("Hendra")
+    expect(parsed.phone).toBe("081333444555")
+    expect(parsed.deliveryDate).toBe("2026-12-25")
+    expect(parsed.cardTo).toBe("Hartono Family")
+    expect(parsed.cardFrom).toBe("Hendra")
+    expect(parsed.shippingMethod).toBe("pick_up")
+    expect(parsed.request).toBe("Ambil jam 11 siang")
+    expect(parsed.items).toEqual([
+      { name: "Spaghetti Classico Bologna Brulee", size: "large", qty: 1 },
+      { name: "Choco Bon Bon", size: "single", qty: 2 },
+      { name: "Classico Red", size: "large", qty: 1 },
+      { name: "Melted Cheese", size: "large", qty: 1 },
+      { name: "Mac & Joy", size: "regular", qty: 1 },
+    ])
+  })
+})
+
+describe("parseWaOrder: template FO dengan dua label tanggal", () => {
+  const fill = (top: string, bottom: string) =>
+    FO1_TEMPLATE.replace("Tanggal Pengiriman:", `Tanggal Pengiriman: ${top}`).replace(
+      "Tanggal kirim:",
+      `Tanggal kirim: ${bottom}`,
+    )
+
+  it("hanya baris atas diisi: tanggal tidak tertimpa label kosong di bawah", () => {
+    expect(parseWaOrder(fill("12/11/2026", ""), TODAY).deliveryDate).toBe("2026-11-12")
+  })
+
+  it("hanya baris bawah diisi", () => {
+    expect(parseWaOrder(fill("", "13/11/2026"), TODAY).deliveryDate).toBe("2026-11-13")
+  })
+
+  it("keduanya diisi: baris terakhir yang dipakai", () => {
+    expect(parseWaOrder(fill("12/11/2026", "14/11/2026"), TODAY).deliveryDate).toBe("2026-11-14")
   })
 })

@@ -12,7 +12,7 @@ async function login(page: Page, email: string, target: string) {
 }
 
 // Data uji seedReportOrders (Feb-Mar 2021). Acuan 2 Mar, periode 7 hari = 24 Feb - 2 Mar:
-// 4 pesanan aktif (3 Personal, 1 Hadiah), lunas 65.000 + 130.000 + 40.000 = 235.000,
+// 4 pesanan aktif (3 Normal, 1 Hampers), lunas 65.000 + 130.000 + 40.000 = 235.000,
 // Kurir Internal 2, Instant 1, Pick Up 1. Dikirim 2 Mar: 1 Bolognese L + 1 Choco Bon Bon.
 const URL = "/dashboard?tanggal=2021-03-02&periode=7"
 
@@ -37,8 +37,8 @@ test.describe("Dashboard", () => {
     )
     const kpi = (label: string) => page.getByText(label, { exact: true }).first().locator("..")
     await expect(kpi("Total Pesanan")).toContainText("4")
-    await expect(kpi("Pesanan Personal")).toContainText("3")
-    await expect(kpi("Pesanan Hadiah")).toContainText("1")
+    await expect(kpi("Pesanan Normal")).toContainText("3")
+    await expect(kpi("Pesanan Hampers")).toContainText("1")
     await expect(kpi("Total Pembayaran")).toContainText("Rp 235.000")
 
     const latest = page.getByRole("region", { name: "Daftar Pesanan Terbaru" }).getByRole("row")
@@ -57,9 +57,9 @@ test.describe("Dashboard", () => {
     const production = page.getByRole("region", { name: /^Rekap Produksi/ })
     await expect(production.getByText("Spaghetti Classico Bologna Brulee")).toBeVisible()
     await expect(production.getByText("Choco Bon Bon")).toBeVisible()
-    // Box hampers (packaging lama diarsipkan).
-    await expect(page.getByRole("region", { name: "Stok Packaging (Ringkas)" })).toContainText(
-      /Classic Red|Mac & Joy|Melted Cheese|Holy E Olio/,
+    // Ringkasan stok per kategori (Box Hampers, Loyang).
+    await expect(page.getByRole("region", { name: "Packaging & Loyang" })).toContainText(
+      /Box Hampers|Loyang/,
     )
 
     // Evaluasi & Masukan: 2 Mar (2 pesanan, lunas 40.000) vs 1 Mar (1 pesanan, lunas 130.000).

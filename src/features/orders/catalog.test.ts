@@ -149,18 +149,17 @@ describe("draftIssues", () => {
     ])
   })
 
-  it("Pick Up tidak butuh alamat; Hadiah butuh nama pengirim; tanggal lewat ditolak", () => {
+  it("Pick Up tidak butuh alamat; tanggal lewat ditolak", () => {
     const issues = draftIssues(
       {
         ...EMPTY_DRAFT,
-        type: "hadiah",
+        type: "hampers",
         shippingMethod: "pick_up",
         deliveryDate: "2026-10-23",
       },
       today,
     )
     expect(issues.address).toBeUndefined()
-    expect(issues.senderName).toBe("Nama pengirim wajib untuk pesanan hadiah.")
     expect(issues.deliveryDate).toBe("Tanggal kirim sudah lewat.")
   })
 })

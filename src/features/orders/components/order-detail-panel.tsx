@@ -176,7 +176,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /** Data customer/penerima, pengiriman, request, dan (Hadiah) pengirim + kartu ucapan. */
 export function OrderInfo({ order }: { order: OrderDetail }) {
-  const isHadiah = order.type === "hadiah"
+  const hasGift = order.type === "hampers" || order.type === "normal_hampers" || Boolean(order.senderName)
+  const hasGiftCard = Boolean(order.cardTo || order.cardWishes || order.cardFrom || order.senderName)
   const shipping =
     order.shipment.method === "kurir_internal"
       ? `Kurir Internal Burnt Butter${order.shipment.courierName ? ` (${order.shipment.courierName})` : ""}`
@@ -191,7 +192,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
     <section aria-labelledby="order-customer" className="border-t border-border px-5 py-4 sm:px-6">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 id="order-customer" className="font-semibold text-brand-ink">
-          {isHadiah ? "Data Penerima" : "Data Customer"}
+          Data Penerima
         </h3>
         <div className="flex flex-wrap justify-end gap-2">
           <OrderNoteButton orderId={order.id} orderNo={order.orderNo} note={order.note} />
@@ -203,7 +204,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
           {ORDER_CHANNEL_LABEL[order.channel]}
           {order.marketplaceOrderNo && ` (${order.marketplaceOrderNo})`}
         </Row>
-        <Row label={isHadiah ? "Nama Penerima" : "Nama Lengkap"}>{order.customer.name}</Row>
+        <Row label={hasGift ? "Nama Penerima" : "Nama Lengkap"}>{order.customer.name}</Row>
         <Row label="No. Telp">
           <span className="tabular-nums">{formatPhone(order.customer.phone)}</span>
         </Row>
@@ -222,10 +223,10 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         )}
         <Row label="Request">{order.request ?? "-"}</Row>
         <Row label="Catatan">{order.note ?? "-"}</Row>
-        {isHadiah && (
+        {hasGiftCard && (
           <>
-            <Row label="Pengirim">{order.senderName ?? "-"}</Row>
-            <Row label="Kartu Ucapan">{card.length ? card.join("\n") : "-"}</Row>
+            {order.senderName && <Row label="Pengirim">{order.senderName}</Row>}
+            {card.length > 0 && <Row label="Kartu Ucapan">{card.join("\n")}</Row>}
           </>
         )}
       </dl>

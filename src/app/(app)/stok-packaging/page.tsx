@@ -28,7 +28,7 @@ import { requirePageAccess } from "@/lib/auth"
 import { formatWaktuDibuat } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export const metadata: Metadata = { title: "Stok Packaging" }
+export const metadata: Metadata = { title: "Packaging & Loyang" }
 
 const PATH = "/stok-packaging"
 
@@ -36,15 +36,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type SearchParams = PageProps<"/stok-packaging">["searchParams"]
 
-// Desain belum ada. Keputusan pemilik toko (Nov 2026): Stok Packaging hanya untuk box hampers
-// (packaging lama diarsipkan). Stok keluar terpotong otomatis saat pesanan di-packing sebagai
-// Hampers (menu Packaging); di sini cukup tambah stok dan hitung ulang (revisi).
+// Stok box hampers dan loyang kue. Keduanya terpotong otomatis saat pesanan Lunas (box sesuai
+// menu hampers, loyang per porsi Large/Regular) dan kembali bila pembayaran/pesanan dibatalkan.
 export default function StokPackagingPage({ searchParams }: PageProps<"/stok-packaging">) {
   return (
     <main className={PAGE_CONTAINER}>
       <PageHeader
-        title="Stok Packaging"
-        description="Stok box hampers. Terpotong otomatis saat pesanan di-packing sebagai Hampers; di sini tambah stok atau revisi lewat hitung ulang."
+        title="Packaging & Loyang"
+        description="Stok box hampers dan loyang kue. Terpotong otomatis saat pesanan Lunas; di sini tambah stok atau revisi lewat hitung ulang."
       />
       <Suspense fallback={<StockSkeleton />}>
         <StockOverview />

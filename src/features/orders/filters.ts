@@ -1,9 +1,9 @@
-// Filter Daftar Pesanan dari URL (?q=&dari=&sampai=&tipe=&status=&kirim=&hal=).
+// Filter Daftar Pesanan dari URL (?q=&dari=&sampai=&jenis=&tipe=&status=&kirim=&sumber=&hal=).
 // Murni supaya bisa dipakai di server dan diuji.
 
-import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
-import { ORDER_CHANNELS, type OrderChannel, SHIPPING_METHODS } from "./constants"
+import { ORDER_CHANNELS, type OrderChannel, ORDER_KINDS, SHIPPING_METHODS } from "./constants"
 
 export const ORDER_STATUSES = [
   "baru",
@@ -26,9 +26,12 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   dibatalkan: "Dibatalkan",
 }
 
+export const ORDER_TYPES = ["normal", "hampers", "normal_hampers"] as const
+
 export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
-  personal: "Personal",
-  hadiah: "Hadiah",
+  normal: "Normal",
+  hampers: "Hampers",
+  normal_hampers: "Normal & Hampers",
 }
 
 export type OrderFilters = {
@@ -36,6 +39,7 @@ export type OrderFilters = {
   /** Rentang tanggal pesanan dibuat (WIB), "YYYY-MM-DD", inklusif. */
   from: string
   to: string
+  kind?: OrderKind
   type?: OrderType
   status?: OrderStatus
   method?: ShippingMethod
@@ -88,7 +92,8 @@ export function parseOrderFilters(params: Params, today: string): OrderFilters {
     q: one("q")?.trim() || undefined,
     from,
     to,
-    type: pick(["personal", "hadiah"] as const, one("tipe")),
+    kind: pick(ORDER_KINDS, one("jenis")),
+    type: pick(ORDER_TYPES, one("tipe")),
     status: pick(ORDER_STATUSES, one("status")),
     method: pick(SHIPPING_METHODS, one("kirim")),
     channel: pick(ORDER_CHANNELS, one("sumber")),
@@ -112,6 +117,7 @@ export function filterParams(
     q: filters.q,
     dari: isToday ? undefined : filters.from,
     sampai: isToday ? undefined : filters.to,
+    jenis: filters.kind,
     tipe: filters.type,
     status: filters.status,
     kirim: filters.method,

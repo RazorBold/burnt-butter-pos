@@ -24,7 +24,7 @@ test("Admin melihat semua menu dan bisa membuka Input Pesanan", async ({ page },
       "Produksi",
       "Packaging",
       "Pengiriman",
-      "Stok Packaging",
+      "Packaging & Loyang",
     ])
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
       "aria-current",
@@ -112,7 +112,7 @@ test("Owner melihat semua menu", async ({ page }, info) => {
     "Packaging",
     "Pengiriman",
     "Laporan",
-    "Stok Packaging",
+    "Packaging & Loyang",
     "Master Data",
   ])
   await expect(page.getByRole("button", { name: "Input Pesanan" })).toBeVisible()

@@ -7,6 +7,7 @@ import { packagingCategories, packagings, profiles, stockMovements } from "@/db/
 import { toJakartaDateString } from "@/lib/format"
 
 import { type StockStatus, stockStatus } from "./stock"
+import { ensureLoyangItems } from "./loyang"
 
 export type PackagingRow = {
   id: string
@@ -53,6 +54,7 @@ export async function listPackagingCategories(): Promise<PackagingCategoryRow[]>
  * urut dibuat. Status dihitung dari stok minimum.
  */
 export async function listPackagings(): Promise<PackagingRow[]> {
+  await ensureLoyangItems()
   const rows = await getDb()
     .select({
       id: packagings.id,

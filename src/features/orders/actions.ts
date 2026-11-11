@@ -36,6 +36,7 @@ import {
 import { ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from "./filters"
 import { ordersToCsv } from "./csv"
 import { formatOrderNo } from "./order-number"
+import { deductOrderStock } from "@/features/packagings/order-stock"
 import { getOrdersForExport } from "./queries"
 import { orderEditSchema, orderSubmitSchema } from "./schemas"
 import { isEditable, isMenuEditable, shipmentStatusFor } from "./status"
@@ -144,7 +145,6 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   const phone = normalizePhone(draft.phone)
   const wanted = Object.entries(draft.quantities).filter(([, qty]) => qty > 0)
   const optional = (value: string) => value.trim() || null
-  const isHadiah = !marketplace && draft.type === "hadiah"
   const shippingMethod = marketplace
     ? ("ekspedisi" as const)
     : (draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">)
@@ -199,16 +199,16 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
           customerName: draft.name.trim(),
           channel: draft.channel,
           marketplaceOrderNo,
-          type: marketplace ? "personal" : draft.type,
+          type: marketplace ? "normal" : draft.type,
           kind: draft.kind,
           deliveryDate: draft.deliveryDate,
           request: optional(draft.request),
           total,
           rawWaText: optional(waText),
-          senderName: isHadiah ? optional(draft.senderName) : null,
-          cardTo: isHadiah ? optional(draft.cardTo) : null,
-          cardWishes: isHadiah ? optional(draft.cardWishes) : null,
-          cardFrom: isHadiah ? optional(draft.cardFrom) : null,
+          senderName: optional(draft.senderName),
+          cardTo: optional(draft.cardTo),
+          cardWishes: optional(draft.cardWishes),
+          cardFrom: optional(draft.cardFrom),
           createdBy: userId,
         })
         .returning({ id: orders.id })
@@ -243,6 +243,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
           paidAt: new Date(),
           recordedBy: userId,
         })
+        await deductOrderStock(tx, [{ id: order.id, orderNo }], userId)
       }
 
       return { orderNo, customerName: customer.name, total }
@@ -516,7 +517,6 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
 
   const phone = normalizePhone(draft.phone)
   const optional = (value: string) => value.trim() || null
-  const isHadiah = !marketplace && draft.type === "hadiah"
   const method = marketplace
     ? ("ekspedisi" as const)
     : (draft.shippingMethod as Exclude<typeof draft.shippingMethod, "">)
@@ -545,13 +545,13 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     address,
     deliveryDate: draft.deliveryDate,
     kind: draft.kind,
-    type: marketplace ? "personal" : draft.type,
+    type: marketplace ? "normal" : draft.type,
     method,
     request: optional(draft.request),
-    senderName: isHadiah ? optional(draft.senderName) : null,
-    cardTo: isHadiah ? optional(draft.cardTo) : null,
-    cardWishes: isHadiah ? optional(draft.cardWishes) : null,
-    cardFrom: isHadiah ? optional(draft.cardFrom) : null,
+    senderName: optional(draft.senderName),
+    cardTo: optional(draft.cardTo),
+    cardWishes: optional(draft.cardWishes),
+    cardFrom: optional(draft.cardFrom),
     marketplaceOrderNo,
     total: total ?? current.total,
   })
@@ -569,14 +569,14 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
         customerName: draft.name.trim(),
         marketplaceOrderNo,
         total,
-        type: marketplace ? "personal" : draft.type,
+        type: marketplace ? "normal" : draft.type,
         kind: draft.kind,
         deliveryDate: draft.deliveryDate,
         request: optional(draft.request),
-        senderName: isHadiah ? optional(draft.senderName) : null,
-        cardTo: isHadiah ? optional(draft.cardTo) : null,
-        cardWishes: isHadiah ? optional(draft.cardWishes) : null,
-        cardFrom: isHadiah ? optional(draft.cardFrom) : null,
+        senderName: optional(draft.senderName),
+        cardTo: optional(draft.cardTo),
+        cardWishes: optional(draft.cardWishes),
+        cardFrom: optional(draft.cardFrom),
       })
       .where(eq(orders.id, orderId))
     await tx

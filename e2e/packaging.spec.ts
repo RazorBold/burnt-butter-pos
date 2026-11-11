@@ -38,9 +38,7 @@ test.describe("Packaging", () => {
     packagingName = undefined
   })
 
-  test("packing Hampers memotong stok box, batal packing mengembalikannya", async ({
-    page,
-  }, info) => {
+  test("packing Hampers tanpa memotong stok lagi; batal packing", async ({ page }, info) => {
     code = `${Date.now()}`
     const orderNo = `QA${code}01`
     const date = farDate(code)
@@ -77,7 +75,8 @@ test.describe("Packaging", () => {
         .getByText("Pesanan belum di-packing (lihat menu Packaging)."),
     ).toBeVisible()
 
-    // Dialog: Normal (default) tanpa isian; Hampers wajib isi box, tidak boleh melebihi stok.
+    // Dialog: pesanan Normal terpilih Normal; Hampers tanpa isian box (box dan loyang sudah
+    // dipotong otomatis saat Lunas), jadi packing tidak mengubah stok.
     await page.goto(`/packaging?tanggal=${date}`)
     await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
     const dialog = page.getByRole("dialog", { name: `Packing ${orderNo}` })
@@ -85,42 +84,24 @@ test.describe("Packaging", () => {
       "aria-checked",
       "true",
     )
-    await expect(dialog.getByRole("textbox", { name: /^Jumlah / })).toHaveCount(0)
     await dialog.getByRole("radio", { name: "Hampers" }).click()
-    await expect(dialog.getByRole("region", { name: "Size Large" })).toBeVisible()
-    await expect(dialog.getByRole("region", { name: "Size Regular" })).toBeVisible()
-    await expect(dialog.getByRole("button", { name: "Simpan & selesai packing" })).toBeDisabled()
-    await dialog.getByRole("textbox", { name: `Jumlah ${name}` }).fill("6")
-    await expect(dialog.getByRole("alert")).toContainText(`Stok ${name} tidak cukup`)
-    await expect(dialog.getByRole("button", { name: "Simpan & selesai packing" })).toBeDisabled()
+    await expect(dialog.getByText(/^Packing hampers. Box hampers dan loyang sudah dipotong/)).toBeVisible()
+    await expect(dialog.getByRole("textbox", { name: /^Jumlah / })).toHaveCount(0)
     await page.screenshot({ path: "test-results/packaging-dialog-desktop.png" })
-    await dialog.getByRole("textbox", { name: `Jumlah ${name}` }).fill("2")
     await dialog.getByRole("button", { name: "Simpan & selesai packing" }).click()
-    await expect(
-      page.getByText(`${orderNo} selesai packing hampers, stok box dipotong.`),
-    ).toBeVisible()
+    await expect(page.getByText(`${orderNo} selesai packing hampers, siap dikirim.`)).toBeVisible()
     const packed = done.getByRole("article", { name: orderNo })
     await expect(packed).toContainText("Packing Hampers")
-    await expect(packed).toContainText(`2 ${name}`)
-    expect(await readPackagingStock(name)).toBe(3)
+    expect(await readPackagingStock(name)).toBe(5)
     expect(await readOrder(orderNo)).toMatchObject({
       status: "siap_kirim",
       shipment_status: "menunggu_kurir",
     })
 
-    // Riwayat stok mencatat pemakaian untuk pesanan ini.
-    await page.goto("/stok-packaging")
-    await expect(
-      page
-        .getByRole("region", { name: "Riwayat Stok" })
-        .getByRole("row", { name: new RegExp(`Packing ${orderNo}`) }),
-    ).toContainText("−2 pcs")
-
-    // Batal packing: stok kembali, pesanan menunggu packing lagi.
-    await page.goto(`/packaging?tanggal=${date}`)
+    // Batal packing: pesanan menunggu packing lagi, stok tetap.
     await page.getByRole("button", { name: `Batal packing: ${orderNo}` }).click()
     await expect(
-      page.getByText(`Packing ${orderNo} dibatalkan, stok packaging dikembalikan.`),
+      page.getByText(`Packing ${orderNo} dibatalkan, pesanan menunggu packing lagi.`),
     ).toBeVisible()
     await expect(waiting.getByRole("article", { name: orderNo })).toBeVisible()
     expect(await readPackagingStock(name)).toBe(5)

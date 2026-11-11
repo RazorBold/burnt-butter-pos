@@ -15,7 +15,7 @@ config({ path: ".env.local", quiet: true })
 type MenuSeed = {
   name: string
   slug: string
-  category: "pasta" | "dessert" | "bundle"
+  category: "pasta" | "dessert" | "bundle" | "hampers"
   description: string
   prices: { large: number; regular: number } | { single: number }
 }
@@ -72,6 +72,34 @@ const MENUS: MenuSeed[] = [
     description: "Pilih 3 menu favorit dalam satu paket spesial.",
     prices: { single: 180000 },
   },
+  {
+    name: "Classico Red",
+    slug: "classico-red",
+    category: "hampers",
+    description: "Baked spaghetti bolognese brulee edisi hampers dengan lelehan keju mozarella creamy.",
+    prices: { large: 65000, regular: 50000 },
+  },
+  {
+    name: "Mac & Joy",
+    slug: "mac-joy",
+    category: "hampers",
+    description: "Mac and cheese creamy spesial hampers dengan keju melimpah yang dipanggang keemasan.",
+    prices: { large: 65000, regular: 50000 },
+  },
+  {
+    name: "Melted Cheese",
+    slug: "melted-cheese",
+    category: "hampers",
+    description: "Pasta makaroni panggang dengan lelehan keju lumer dan saus keju gurih spesial edisi hampers.",
+    prices: { large: 65000, regular: 50000 },
+  },
+  {
+    name: "Holy E Olio",
+    slug: "holy-e-olio",
+    category: "hampers",
+    description: "Spaghetti aglio e olio harum dengan minyak zaitun, bawang putih renyah, dan cabai aromatik.",
+    prices: { large: 60000, regular: 45000 },
+  },
 ]
 
 /** Kategori awal (urutan = urutan template WA). Nama dipakai sebagai kunci. */
@@ -79,6 +107,7 @@ const CATEGORIES = [
   { key: "pasta", name: "Pasta", sized: true, sortOrder: 0 },
   { key: "dessert", name: "Dessert", sized: false, sortOrder: 1 },
   { key: "bundle", name: "Special Bundle", sized: false, sortOrder: 2 },
+  { key: "hampers", name: "Hampers", sized: true, sortOrder: 3 },
 ] as const
 
 function photoPathFor(menu: MenuSeed) {

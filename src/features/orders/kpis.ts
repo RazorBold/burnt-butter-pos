@@ -6,12 +6,12 @@ import { addDays, daysBetween, previousRange } from "./filters"
 export type DailyOrderStats = {
   day: string
   orders: number
-  personal: number
-  hadiah: number
+  normal: number
+  hampers: number
   value: number
 }
 
-export type KpiMetric = "orders" | "personal" | "hadiah" | "value"
+export type KpiMetric = "orders" | "normal" | "hampers" | "value"
 
 export type OrderKpi = {
   value: number
@@ -57,8 +57,8 @@ export function computeKpis(
   }
   return {
     orders: metric("orders"),
-    personal: metric("personal"),
-    hadiah: metric("hadiah"),
+    normal: metric("normal"),
+    hampers: metric("hampers"),
     value: metric("value"),
   }
 }

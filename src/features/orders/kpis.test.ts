@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest"
 
 import { computeKpis, type DailyOrderStats, kpiWindow } from "./kpis"
 
-const day = (d: string, orders: number, hadiah: number, value: number): DailyOrderStats => ({
+const day = (d: string, orders: number, hampers: number, value: number): DailyOrderStats => ({
   day: d,
   orders,
-  personal: orders - hadiah,
-  hadiah,
+  normal: orders - hampers,
+  hampers,
   value,
 })
 
@@ -20,8 +20,8 @@ describe("computeKpis", () => {
   it("satu hari: nilai hari itu, tren dibanding kemarin, sparkline 7 hari", () => {
     const kpis = computeKpis(daily, "2026-10-24", "2026-10-24")
     expect(kpis.orders).toEqual({ value: 12, percent: 20, series: [1, 0, 0, 0, 0, 10, 12] })
-    expect(kpis.hadiah.percent).toBe(-25)
-    expect(kpis.personal.value).toBe(9)
+    expect(kpis.hampers.percent).toBe(-25)
+    expect(kpis.normal.value).toBe(9)
     expect(kpis.value.value).toBe(2_400_000)
   })
 

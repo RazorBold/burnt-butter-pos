@@ -10,7 +10,7 @@ import {
 
 const order = (day: string, extra: Partial<EvalOrder> = {}): EvalOrder => ({
   day,
-  type: "personal",
+  type: "normal",
   status: "selesai",
   method: "pick_up",
   total: 100_000,

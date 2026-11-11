@@ -57,14 +57,14 @@ async function Preview() {
         />
         <KpiCard
           icon={Package}
-          label="Pesanan Personal"
+          label="Pesanan Normal"
           value="18"
           trend={{ percent: 20 }}
           series={[2, 3, 2.5, 4, 3, 5, 6, 6.5]}
         />
         <KpiCard
           icon={Gift}
-          label="Pesanan Hadiah"
+          label="Pesanan Hampers"
           value="6"
           trend={{ percent: -14 }}
           series={[7, 6, 6.5, 5, 5.5, 4, 4.5, 3.5]}

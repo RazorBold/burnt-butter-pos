@@ -14,7 +14,6 @@ import { toast } from "sonner"
 
 import { OrderStatusBadge, UrgentBadge } from "@/components/app/order-badges"
 import { isUrgent } from "@/features/orders/status"
-import { QtyStepper } from "@/components/app/qty-stepper"
 import { SegmentedControl } from "@/components/app/segmented-control"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
-import { groupByCategory } from "@/features/packagings/categories"
 import { packOrder, unpackOrder } from "@/features/packing/actions"
 import type { PackagingUse } from "@/features/packing/needs"
 import type { PackingOrder, PackingPackaging } from "@/features/packing/queries"
@@ -76,15 +74,15 @@ export function PackingOrderCard({
           </h4>
           <p className="text-[13px] text-text-body">
             {order.customerName}
-            {order.type === "hadiah" && order.senderName && ` (dari ${order.senderName})`}
+            {order.senderName && ` (dari ${order.senderName})`}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
-          {order.type === "hadiah" && (
+          {order.type !== "normal" && (
             <span className="inline-flex items-center gap-1 rounded-md bg-hadiah px-2 py-0.5 text-xs font-medium text-hadiah-fg">
               <Gift className="size-3.5" aria-hidden />
-              {order.hasCard ? "Hadiah + kartu" : "Hadiah"}
+              {order.type === "normal_hampers" ? "Normal & Hampers" : "Hampers"}
             </span>
           )}
           {!waiting && <OrderStatusBadge status={order.status} />}
@@ -153,12 +151,7 @@ export function PackingOrderCard({
                 <PackageCheck aria-hidden />
                 Selesai packing
               </Button>
-              <PackingDialog
-                open={open}
-                onOpenChange={setOpen}
-                order={order}
-                packagings={packagings}
-              />
+              <PackingDialog open={open} onOpenChange={setOpen} order={order} />
             </>
           ) : (
             <Button
@@ -190,19 +183,17 @@ const TYPE_OPTIONS = [
 ] as const
 
 /**
- * Konfirmasi packing: Normal (packaging biasa, stok tidak dicatat) atau Hampers (isi jumlah
- * tiap box hampers; stoknya terpotong).
+ * Konfirmasi packing: Normal atau Hampers. Stok tidak dipotong di sini: loyang dan box hampers
+ * sudah terpotong otomatis saat pesanan Lunas (keputusan pemilik toko, Nov 2026).
  */
 function PackingDialog({
   open,
   onOpenChange,
   order,
-  packagings,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   order: PackingOrder
-  packagings: PackingPackaging[]
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,45 +203,28 @@ function PackingDialog({
             Packing {order.orderNo}
           </DialogTitle>
           <DialogDescription className="text-text-body">
-            Pilih jenis packing. Hampers memotong stok box hampers sesuai jumlah yang diisi.
+            Pilih jenis packing. Stok box dan loyang sudah dipotong otomatis saat pesanan Lunas.
           </DialogDescription>
         </DialogHeader>
-        {/* Dipasang ulang tiap dibuka, jadi isian selalu mulai dari awal. */}
-        {open && (
-          <PackingForm order={order} packagings={packagings} onDone={() => onOpenChange(false)} />
-        )}
+        {/* Dipasang ulang tiap dibuka, jadi pilihan selalu mulai dari awal. */}
+        {open && <PackingForm order={order} onDone={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
   )
 }
 
-function PackingForm({
-  order,
-  packagings,
-  onDone,
-}: {
-  order: PackingOrder
-  packagings: PackingPackaging[]
-  onDone: () => void
-}) {
-  const [type, setType] = useState<"normal" | "hampers">("normal")
-  const [qty, setQty] = useState<Record<string, number>>({})
+function PackingForm({ order, onDone }: { order: PackingOrder; onDone: () => void }) {
+  // Pesanan Hampers / Normal & Hampers langsung terpilih Hampers.
+  const [type, setType] = useState<"normal" | "hampers">(
+    order.type === "normal" ? "normal" : "hampers",
+  )
   const [error, setError] = useState<string>()
   const [pending, startTransition] = useTransition()
   const hampers = type === "hampers"
-  const short = hampers ? packagings.filter((item) => (qty[item.id] ?? 0) > item.stock) : []
-  const picked = Object.values(qty).reduce((sum, value) => sum + value, 0)
-  const groups = groupByCategory(packagings)
 
   function save() {
     startTransition(async () => {
-      const result = await packOrder({
-        orderId: order.id,
-        type,
-        items: hampers
-          ? Object.entries(qty).map(([packagingId, value]) => ({ packagingId, qty: value }))
-          : [],
-      })
+      const result = await packOrder({ orderId: order.id, type, items: [] })
       if (result.ok) {
         toast.success(result.message)
         onDone()
@@ -272,72 +246,24 @@ function PackingForm({
         }}
       />
 
-      {!hampers ? (
-        <p className="rounded-lg bg-nav-active/70 px-4 py-3 text-sm text-text-body">
-          Packaging biasa, stok tidak dicatat. Pesanan langsung jadi Siap Kirim.
-        </p>
-      ) : packagings.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-text-body">
-          Belum ada box hampers. Tambahkan di Master Data › Stok Packaging.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {groups.map((group) => (
-            <section key={group.key} aria-label={group.title}>
-              <h3 className="text-sm font-semibold text-brand-ink">{group.title}</h3>
-              <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-white">
-                {group.items.map((item) => {
-                  const value = qty[item.id] ?? 0
-                  const over = value > item.stock
-                  return (
-                    <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-text-strong">{item.name}</p>
-                        <p
-                          className={cn(
-                            "text-[13px] tabular-nums",
-                            over ? "text-trend-down-fg" : "text-text-body",
-                          )}
-                        >
-                          Stok {item.stock} {item.unit}
-                          {over && " · kurang"}
-                        </p>
-                      </div>
-                      <QtyStepper
-                        value={value}
-                        onChange={(next) => {
-                          setQty((current) => ({ ...current, [item.id]: next }))
-                          setError(undefined)
-                        }}
-                        label={item.name}
-                        max={999}
-                      />
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+      <p className="rounded-lg bg-nav-active/70 px-4 py-3 text-sm text-text-body">
+        {hampers
+          ? "Packing hampers. Box hampers dan loyang sudah dipotong otomatis saat pesanan Lunas, jadi stok tidak dipotong lagi di sini."
+          : "Packaging biasa. Pesanan langsung jadi Siap Kirim."}
+      </p>
 
-      {(error || short.length > 0) && (
+      {error && (
         <p
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-trend-down px-3 py-2.5 text-sm text-trend-down-fg"
         >
           <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {error ??
-            `Stok ${short.map((item) => item.name).join(", ")} tidak cukup. Tambah atau revisi stoknya di Stok Packaging dulu.`}
+          {error}
         </p>
       )}
 
       <div className="flex justify-end">
-        <Button
-          onClick={save}
-          disabled={pending || short.length > 0 || (hampers && picked === 0)}
-          className="h-11 rounded-lg px-6"
-        >
+        <Button onClick={save} disabled={pending} className="h-11 rounded-lg px-6">
           {pending && <LoaderCircle className="animate-spin" aria-hidden />}
           {pending ? "Menyimpan…" : "Simpan & selesai packing"}
         </Button>

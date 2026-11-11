@@ -42,7 +42,7 @@ test.describe("Master Data › Produk & Menu", () => {
 
     await page.getByLabel("Cari nama menu").fill("mac")
     await expect(page).toHaveURL(/q=mac/)
-    await expect(table.getByRole("row")).toHaveCount(3) // header + 2 menu mac and cheese
+    await expect(table.getByRole("row")).toHaveCount(4) // header + 2 mac and cheese + Mac & Joy (hampers)
 
     await page.getByLabel("Cari nama menu").fill("")
     await page.getByRole("combobox", { name: "Filter kategori" }).click()

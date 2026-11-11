@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Copy,
   CircleAlert,
   CircleCheck,
   LoaderCircle,
@@ -60,12 +61,20 @@ import { formatHariTanggal, formatRupiah, toJakartaDateString } from "@/lib/form
 import { cn } from "@/lib/utils"
 import { type OrderType, type ParsedItem, parseWaOrder } from "@/lib/wa-parser"
 
+import {
+  FO1_TEMPLATE,
+  FO2_TEMPLATE,
+  FO3_TEMPLATE,
+  OLSHOP_TEMPLATE,
+} from "@/lib/wa-parser/templates"
+
 /** Lama popup "Pesanan sudah terinput" sebelum pindah ke daftar pesanan. */
 const SAVED_REDIRECT_MS = 3000
 
 const TYPE_OPTIONS = [
-  { value: "personal", label: "Personal" },
-  { value: "hadiah", label: "Hadiah" },
+  { value: "normal", label: "Normal" },
+  { value: "hampers", label: "Hampers" },
+  { value: "normal_hampers", label: "Normal & Hampers" },
 ] as const satisfies readonly { value: OrderType; label: string }[]
 
 const CHANNEL_OPTIONS = ORDER_CHANNELS.map((value) => ({
@@ -85,9 +94,7 @@ type ParseSummary = {
 /** Field yang dicek saat Isi Otomatis: wajib, dan hasilnya ditandai bila tidak terbaca. */
 function checkedFields(draft: OrderDraft): DraftField[] {
   if (isMarketplace(draft.channel)) return ["marketplaceOrderNo", "name", "deliveryDate"]
-  const fields: DraftField[] = ["name", "phone", "address", "deliveryDate", "shippingMethod"]
-  if (draft.type === "hadiah") fields.push("senderName")
-  return fields
+  return ["name", "phone", "address", "deliveryDate", "shippingMethod"]
 }
 
 function readStoredDraft(): StoredDraft | null {
@@ -283,8 +290,8 @@ export function NewOrderWorkspace({
   const issues = draftIssues(draft, today)
   const { items, total } = orderTotal(catalog, draft.quantities)
   const marketplace = isMarketplace(draft.channel)
+  const isGift = draft.type === "hampers" || draft.type === "normal_hampers"
   const channelLabel = ORDER_CHANNEL_LABEL[draft.channel]
-  const isHadiah = !marketplace && draft.type === "hadiah"
   const shownTotal = marketplace ? (parseRupiahInput(draft.marketplaceTotal) ?? total) : total
   const fieldLabel: Record<DraftField, string> = {
     channel: "Sumber",
@@ -292,7 +299,7 @@ export function NewOrderWorkspace({
     marketplaceTotal: "Total pembayaran",
     type: "Tipe",
     kind: "Jenis pesanan",
-    name: marketplace || isHadiah ? "Nama penerima" : "Nama",
+    name: "Nama penerima",
     phone: "No. telp",
     address: "Alamat",
     deliveryDate: "Tanggal kirim",
@@ -383,6 +390,58 @@ export function NewOrderWorkspace({
               <RotateCcw aria-hidden />
               Reset
             </Button>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+            <span className="text-xs font-medium text-text-body">Salin format:</span>
+            {!marketplace ? (
+              <>
+                <button
+                  suppressHydrationWarning
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(FO1_TEMPLATE)
+                    toast.success("Format FO1 (Normal) disalin ke clipboard.")
+                  }}
+                  className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"
+                >
+                  <Copy className="size-3" /> FO1 (Normal)
+                </button>
+                <button
+                  suppressHydrationWarning
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(FO2_TEMPLATE)
+                    toast.success("Format FO2 (Hampers) disalin ke clipboard.")
+                  }}
+                  className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"
+                >
+                  <Copy className="size-3" /> FO2 (Hampers)
+                </button>
+                <button
+                  suppressHydrationWarning
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(FO3_TEMPLATE)
+                    toast.success("Format FO3 (Normal & Hampers) disalin ke clipboard.")
+                  }}
+                  className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"
+                >
+                  <Copy className="size-3" /> FO3 (Gabungan)
+                </button>
+              </>
+            ) : (
+              <button
+                suppressHydrationWarning
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(OLSHOP_TEMPLATE)
+                  toast.success("Format Olshop disalin ke clipboard.")
+                }}
+                className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"
+              >
+                <Copy className="size-3" /> Template Olshop
+              </button>
+            )}
           </div>
           <div aria-live="polite">
             {summary && (
@@ -480,18 +539,14 @@ export function NewOrderWorkspace({
               </FormGroup>
             )}
 
-            <FormGroup title={marketplace || isHadiah ? "Penerima" : "Customer"}>
+            <FormGroup title={marketplace || isGift ? "Penerima" : "Customer"}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field id="name" label={fieldLabel.name} flag={flagFor("name")}>
                   <Input
                     value={draft.name}
                     onChange={(event) => update("name", event.target.value)}
                     placeholder={
-                      marketplace
-                        ? "Nama penerima di marketplace"
-                        : isHadiah
-                          ? "Nama penerima hadiah"
-                          : "Nama lengkap customer"
+                      marketplace ? "Nama penerima di marketplace" : "Nama lengkap penerima"
                     }
                     maxLength={80}
                   />
@@ -542,13 +597,19 @@ export function NewOrderWorkspace({
               </Field>
             </FormGroup>
 
-            {isHadiah && (
-              <FormGroup title="Pengirim dan kartu ucapan">
-                <Field id="senderName" label="Nama pengirim" flag={flagFor("senderName")}>
+            {!marketplace && (
+              <FormGroup
+                title={
+                  draft.type === "normal"
+                    ? "Pengirim dan kartu ucapan (opsional)"
+                    : "Kartu ucapan & pengirim (Template Christmas)"
+                }
+              >
+                <Field id="senderName" label="Nama pengirim" optional flag={flagFor("senderName")}>
                   <Input
                     value={draft.senderName}
                     onChange={(event) => update("senderName", event.target.value)}
-                    placeholder="Nama yang memesan hadiah"
+                    placeholder="Nama pengirim (jika ada)"
                     maxLength={80}
                     className="sm:max-w-[calc(50%-0.5rem)]"
                   />
@@ -569,15 +630,17 @@ export function NewOrderWorkspace({
                     />
                   </Field>
                 </div>
-                <Field id="cardWishes" label="Wishes" optional>
-                  <Textarea
-                    value={draft.cardWishes}
-                    onChange={(event) => update("cardWishes", event.target.value)}
-                    placeholder="Ucapan yang ditulis di kartu"
-                    rows={3}
-                    maxLength={300}
-                  />
-                </Field>
+                {draft.type === "normal" && (
+                  <Field id="cardWishes" label="Wishes" optional>
+                    <Textarea
+                      value={draft.cardWishes}
+                      onChange={(event) => update("cardWishes", event.target.value)}
+                      placeholder="Ucapan yang ditulis di kartu"
+                      rows={3}
+                      maxLength={300}
+                    />
+                  </Field>
+                )}
               </FormGroup>
             )}
 

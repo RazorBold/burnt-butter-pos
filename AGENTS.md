@@ -88,7 +88,7 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Pesanan                                                                                      | `order` / `orders`                                                                         |
 | Item menu pesanan                                                                            | `order_items`                                                                              |
-| Tipe: Personal / Hadiah                                                                      | `type`: `personal` / `hadiah`                                                              |
+| Tipe: Normal / Hampers / Normal & Hampers                                                    | `type`: `normal` / `hampers` / `normal_hampers`                                            |
 | Jenis pesanan: PO / Ready Stock / Made to Order                                              | `kind`: `po` / `ready_stock` / `made_to_order`                                             |
 | Status: Baru, Diproses, Siap Packing, Siap Kirim, Dikirim, Selesai, Dibatalkan               | `baru`, `diproses`, `siap_packing`, `siap_kirim`, `dikirim`, `selesai`, `dibatalkan`       |
 | Pengiriman                                                                                   | `shipment` / `shipments`                                                                   |

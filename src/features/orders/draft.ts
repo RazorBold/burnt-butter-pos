@@ -34,7 +34,7 @@ export const EMPTY_DRAFT: OrderDraft = {
   channel: "whatsapp",
   marketplaceOrderNo: "",
   marketplaceTotal: "",
-  type: "personal",
+  type: "normal",
   kind: "po",
   name: "",
   phone: "",
@@ -99,8 +99,7 @@ function marketplaceIssues(draft: OrderDraft, today: string) {
 export function draftIssues(draft: OrderDraft, today: string): Partial<Record<DraftField, string>> {
   if (isMarketplace(draft.channel)) return marketplaceIssues(draft, today)
   const issues: Partial<Record<DraftField, string>> = {}
-  const nameLabel = draft.type === "hadiah" ? "Nama penerima" : "Nama"
-  if (draft.name.trim().length < 2) issues.name = `${nameLabel} wajib diisi.`
+  if (draft.name.trim().length < 2) issues.name = "Nama penerima wajib diisi."
   if (!draft.phone.trim()) issues.phone = "No. telp wajib diisi."
   else if (!normalizePhone(draft.phone))
     issues.phone = "Nomor HP belum benar. Contoh: 0812 3456 7890."
@@ -108,8 +107,6 @@ export function draftIssues(draft: OrderDraft, today: string): Partial<Record<Dr
     issues.address = "Alamat wajib untuk pesanan yang diantar."
   if (!draft.deliveryDate) issues.deliveryDate = "Tanggal kirim wajib diisi."
   else if (draft.deliveryDate < today) issues.deliveryDate = "Tanggal kirim sudah lewat."
-  if (draft.type === "hadiah" && !draft.senderName.trim())
-    issues.senderName = "Nama pengirim wajib untuk pesanan hadiah."
   if (!draft.shippingMethod) issues.shippingMethod = "Pilih metode pengiriman."
   if (!Object.values(draft.quantities).some((qty) => qty > 0))
     issues.items = "Pilih minimal satu menu."

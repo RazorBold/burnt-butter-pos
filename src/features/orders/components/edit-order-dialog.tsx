@@ -32,8 +32,9 @@ import { formatPhone } from "@/lib/phone"
 type EditDraft = Omit<OrderDraft, "quantities">
 
 const TYPE_OPTIONS = [
-  { value: "personal", label: "Personal" },
-  { value: "hadiah", label: "Hadiah" },
+  { value: "normal", label: "Normal" },
+  { value: "hampers", label: "Hampers" },
+  { value: "normal_hampers", label: "Normal & Hampers" },
 ] as const
 
 function draftOf(order: OrderDetail): EditDraft {
@@ -63,7 +64,6 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
   const [errors, setErrors] = useState<Partial<Record<DraftField, string>>>({})
   const [pending, startTransition] = useTransition()
   const marketplace = isMarketplace(order.channel)
-  const isHadiah = !marketplace && draft.type === "hadiah"
 
   function update<K extends keyof EditDraft>(key: K, value: EditDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -178,7 +178,7 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               id="edit-name"
-              label={marketplace ? "Nama pembeli" : isHadiah ? "Nama penerima" : "Nama"}
+              label={marketplace ? "Nama pembeli" : "Nama penerima"}
               flag={errors.name}
             >
               <Input
@@ -223,12 +223,13 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
               className="w-full sm:w-[220px]"
             />
           </Field>
-          {isHadiah && (
+          {!marketplace && (
             <>
-              <Field id="edit-senderName" label="Nama pengirim" flag={errors.senderName}>
+              <Field id="edit-senderName" label="Nama pengirim" optional flag={errors.senderName}>
                 <Input
                   value={draft.senderName}
                   onChange={(event) => update("senderName", event.target.value)}
+                  placeholder="Nama pengirim (jika ada)"
                   maxLength={80}
                 />
               </Field>
@@ -248,14 +249,16 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
                   />
                 </Field>
               </div>
-              <Field id="edit-cardWishes" label="Wishes" optional>
-                <Textarea
-                  value={draft.cardWishes}
-                  onChange={(event) => update("cardWishes", event.target.value)}
-                  rows={2}
-                  maxLength={300}
-                />
-              </Field>
+              {draft.type === "normal" && (
+                <Field id="edit-cardWishes" label="Wishes" optional>
+                  <Textarea
+                    value={draft.cardWishes}
+                    onChange={(event) => update("cardWishes", event.target.value)}
+                    rows={2}
+                    maxLength={300}
+                  />
+                </Field>
+              )}
             </>
           )}
           {!marketplace && (

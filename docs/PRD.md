@@ -64,7 +64,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 - **F-11** Filter periode: Hari Ini, 7 Hari, 30 Hari, Bulan Ini (dropdown).
 - **F-12** KPI: Total Pesanan, Pesanan Personal, Pesanan Hadiah, Total Pembayaran.
 - **F-13** Daftar Pesanan Terbaru (5 baris): No. Pesanan, Waktu, Nama, Tipe, Total, Status, menu aksi; tombol Lihat Semua ke halaman Pesanan.
-- **F-14** Donat Pesanan per Tipe (Personal vs Hadiah, jumlah + persen).
+- **F-14** Donat Pesanan per Tipe (Normal vs Hampers, jumlah + persen; Hampers termasuk Normal & Hampers).
 - **F-15** Bar Status Pesanan Hari Ini: Baru, Diproses, Siap Kirim, Dikirim, Selesai.
 - **F-16** Grafik garis Total Pembayaran 7 hari terakhir + Lihat Detail ke Laporan › Pembayaran.
 - **F-17** Pesanan per Metode Pengiriman: Pick Up, Instant, Kurir Internal (jumlah, persen, bar).
@@ -75,11 +75,12 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 ### Input Pesanan
 
 - **F-20** Modal berisi area teks untuk menempel pesan WA, tombol **Isi Otomatis**, dan **Reset**.
-- **F-21** Isi Otomatis mem-parsing teks menjadi: nama, no. telp, alamat, tanggal kirim, metode pengiriman, request, tipe (Personal/Hadiah), dan item menu + ukuran + jumlah.
+- **F-21** Isi Otomatis mem-parsing teks menjadi: nama, no. telp, alamat, tanggal kirim, metode pengiriman, request, tipe (Normal / Hampers / Normal & Hampers), dan item menu + ukuran + jumlah.
 - **F-22** Hasil parsing tampil di form yang bisa diedit; field yang tidak terbaca ditandai agar diisi manual. Form ada di halaman `/pesanan/baru` (pesan WA di kiri, form di kanan); Isi Otomatis di modal membawa pesan ke halaman ini. Desainnya diputuskan saat implementasi (lihat DESIGN.md).
 - **F-23** Simpan membuat pesanan berstatus **Baru** dengan nomor otomatis `BB` + `YYMMDD` + urutan 3 digit (contoh BB261021001).
 - **F-24** Total dihitung dari harga master menu sesuai ukuran.
 - **F-24b** Log edit pesanan (permintaan pemilik toko, Nov 2026): setiap simpan **Edit data**, **Ubah menu**, dan **catatan** mencatat siapa, kapan, dan ringkasan perubahannya (mis. "Alamat diubah", "Jenis: PO → Ready Stock", "Tambah 1x Choco Bon Bon"). Panel detail menampilkan edit terakhir ("Data pesanan diubah … oleh …" + tautan Lihat riwayat); Detail Lengkap menggabungkan log edit dengan riwayat status. Simpan tanpa perubahan tidak dicatat.
+- **F-24c** Tipe pesanan **Normal / Hampers / Normal & Hampers** (Nov 2026, menggantikan Personal/Hadiah). Template WA baru `#DetailFO1` (Normal), `#DetailFO2` (Hampers), `#DetailFO3` (Normal & Hampers) dengan baris `Jenis: PO/RS/MTO` dan `Tipe Box:`; tipe juga terbaca dari judul `#box …` atau menu hampers (Classico Red, Mac & Joy, Melted Cheese, Holy E Olio). Nama pengirim dan kartu ucapan bisa diisi di semua tipe. Saat pesanan **lunas**, stok **loyang** (Large/Regular) dan **box hampers** sesuai menu dipotong otomatis; dikembalikan bila pembayaran atau pesanan dibatalkan. Migrasi `0020` mengubah `personal`→`normal`, `hadiah`→`hampers` (database produksi sudah diubah langsung).
 - **F-24a** Jenis pesanan **PO / Ready Stock / Made to Order** (permintaan pemilik toko, Nov 2026): dipilih di header form Input Pesanan (WA dan Olshop, bawaan PO) dan bisa diubah lewat Edit di panel detail. Parser membaca label opsional `Jenis Pesanan : …` (PO/Pre Order, Ready, Made to Order/MTO); template WA customer tidak diubah. Tampil sebagai kolom **Jenis** di Daftar Pesanan, badge di panel detail dan Detail Lengkap, serta kolom di CSV. Pesanan lama terisi PO. Belum memengaruhi alur status (Ready Stock tetap lewat Produksi).
 
 ### Pesanan
@@ -141,6 +142,7 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 - **F-71** Produksi: rekap porsi per menu dan ukuran per tanggal kirim, serta papan pesanan Belum mulai / Sedang dimasak / Selesai masak. Hanya pesanan yang sudah **Lunas** masuk antrean masak (pesanan Baru yang belum dibayar tidak tampil, ada keterangan jumlahnya), dan Baru → Diproses ditolak bila belum Lunas di semua menu (keputusan pemilik toko, Nov 2026). Mulai masak = Diproses, selesai masak = Siap Packing. Role Produksi boleh mengubah status, tapi hanya untuk langkah dapur ini.
 - **F-72** Stok Packaging: box hampers dikelompokkan per **kategori stok** (F-61; awalnya Size Large / Size Regular × Classic Red, Mac & Joy, Melted Cheese, Holy E Olio); packaging lama (Box Large/Regular/Dessert, Cup Dessert, Paper Bag) diarsipkan, data dan riwayatnya tetap ada (keputusan pemilik toko, Nov 2026). Stok masuk dan hitung ulang (revisi bila ada selisih) beserta riwayatnya. Stok keluar **terpotong otomatis** saat packing Hampers (F-73), jadi tidak ada stok keluar manual.
 - **F-73** Packaging (menu baru antara Produksi dan Pengiriman, Admin + Produksi): papan Menunggu packing / Selesai packing per tanggal kirim. **Selesai packing** = Siap Packing → Siap Kirim, dengan pilihan jenis packing: **Normal** (packaging biasa, stok tidak dicatat, langsung Siap Kirim) atau **Hampers** (isi jumlah tiap box hampers, dikelompokkan Size Large / Size Regular seperti template "PESANAN BOX HAMPERS"; stoknya terpotong). Jenis packing disimpan di pesanan (`orders.packaging_type`). Stok box kurang = tidak bisa disimpan (tambah/revisi stok dulu). **Batal packing**, atau pesanan ter-packing dibatalkan, mengembalikan stoknya. Siap Kirim hanya bisa dicapai lewat menu ini (keputusan pemilik toko, Nov 2026).
+  - **Revisi Nov 2026:** dialog Packing tidak lagi memotong stok. Box hampers (sesuai menu kategori Hampers) dan loyang (per porsi Large/Regular) terpotong otomatis saat pesanan **Lunas**; kembali bila pembayaran atau pesanan dibatalkan. Batal packing tidak mengubah stok. Menu pasta biasa tidak memotong box walau namanya mirip (mis. "Spaghetti Classico").
 
 ## Alur pengguna
 
@@ -171,7 +173,7 @@ Pesanan adalah entitas pusat: satu pesanan punya satu customer, banyak item menu
 
 | Entitas | Field utama | Relasi |
 | --- | --- | --- |
-| Order (Pesanan) | no_pesanan, waktu_dibuat, tipe (Personal/Hadiah), tgl_kirim, status, total, request, raw_wa_text | → Customer, → OrderItem[], → Shipment, → Payment[] |
+| Order (Pesanan) | no_pesanan, waktu_dibuat, tipe (Normal / Hampers / Normal & Hampers), tgl_kirim, status, total, request, raw_wa_text | → Customer, → OrderItem[], → Shipment, → Payment[] |
 | OrderItem | menu_id, ukuran, qty, harga_satuan, subtotal | → Order, → Menu |
 | Customer | nama, no_telp, alamat | → Order[] |
 | Menu | nama, deskripsi, foto, kategori, harga per ukuran, status | → OrderItem[] |

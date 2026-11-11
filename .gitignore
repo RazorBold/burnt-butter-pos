@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Sesi login QA untuk e2e (dibuat ulang setiap run)
 e2e/.auth/
+
+# Coretan lokal
+scratch/

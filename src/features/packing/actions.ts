@@ -26,40 +26,30 @@ const packSchema = z.object({
 })
 
 /**
- * Selesai packing (Admin, Produksi): Siap Packing → Siap Kirim. Normal = packaging biasa, stok
- * tidak dicatat. Hampers = admin mengisi box hampers yang dipakai, dan stoknya dipotong.
+ * Selesai packing (Admin, Produksi, Owner): Siap Packing → Siap Kirim, mencatat jenis packing
+ * Normal/Hampers. Stok tidak dipotong di sini: loyang dan box hampers sudah terpotong otomatis
+ * saat pesanan Lunas (keputusan pemilik toko, Nov 2026). Isian `items` diabaikan.
  */
 export async function packOrder(input: unknown): Promise<PackingResult> {
   const userId = await requirePacker()
   if (typeof userId !== "string") return userId
   const parsed = packSchema.safeParse(input)
   if (!parsed.success) return { ok: false, message: "Data packing tidak terbaca. Muat ulang." }
-  const { orderId, type, items } = parsed.data
-
-  // Packaging yang sama dijumlahkan; jumlah 0 dibuang.
-  const total = new Map<string, number>()
-  for (const item of items)
-    total.set(item.packagingId, (total.get(item.packagingId) ?? 0) + item.qty)
-  const usage = [...total]
-    .filter(([, qty]) => qty > 0)
-    .map(([packagingId, qty]) => ({ packagingId, qty }))
-  if (type === "hampers" && usage.length === 0) {
-    return { ok: false, message: "Isi jumlah box hampers yang dipakai, minimal satu." }
-  }
+  const { orderId, type } = parsed.data
 
   const { done, skipped } = await changeStatuses(
     [orderId],
     "siap_kirim",
     userId,
     { packing: true },
-    { [orderId]: { type, uses: type === "hampers" ? usage : [] } },
+    { [orderId]: { type, uses: [] } },
   )
   if (done.length > 0) {
     return {
       ok: true,
       message:
         type === "hampers"
-          ? `${done[0]} selesai packing hampers, stok box dipotong.`
+          ? `${done[0]} selesai packing hampers, siap dikirim.`
           : `${done[0]} selesai packing normal, siap dikirim.`,
     }
   }
@@ -71,7 +61,10 @@ export async function packOrder(input: unknown): Promise<PackingResult> {
   return { ok: false, message: `${skip.orderNo} tidak sedang menunggu packing. Muat ulang.` }
 }
 
-/** Batal packing (Admin, Produksi): Siap Kirim → Siap Packing, stok packaging dikembalikan. */
+/**
+ * Batal packing: Siap Kirim → Siap Packing. Stok yang terpotong saat Lunas tidak dikembalikan
+ * (pesanan masih lunas); hanya potongan lama dari dialog packing (sebelum Nov 2026) yang kembali.
+ */
 export async function unpackOrder(orderId: unknown): Promise<PackingResult> {
   const userId = await requirePacker()
   if (typeof userId !== "string") return userId
@@ -82,7 +75,7 @@ export async function unpackOrder(orderId: unknown): Promise<PackingResult> {
     limitTo: ["siap_packing", "siap_kirim"],
   })
   if (done.length > 0) {
-    return { ok: true, message: `Packing ${done[0]} dibatalkan, stok packaging dikembalikan.` }
+    return { ok: true, message: `Packing ${done[0]} dibatalkan, pesanan menunggu packing lagi.` }
   }
   return { ok: false, message: "Pesanan ini sudah dikirim atau berubah. Muat ulang halaman." }
 }

@@ -96,7 +96,7 @@
 }
 
 :root {
-  --bg-page: #f6f0ea;
+  --bg-page: #faf8f5;
   --bg-card: #fffcf9;
 
   /* Empat nada pastel dari foto brand. Teks *-ink di atas *-soft kontras ≥ 4.5:1. */
@@ -209,4 +209,12 @@
   --tone-ring: var(--sky-ring);
   --tone-ink: var(--sky-ink);
   --tone-spark: var(--sky-spark);
+}
+
+/* Latar belakang putih dengan pattern halus */
+.bg-page-pattern {
+  background-color: var(--bg-page);
+  background-image: radial-gradient(rgba(117, 65, 34, 0.075) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+  background-attachment: fixed;
 }

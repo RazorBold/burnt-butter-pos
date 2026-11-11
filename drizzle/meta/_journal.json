@@ -141,6 +141,13 @@
       "when": 1794229653963,
       "tag": "0019_order_edit_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794369233504,
+      "tag": "0020_order_type_hampers",
+      "breakpoints": true
     }
   ]
 }

@@ -99,6 +99,9 @@ export async function returnPacking(
     .where(
       and(
         eq(stockMovements.itemType, "packaging"),
+        // Hanya potongan dari dialog packing (catatan "Packing …"). Loyang dan box yang terpotong
+        // saat Lunas dikembalikan lewat returnOrderStock saat pembayaran/pesanan dibatalkan.
+        sql`${stockMovements.note} like 'Packing %'`,
         inArray(
           stockMovements.orderId,
           orders.map((order) => order.id),

@@ -26,7 +26,7 @@ describe("ordersToCsv", () => {
     orderNo: "BB261025001",
     // 09:12 WIB
     createdAt: new Date("2026-10-25T02:12:00Z"),
-    type: "hadiah",
+    type: "hampers",
     kind: "made_to_order",
     customerName: "Nadia Rahma",
     phone: "081234567890",
@@ -54,7 +54,7 @@ describe("ordersToCsv", () => {
       "No. Pesanan,Dibuat (WIB),Jenis,Tipe,Nama Customer,No. HP,Alamat,Pengirim Hadiah,Tanggal Kirim,Pengiriman,Status,Pembayaran,Dibayar Lewat,Menu,Request,Total (Rp),Sumber,No. Marketplace,Catatan,Link Lacak",
     )
     expect(line).toBe(
-      'BB261025001,2026-10-25 09:12,Made to Order,Hadiah,Nadia Rahma,0812 3456 7890,"Jl. Melati No. 10, Cilandak",Rizky,2026-10-26,Kurir Internal,Diproses,Lunas,BCA,2x Spaghetti Classico Bologna Brulee (Large); 1x Choco Bon Bon,,250000,WhatsApp,,Add on keju,',
+      'BB261025001,2026-10-25 09:12,Made to Order,Hampers,Nadia Rahma,0812 3456 7890,"Jl. Melati No. 10, Cilandak",Rizky,2026-10-26,Kurir Internal,Diproses,Lunas,BCA,2x Spaghetti Classico Bologna Brulee (Large); 1x Choco Bon Bon,,250000,WhatsApp,,Add on keju,',
     )
     expect(end).toBe("")
   })

@@ -54,11 +54,11 @@ export function SeriesLegend({ items }: { items: { label: string; color: string 
 }
 
 const trendConfig = {
-  personal: { label: "Personal", color: REPORT_COLORS.personal },
-  hadiah: { label: "Hadiah", color: REPORT_COLORS.hadiah },
+  personal: { label: "Normal", color: REPORT_COLORS.personal },
+  hadiah: { label: "Hampers", color: REPORT_COLORS.hadiah },
 } satisfies ChartConfig
 
-/** Tren Pesanan (F-52): garis harian Personal vs Hadiah. */
+/** Tren Pesanan (F-52): garis harian Normal vs Hampers. */
 export function OrderTrendChart({ perDay }: { perDay: PerDay[] }) {
   return (
     <>
@@ -96,14 +96,14 @@ export function OrderTrendChart({ perDay }: { perDay: PerDay[] }) {
       </ChartContainer>
       <DataTable
         caption="Tren pesanan per hari"
-        head={["Tanggal", "Personal", "Hadiah"]}
+        head={["Tanggal", "Normal", "Hampers"]}
         rows={perDay.map((row) => [longDay(row.day), row.personal, row.hadiah])}
       />
     </>
   )
 }
 
-/** Rekap Penjualan per Hari (F-55): bar bertumpuk Personal/Hadiah, toggle Pesanan / Pendapatan. */
+/** Rekap Penjualan per Hari (F-55): bar bertumpuk Normal/Hampers, toggle Pesanan / Pendapatan. */
 export function DailySalesChart({ perDay }: { perDay: PerDay[] }) {
   const [mode, setMode] = useState<"pesanan" | "pendapatan">("pesanan")
   const revenue = mode === "pendapatan"
@@ -111,8 +111,8 @@ export function DailySalesChart({ perDay }: { perDay: PerDay[] }) {
     ? (["personalRevenue", "hadiahRevenue"] as const)
     : (["personal", "hadiah"] as const)
   const config = {
-    [keys[0]]: { label: "Personal", color: REPORT_COLORS.personal },
-    [keys[1]]: { label: "Hadiah", color: REPORT_COLORS.hadiah },
+    [keys[0]]: { label: "Normal", color: REPORT_COLORS.personal },
+    [keys[1]]: { label: "Hampers", color: REPORT_COLORS.hadiah },
   } satisfies ChartConfig
   const compactRupiah = (value: number) =>
     value >= 1_000_000
@@ -198,14 +198,14 @@ export function DailySalesChart({ perDay }: { perDay: PerDay[] }) {
       <div className="mt-3">
         <SeriesLegend
           items={[
-            { label: "Personal", color: REPORT_COLORS.personal },
-            { label: "Hadiah", color: REPORT_COLORS.hadiah },
+            { label: "Normal", color: REPORT_COLORS.personal },
+            { label: "Hampers", color: REPORT_COLORS.hadiah },
           ]}
         />
       </div>
       <DataTable
         caption={revenue ? "Pendapatan per hari" : "Pesanan per hari"}
-        head={["Tanggal", "Personal", "Hadiah"]}
+        head={["Tanggal", "Normal", "Hampers"]}
         rows={perDay.map((row) =>
           revenue
             ? [longDay(row.day), formatRupiah(row.personalRevenue), formatRupiah(row.hadiahRevenue)]

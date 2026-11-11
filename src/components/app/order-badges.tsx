@@ -28,11 +28,18 @@ const BADGE =
 
 /** Badge tipe pesanan: Personal (krem) / Hadiah (merah muda), sesuai 03-pesanan.png. */
 export function TypeBadge({ type, className }: { type: OrderType; className?: string }) {
+  const colorClass =
+    type === "hampers"
+      ? "bg-hadiah text-hadiah-fg"
+      : type === "normal_hampers"
+        ? "bg-amber-100 text-amber-900 border border-amber-300"
+        : "bg-personal text-personal-fg"
+
   return (
     <span
       className={cn(
         BADGE,
-        type === "hadiah" ? "bg-hadiah text-hadiah-fg" : "bg-personal text-personal-fg",
+        colorClass,
         className,
       )}
     >

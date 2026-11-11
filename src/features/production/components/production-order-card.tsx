@@ -70,15 +70,15 @@ export function ProductionOrderCard({
           </h4>
           <p className="text-[13px] text-text-body">
             {order.customerName}
-            {order.type === "hadiah" && order.senderName && ` (dari ${order.senderName})`}
+            {order.senderName && ` (dari ${order.senderName})`}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
-          {order.type === "hadiah" && (
+          {order.type !== "normal" && (
             <span className="inline-flex items-center gap-1 rounded-md bg-hadiah px-2 py-0.5 text-xs font-medium text-hadiah-fg">
               <Gift className="size-3.5" aria-hidden />
-              {order.hasCard ? "Hadiah + kartu" : "Hadiah"}
+              {order.type === "normal_hampers" ? "Normal & Hampers" : "Hampers"}
             </span>
           )}
           {(order.status === "siap_packing" ||

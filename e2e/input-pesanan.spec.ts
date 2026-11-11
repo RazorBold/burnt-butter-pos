@@ -13,7 +13,7 @@ async function login(page: Page, target: string) {
 test.describe("Input Pesanan", () => {
   test.skip(!admin.email || !admin.password, "E2E_EMAIL / E2E_PASSWORD belum diisi")
 
-  test("Personal: tempel di modal navbar, Isi Otomatis membuka form yang terisi", async ({
+  test("Normal: tempel di modal navbar, Isi Otomatis membuka form yang terisi", async ({
     page,
   }, info) => {
     await login(page, "/dashboard")
@@ -27,11 +27,11 @@ test.describe("Input Pesanan", () => {
     await dialog.getByRole("button", { name: "Isi Otomatis" }).click()
 
     await expect(page).toHaveURL(/\/pesanan\/baru$/)
-    await expect(page.getByRole("radio", { name: "Personal" })).toHaveAttribute(
+    await expect(page.getByRole("radio", { name: "Normal", exact: true })).toHaveAttribute(
       "aria-checked",
       "true",
     )
-    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue("Siti Nurhaliza")
+    await expect(page.getByLabel("Nama penerima")).toHaveValue("Siti Nurhaliza")
     await expect(page.getByLabel("No. telp")).toHaveValue("081234567890")
     await expect(page.getByLabel(/^Alamat lengkap/)).toHaveValue(
       "Jl. Melati No. 12, RT 03/RW 05\nKel. Sukajadi, Bandung",
@@ -55,21 +55,21 @@ test.describe("Input Pesanan", () => {
     await expect(page.getByTestId("order-total")).toHaveText("Rp 365.000")
   })
 
-  test("Hadiah: penerima, pengirim, kartu ucapan, dan Kurir Internal", async ({ page }, info) => {
+  test("Hampers: penerima, pengirim, kartu ucapan, dan Kurir Internal", async ({ page }, info) => {
     test.skip(info.project.name !== "desktop", "cukup sekali, di desktop")
     await login(page, "/pesanan/baru")
     await page.getByRole("textbox", { name: "Pesan WhatsApp" }).fill(HADIAH_SAMPLE)
     await page.getByRole("button", { name: "Isi Otomatis" }).click()
 
-    await expect(page.getByRole("radio", { name: "Hadiah" })).toHaveAttribute(
+    await expect(page.getByRole("radio", { name: "Hampers", exact: true })).toHaveAttribute(
       "aria-checked",
       "true",
     )
     await expect(page.getByLabel("Nama penerima")).toHaveValue("Alya Putri")
     await expect(page.getByLabel("Nama pengirim")).toHaveValue("Rizky")
-    await expect(page.getByLabel(/^Wishes/)).toHaveValue(
-      "Happy birthday sayang!\nSemoga suka pastanya",
-    )
+    // Hampers memakai kartu Template Christmas: hanya To dan From.
+    await expect(page.getByLabel(/^To/)).toHaveValue("Alya")
+    await expect(page.getByLabel(/^From/)).toHaveValue("Rizky")
     await expect(page.getByRole("radio", { name: /^Kurir Internal/ })).toBeChecked()
     await expect(page.getByLabel("Jumlah Bundle of 3")).toHaveValue("1")
     await expect(page.getByTestId("order-total")).toHaveText("Rp 245.000")
@@ -85,15 +85,15 @@ test.describe("Input Pesanan", () => {
     await page.getByRole("button", { name: "Isi Otomatis" }).click()
 
     await expect(page.getByText(/Terbaca 0 dari 5 isian wajib dan 0 menu\./)).toBeVisible()
-    await expect(page.getByText("Nama wajib diisi.")).toBeVisible()
+    await expect(page.getByText("Nama penerima wajib diisi.")).toBeVisible()
     await expect(page.getByText("Pilih metode pengiriman.")).toBeVisible()
     await expect(page.getByText("Pilih minimal satu menu.")).toBeVisible()
     await expect(page.getByText(/^Belum lengkap:/)).toContainText(
-      "Nama, No. telp, Alamat, Tanggal kirim, Metode pengiriman, Menu",
+      "Nama penerima, No. telp, Alamat, Tanggal kirim, Metode pengiriman, Menu",
     )
 
-    await page.getByLabel("Nama", { exact: true }).fill("Dewi")
-    await expect(page.getByText("Nama wajib diisi.")).toBeHidden()
+    await page.getByLabel("Nama penerima").fill("Dewi")
+    await expect(page.getByText("Nama penerima wajib diisi.")).toBeHidden()
     await page.getByRole("radio", { name: /^Pick Up/ }).check()
     // Pick Up tidak butuh alamat.
     await expect(page.getByText(/^Belum lengkap:/)).not.toContainText("Alamat")
@@ -101,7 +101,7 @@ test.describe("Input Pesanan", () => {
 
     await page.getByRole("button", { name: "Reset" }).click()
     await expect(page.getByRole("textbox", { name: "Pesan WhatsApp" })).toHaveValue("")
-    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue("")
+    await expect(page.getByLabel("Nama penerima")).toHaveValue("")
   })
 })
 
@@ -131,7 +131,7 @@ test.describe("Input Pesanan › Simpan", () => {
     return { dialog, orderNo }
   }
 
-  test("Personal tersimpan: nomor otomatis, customer baru, item, pengiriman, log", async ({
+  test("Normal tersimpan: nomor otomatis, customer baru, item, pengiriman, log", async ({
     page,
   }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
@@ -149,7 +149,7 @@ test.describe("Input Pesanan › Simpan", () => {
 
     const order = await readOrder(orderNo)
     expect(order).toMatchObject({
-      type: "personal",
+      type: "normal",
       // Tanpa label "Jenis Pesanan" di pesan WA: bawaan PO.
       kind: "po",
       status: "baru",
@@ -188,7 +188,7 @@ test.describe("Input Pesanan › Simpan", () => {
     await expect(row.getByRole("cell", { name: "1", exact: true })).toBeVisible()
   })
 
-  test("Hadiah Pick Up tersimpan: pengirim, kartu ucapan, status kirim kosong", async ({
+  test("Hampers Pick Up tersimpan: pengirim, kartu ucapan, status kirim kosong", async ({
     page,
   }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
@@ -205,7 +205,7 @@ ${HADIAH_SAMPLE}`
     const { orderNo } = await saveFrom(page, text)
 
     expect(await readOrder(orderNo)).toMatchObject({
-      type: "hadiah",
+      type: "hampers",
       kind: "made_to_order",
       customer: name,
       sender_name: "Rizky",
@@ -265,7 +265,7 @@ ${HADIAH_SAMPLE}`
 
     await login(page, "/dashboard")
     await viaModal(message(first, `0899${String(stamp).slice(-8)}`))
-    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue(first)
+    await expect(page.getByLabel("Nama penerima")).toHaveValue(first)
     await page.getByRole("button", { name: "Simpan pesanan" }).click()
     const firstPopup = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
     const firstNo = await firstPopup.getByTestId("saved-order-no").innerText()
@@ -276,7 +276,7 @@ ${HADIAH_SAMPLE}`
     // pertama dan timernya, sehingga pesanan kedua tidak sempat disimpan.
     await viaModal(message(second, `0898${String(stamp).slice(-8)}`))
     await expect(page.getByRole("dialog", { name: "Pesanan sudah terinput" })).toBeHidden()
-    await expect(page.getByLabel("Nama", { exact: true })).toHaveValue(second)
+    await expect(page.getByLabel("Nama penerima")).toHaveValue(second)
     await page.waitForTimeout(3_500) // lewat dari timer popup lama: tetap di form
     await expect(page).toHaveURL(/\/pesanan\/baru$/)
     await page.getByRole("button", { name: "Simpan pesanan" }).click()

@@ -113,8 +113,26 @@ export function buildReport(
         sparkDays,
       ),
     },
-    personal: typeKpi("personal"),
-    hadiah: typeKpi("hadiah"),
+    normal: typeKpi("normal"),
+    hampers: {
+      value: current.filter((o) => o.type === "hampers" || o.type === "normal_hampers").length,
+      percent: percentChange(
+        current.filter((o) => o.type === "hampers" || o.type === "normal_hampers").length,
+        before.filter((o) => o.type === "hampers" || o.type === "normal_hampers").length,
+      ),
+      series: perDayValues(
+        active.filter((o) => o.type === "hampers" || o.type === "normal_hampers"),
+        orderDay,
+        () => 1,
+        sparkDays,
+      ),
+    },
+    get personal() {
+      return this.normal
+    },
+    get hadiah() {
+      return this.hampers
+    },
     customers: {
       value: distinctCustomers(current),
       percent: percentChange(distinctCustomers(current), distinctCustomers(before)),
@@ -124,23 +142,40 @@ export function buildReport(
     },
   } satisfies Record<string, Kpi>
 
-  const byType = (type: OrderType, value: (order: ReportOrder) => number) =>
-    perDayValues(
-      current.filter((order) => order.type === type),
-      orderDay,
-      value,
-      rangeDays,
-    )
-  const personalOrders = byType("personal", () => 1)
-  const hadiahOrders = byType("hadiah", () => 1)
-  const personalRevenue = byType("personal", (order) => order.total)
-  const hadiahRevenue = byType("hadiah", (order) => order.total)
+  const normalOrders = perDayValues(
+    current.filter((o) => o.type === "normal"),
+    orderDay,
+    () => 1,
+    rangeDays,
+  )
+  const hampersOrders = perDayValues(
+    current.filter((o) => o.type !== "normal"),
+    orderDay,
+    () => 1,
+    rangeDays,
+  )
+  const normalRevenue = perDayValues(
+    current.filter((o) => o.type === "normal"),
+    orderDay,
+    (o) => o.total,
+    rangeDays,
+  )
+  const hampersRevenue = perDayValues(
+    current.filter((o) => o.type !== "normal"),
+    orderDay,
+    (o) => o.total,
+    rangeDays,
+  )
   const perDay = rangeDays.map((day, index) => ({
     day,
-    personal: personalOrders[index],
-    hadiah: hadiahOrders[index],
-    personalRevenue: personalRevenue[index],
-    hadiahRevenue: hadiahRevenue[index],
+    normal: normalOrders[index],
+    hampers: hampersOrders[index],
+    normalRevenue: normalRevenue[index],
+    hampersRevenue: hampersRevenue[index],
+    personal: normalOrders[index],
+    hadiah: hampersOrders[index],
+    personalRevenue: normalRevenue[index],
+    hadiahRevenue: hampersRevenue[index],
   }))
 
   const count = <K extends string>(keys: readonly K[], keyOf: (order: ReportOrder) => string) =>

@@ -11,7 +11,7 @@
 
 import { normalizePhone } from "@/lib/phone"
 
-export type OrderType = "personal" | "hadiah"
+export type OrderType = "normal" | "hampers" | "normal_hampers"
 
 /** Jenis pesanan: Pre-Order, Ready Stock, atau Made to Order. */
 export type OrderKind = "po" | "ready_stock" | "made_to_order"
@@ -62,6 +62,7 @@ type Field =
   | "marketplace"
   | "invoice"
   | "kind"
+  | "boxType"
 
 // Urutan penting: "Nama Pengirim" dicek sebelum pola nama umum.
 const FIELD_LABELS: [Field, RegExp][] = [
@@ -77,6 +78,7 @@ const FIELD_LABELS: [Field, RegExp][] = [
   ["marketplace", /^marketplace\b/],
   ["invoice", /^(no\.?|nomor|nmr)\s*(invoice|inv|pesanan|order)\b/],
   ["kind", /^jenis(\s*(pesanan|order))?\b/],
+  ["boxType", /^(tipe\s*box|tipe\s*pesanan|tipe)\b/],
 ]
 
 /** Field yang nilainya boleh lebih dari satu baris. */
@@ -84,9 +86,11 @@ const MULTILINE: ReadonlySet<Field> = new Set(["address", "cardWishes", "request
 
 const SHIPPING_LABEL = /^(pilih\s*)?metode\s*(pengiriman|kirim)\b/
 const MENU_HEADER = /^pilihan\s*menu\b/
-const CARD_HEADER = /^isi\s*kartu\s*ucapan\b/
+const CARD_HEADER = /^(isi\s*)?kartu\s*ucapan\b/
 const INTRO = /^untuk\s*pemesanan\b/
-const SEPARATOR = /^[-–—_=]{3,}$/
+const SEPARATOR = /^[-–—_=]{2,}$/
+const BOX_HEADER = /^#?box\s*(normal|christmas|hampers)\b/
+const TEMPLATE_TAG = /^#detailfo\d\b/
 
 const SECTIONS: [ParsedSize, RegExp][] = [
   ["large", /^(size\s*)?large\b/],
@@ -129,6 +133,8 @@ function isStructural(lower: string): boolean {
     CARD_HEADER.test(lower) ||
     INTRO.test(lower) ||
     SEPARATOR.test(lower) ||
+    BOX_HEADER.test(lower) ||
+    TEMPLATE_TAG.test(lower) ||
     SECTIONS.some(([, pattern]) => pattern.test(lower))
   )
 }
@@ -227,7 +233,6 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
   let current: Field | null = null
   let inShipping = false
   let menuSize: ParsedSize | null = null
-  const lower = text.toLowerCase()
 
   for (const original of lines) {
     const line = clean(original)
@@ -245,7 +250,13 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
       inShipping = false
       continue
     }
-    if (MENU_HEADER.test(key) || SEPARATOR.test(key)) {
+    if (BOX_HEADER.test(key)) {
+      menuSize = null
+      current = null
+      inShipping = false
+      continue
+    }
+    if (MENU_HEADER.test(key) || SEPARATOR.test(key) || TEMPLATE_TAG.test(key)) {
       current = null
       inShipping = false
       continue
@@ -289,7 +300,9 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
       inShipping = false
       current = field
       const value = valueAfterLabel(line)
-      values[current] = value ? [value] : []
+      // Template FO punya label kembar ("Tanggal Pengiriman" dan "Tanggal kirim"); label kosong
+      // tidak boleh menimpa isian yang sudah terbaca di label sebelumnya.
+      if (value || !values[current]?.length) values[current] = value ? [value] : []
       continue
     }
 
@@ -325,14 +338,10 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
   const phoneRaw = value("phone")
   const dateRaw = value("date")
   const isMarketplace = values.marketplace !== undefined || values.invoice !== undefined
-  // Template Olshop juga memakai "Nama Penerima", tapi bukan pesanan Hadiah.
-  const isHadiah =
-    !isMarketplace &&
-    (/pemesanan\s*hadiah|nama\s*penerima|nama\s*pengirim|kartu\s*ucapan/.test(lower) ||
-      Boolean(value("sender")))
+  const orderType = isMarketplace ? "normal" : orderTypeFrom(text, value("boxType") ?? "")
 
   return {
-    type: isHadiah ? "hadiah" : "personal",
+    type: orderType,
     name: value("name"),
     phone: normalizePhone(phoneRaw),
     phoneRaw,
@@ -354,14 +363,52 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
 }
 
 /**
- * "PO" / "Pre Order" → po, "Ready" → ready_stock, "Made to order" / "MTO" → made_to_order.
+ * Tentukan jenis pesanan: Normal, Hampers, atau Normal & Hampers.
+ */
+export function orderTypeFrom(text: string, boxTypeValue = ""): OrderType {
+  const lower = text.toLowerCase()
+  const boxTypeLower = boxTypeValue.toLowerCase()
+
+  if (
+    /#detailfo3\b/.test(lower) ||
+    /normal\s*(&|dan|\+)\s*hampers/.test(boxTypeLower) ||
+    (/box\s*normal/.test(lower) && /box\s*(christmas|hampers)/.test(lower))
+  ) {
+    return "normal_hampers"
+  }
+  if (
+    /#detailfo2\b/.test(lower) ||
+    /hampers|hadiah/.test(boxTypeLower) ||
+    /\bhadiah\b/.test(lower) ||
+    /box\s*(christmas|hampers)/.test(lower)
+  ) {
+    return "hampers"
+  }
+  if (/#detailfo1\b/.test(lower) || /normal/.test(boxTypeLower)) {
+    return "normal"
+  }
+
+  // Deteksi bila ada nama menu hampers
+  const hasHampersMenu = /classico\s*red|mac\s*&\s*joy|melted\s*cheese|holy\s*e\s*olio/.test(lower)
+  const hasNormalMenu =
+    /spaghetti\s*classico|not\s*your\s*mac|potato\s*gratin|choco\s*bon\s*bon|bundle\s*of\s*3/.test(
+      lower,
+    )
+
+  if (hasHampersMenu && hasNormalMenu) return "normal_hampers"
+  if (hasHampersMenu) return "hampers"
+  return "normal"
+}
+
+/**
+ * "PO" / "Pre Order" → po, "RS" / "Ready" → ready_stock, "Made to order" / "MTO" → made_to_order.
  * Lebih dari satu pilihan (template belum diisi) atau kosong → null.
  */
 export function kindFrom(text: string): OrderKind | null {
   const lower = text.toLowerCase()
   const found: OrderKind[] = []
   if (/\bpo\b|pre[\s-]*order/.test(lower)) found.push("po")
-  if (/ready/.test(lower)) found.push("ready_stock")
+  if (/\brs\b|ready/.test(lower)) found.push("ready_stock")
   if (/ma[dy]e?\s*to\s*order|\bmto\b/.test(lower)) found.push("made_to_order")
   return found.length === 1 ? found[0] : null
 }

@@ -30,7 +30,7 @@ test.describe("Daftar Pesanan", () => {
     page,
   }, info) => {
     code = `${Date.now()}`
-    // 12 pesanan hari ini: 8 Personal + 4 Hadiah. Dicari lewat kodenya supaya pesanan asli
+    // 12 pesanan hari ini: 8 Normal + 4 Hampers. Dicari lewat kodenya supaya pesanan asli
     // (database produksi) tidak ikut terhitung.
     await seedQaOrders(code, 12, 4)
     await login(page, admin.email!, `/pesanan?q=${code}`)
@@ -41,7 +41,7 @@ test.describe("Daftar Pesanan", () => {
     await expect(dataRows(page)).toHaveCount(10)
     const first = dataRows(page).first()
     await expect(first).toContainText(`QA${code}01`)
-    await expect(first.getByText("Personal")).toBeVisible()
+    await expect(first.getByText("Normal", { exact: true })).toBeVisible()
     await expect(first.getByText("Baru")).toBeVisible()
     await expect(first.getByText("Kurir Internal")).toBeVisible()
     await page.screenshot({ path: `test-results/pesanan-${info.project.name}.png`, fullPage: true })
@@ -54,8 +54,8 @@ test.describe("Daftar Pesanan", () => {
     await expect(dataRows(page)).toHaveCount(2)
 
     await page.getByRole("combobox", { name: "Semua Tipe" }).click()
-    await page.getByRole("option", { name: "Hadiah" }).click()
-    await expect(page).toHaveURL(/tipe=hadiah/)
+    await page.getByRole("option", { name: "Hampers", exact: true }).click()
+    await expect(page).toHaveURL(/tipe=hampers/)
     await expect(page).not.toHaveURL(/hal=/)
     await expect(page.getByText("Menampilkan 1–4 dari 4 pesanan")).toBeVisible()
 
@@ -63,7 +63,7 @@ test.describe("Daftar Pesanan", () => {
     await page.getByRole("option", { name: "Siap Kirim" }).click()
     await expect(dataRows(page)).toHaveCount(1)
     await expect(dataRows(page).first()).toContainText(`QA${code}09`)
-    // Hadiah: pengirim tampil di bawah nama penerima.
+    // Hampers: pengirim tampil di bawah nama penerima.
     await expect(dataRows(page).first()).toContainText(`dari QA Pengirim ${code}`)
 
     await page.getByRole("button", { name: /^Tanggal pesanan/ }).click()
@@ -80,6 +80,6 @@ test.describe("Daftar Pesanan", () => {
     test.skip(!kasirEmail || info.project.name !== "desktop", "butuh E2E_KASIR_EMAIL, desktop saja")
     await login(page, kasirEmail!, "/pesanan")
     await expect(page.getByRole("heading", { name: "Daftar Pesanan" })).toBeVisible()
-    await expect(page.getByText("Pesanan Hadiah")).toBeVisible()
+    await expect(page.getByText("Pesanan Hampers")).toBeVisible()
   })
 })

@@ -2,62 +2,172 @@
 // Olshop untuk pesanan Shopee/Tokopedia (November 2026).
 // Dipakai untuk test parser dan contoh di e2e.
 
-const SHIPPING_AND_MENU = `Pilih Metode Pengiriman :
+export const FO1_TEMPLATE = `#DetailFO1
+Tanggal Pengiriman:
+Jenis: PO/RS/MTO
+Tipe Box: NORMAL
+
+Untuk pemesanan boleh dilengkapi ya kak 🤗
+
+Nama Penerima:
+Nama Pengirim (Jika ada): 
+No.Telp: 
+Alamat Lengkap:
+Tanggal kirim:
+
+Kartu Ucapan (Jika ada)
+To:
+Wishes:
+From:
+
+Pilih Metode Pengiriman : 
 - Pick Up
-- Instant
+- Instant 
 - Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
 
 Request (Jika ada):
 
 
----
+——
 
 
 Pilihan Menu (mohon meng-isi jumlah):
 
 Size Large
-A. Spaghetti Classico Bologna Brulee :
-B. Not Your Mac and Cheese  :
-C. Potato Gratin Lasagna :
-D. Melt My Mac and Cheese  :
-E. Spaghetti Aglio E Olio  :
+A. Spaghetti Classico Bologna Brulee : 
+B. Not Your Mac and Cheese  : 
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
 
 Size Regular
-A. Spaghetti Classico Bologna Brulee :
-B. Not Your Mac and Cheese  :
-C. Potato Gratin Lasagna :
-D. Melt My Mac and Cheese  :
-E. Spaghetti Aglio E Olio  :
+A. Spaghetti Classico Bologna Brulee : 
+B. Not Your Mac and Cheese  : 
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
 
 Dessert
-Choco Bon Bon :
+Choco Bon Bon : 
 
 Special Bundle
 Bundle of 3 :`
 
-export const PERSONAL_TEMPLATE = `Untuk pemesanan PERSONAL , silahkan diisi format berikut ya, Kak. 😊
+export const FO2_TEMPLATE = `#DetailFO2
+Tanggal Pengiriman:
+Jenis: PO/RS/MTO
+Tipe Box: HAMPERS
 
-Nama Lengkap:
-No.Telp:
-Alamat Lengkap:
-Tanggal kirim:
-
-${SHIPPING_AND_MENU}`
-
-export const HADIAH_TEMPLATE = `Untuk pemesanan HADIAH , silahkan diisi format berikut ya, Kak. 😊
+Untuk pemesanan boleh dilengkapi ya kak 🤗
 
 Nama Penerima:
-No.Telp:
+Nama Pengirim: 
+No.Telp: 
 Alamat Lengkap:
 Tanggal kirim:
-Nama Pengirim:
 
-Isi Kartu Ucapan (Jika ada)
+Kartu Ucapan (Template Christmas)
 To:
-Wishes:
 From:
 
-${SHIPPING_AND_MENU}`
+Pilih Metode Pengiriman : 
+- Pick Up
+- Instant 
+- Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
+
+Request (Jika ada):
+
+
+——
+
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Classico Red : 
+B. Mac & Joy  :  
+C. Melted Cheese  : 
+E. Holy E Olio  : 
+
+Size Regular
+A. Classico Red : 
+B. Mac & Joy  :  
+C. Melted Cheese  : 
+E. Holy E Olio  : `
+
+export const FO3_TEMPLATE = `#DetailFO3
+Tanggal Pengiriman:
+Jenis: PO/RS/MTO
+Tipe Box: NORMAL & HAMPERS
+
+Untuk pemesanan boleh dilengkapi ya kak 🤗
+
+Nama Penerima:
+Nama Pengirim: 
+No.Telp: 
+Alamat Lengkap:
+Tanggal kirim:
+
+Kartu Ucapan (Template Christmas)
+To:
+From:
+
+Pilih Metode Pengiriman : 
+- Pick Up
+- Instant 
+- Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
+
+Request (Jika ada):
+
+
+——
+
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+#BOX NORMAL
+
+Size Large
+A. Spaghetti Classico Bologna Brulee:
+B. Not Your Mac and Cheese:
+C. Potato Gratin Lasagna:
+D. Melt My Mac and Cheese:
+E. Spaghetti Aglio E Olio:
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee:
+B. Not Your Mac and Cheese:
+C. Potato Gratin Lasagna:
+D. Melt My Mac and Cheese:
+E. Spaghetti Aglio E Olio:
+
+Dessert
+Choco Bon Bon:
+
+Special Bundle
+Bundle of 3:
+
+#BOX CHRISTMAS
+
+Size Large
+A. Classico Red : 
+B. Mac & Joy  :  
+C. Melted Cheese  : 
+E. Holy E Olio  : 
+
+Size Regular
+A. Classico Red : 
+B. Mac & Joy  :  
+C. Melted Cheese  : 
+E. Holy E Olio  : `
+
+export const NORMAL_TEMPLATE = FO1_TEMPLATE
+export const HAMPERS_TEMPLATE = FO2_TEMPLATE
+export const NORMAL_HAMPERS_TEMPLATE = FO3_TEMPLATE
+
+// Alias untuk kompatibilitas
+export const PERSONAL_TEMPLATE = NORMAL_TEMPLATE
+export const HADIAH_TEMPLATE = HAMPERS_TEMPLATE
 
 /** Contoh pesan Personal yang sudah diisi customer (opsi kirim lain dihapus). */
 export const PERSONAL_SAMPLE = `Untuk pemesanan PERSONAL , silahkan diisi format berikut ya, Kak. 😊

@@ -135,8 +135,8 @@ async function Report({ searchParams }: { searchParams: SearchParams }) {
           actions={
             <SeriesLegend
               items={[
-                { label: "Personal", color: REPORT_COLORS.personal },
-                { label: "Hadiah", color: REPORT_COLORS.hadiah },
+                { label: "Normal", color: REPORT_COLORS.personal },
+                { label: "Hampers", color: REPORT_COLORS.hadiah },
               ]}
             />
           }

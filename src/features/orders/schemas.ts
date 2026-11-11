@@ -13,7 +13,7 @@ export const orderSubmitSchema = z.object({
     channel: z.enum(ORDER_CHANNELS),
     marketplaceOrderNo: text(60),
     marketplaceTotal: text(20),
-    type: z.enum(["personal", "hadiah"]),
+    type: z.enum(["normal", "hampers", "normal_hampers"]),
     kind: z.enum(ORDER_KINDS),
     name: text(80),
     phone: text(30),

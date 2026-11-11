@@ -9,6 +9,7 @@ import type { PackagingUse } from "@/features/packing/needs"
 
 /** Isian dialog packing: Normal (tanpa stok) atau Hampers dengan box yang dipakai. */
 export type PackingInput = { type: "normal" | "hampers"; uses: PackagingUse[] }
+import { returnOrderStock } from "@/features/packagings/order-stock"
 import { deductPacking, returnPacking } from "@/features/packing/stock"
 import type { BulkSkip } from "@/lib/bulk"
 import type { ShippingMethod } from "@/lib/wa-parser"
@@ -149,6 +150,17 @@ export async function changeStatuses(
     await returnPacking(tx, unpacked, userId, (orderNo) =>
       target === "dibatalkan" ? `Pesanan ${orderNo} dibatalkan` : `Packing ${orderNo} dibatalkan`,
     )
+
+    // Dibatalkan: kembalikan stok loyang dan box bila pesanan sudah lunas
+    const cancelled = valid.filter((row) => targetOf(row.method) === "dibatalkan")
+    if (cancelled.length > 0) {
+      await returnOrderStock(
+        tx,
+        cancelled,
+        userId,
+        (orderNo) => `Pesanan ${orderNo} dibatalkan (stok dikembalikan)`,
+      )
+    }
 
     // Status tujuan dan status pengiriman bergantung pada metode, jadi UPDATE per metode.
     for (const method of new Set(valid.map((row) => row.method))) {

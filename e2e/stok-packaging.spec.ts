@@ -35,11 +35,11 @@ test.describe("Stok Packaging", () => {
     await expect(table.getByRole("row", { name: /Holy E Olio \(Regular\)/ })).toBeVisible()
     await expect(table.getByRole("row", { name: /Box Dessert/ })).toHaveCount(0)
     await expect(
-      table.getByRole("row", { name: /Classic Red \(Large\)/ }).getByText("Size Large"),
+      table.getByRole("row", { name: /Classic Red \(Large\)/ }).getByText("Box Hampers"),
     ).toBeVisible()
     const categories = page.getByRole("region", { name: "Kategori stok" })
-    await expect(categories).toContainText("Size Large")
-    await expect(categories).toContainText("Size Regular")
+    await expect(categories).toContainText("Box Hampers")
+    await expect(categories).toContainText("Loyang")
     await expect(page.getByRole("button", { name: "Tambah Packaging" })).toBeVisible()
     await page.screenshot({
       path: `test-results/master-packaging-${info.project.name}.png`,
@@ -48,9 +48,10 @@ test.describe("Stok Packaging", () => {
 
     // Menu Stok Packaging (catat stok) untuk Admin.
     await login(page, admin.email!, "/stok-packaging")
-    await expect(page.getByRole("heading", { name: "Stok Packaging", level: 1 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Packaging & Loyang", level: 1 })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Classic Red (Large)" })).toBeVisible()
-    await expect(page.getByRole("heading", { name: /^Size Large/, level: 2 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /^Box Hampers/, level: 2 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /^Loyang/, level: 2 })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Paper Bag" })).toHaveCount(0)
     await page.screenshot({
       path: `test-results/stok-packaging-${info.project.name}.png`,

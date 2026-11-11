@@ -26,7 +26,7 @@ export const userRole = pgEnum("user_role", ["admin", "kasir", "produksi", "owne
 export const menuSize = pgEnum("menu_size", ["large", "regular", "single"])
 /** Lama (sebelum kategori bisa diatur Owner). Tidak dipakai lagi; dihapus di migrasi berikutnya. */
 export const menuCategory = pgEnum("menu_category", ["pasta", "dessert", "bundle"])
-export const orderType = pgEnum("order_type", ["personal", "hadiah"])
+export const orderType = pgEnum("order_type", ["normal", "hampers", "normal_hampers"])
 /** Jenis pesanan: PO / Ready Stock / Made to Order. */
 export const orderKind = pgEnum("order_kind", ["po", "ready_stock", "made_to_order"])
 export const orderChannel = pgEnum("order_channel", ["whatsapp", "shopee", "tokopedia"])

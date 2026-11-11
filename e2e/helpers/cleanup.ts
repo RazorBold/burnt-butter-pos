@@ -131,7 +131,7 @@ type SeedPlan = {
 /**
  * Buat `count` pesanan uji hari ini langsung di DB, untuk menguji daftar dan filter.
  * Nomornya "QA<kode>NN" (bukan BB…), jadi penghitung nomor asli tidak tersentuh.
- * Pesanan ke-1..(count-hadiah) Personal, sisanya Hadiah; status dan metode bergiliran, kecuali
+ * Pesanan ke-1..(count-hadiah) Normal, sisanya Hampers; status dan metode bergiliran, kecuali
  * diatur lewat `plan` (satu entri per pesanan). Tanggal kirim default besok (WIB).
  */
 export async function seedQaOrders(
@@ -158,7 +158,7 @@ export async function seedQaOrders(
           insert into orders (order_no, customer_id, customer_name, type, sender_name, status,
             delivery_date, total, created_at)
           values (${`QA${code}${String(i + 1).padStart(2, "0")}`}, ${customer.id}, ${customerName},
-            ${i < count - hadiah ? "personal" : "hadiah"},
+            ${i < count - hadiah ? "normal" : "hampers"},
             ${i < count - hadiah ? null : `QA Pengirim ${code}`},
             ${status},
             coalesce(${options.deliveryDate ?? null}::date,
@@ -179,10 +179,10 @@ export async function seedQaOrders(
 
 /**
  * Data laporan uji di Maret 2021 (jauh dari data asli), satu customer:
- * - 27 Feb (periode pembanding): Personal, Kurir, Selesai, 1× Bolognese L, lunas Cash 65.000.
- * - 1 Mar: Personal, Kurir Internal, Selesai, 2× Bolognese L = 130.000, lunas Bank.
- * - 2 Mar: Hadiah, Instant, Dikirim, 1× Choco Bon Bon = 40.000, lunas E-Wallet.
- * - 2 Mar: Personal, Pick Up, Baru, 1× Bolognese L = 65.000, belum bayar.
+ * - 27 Feb (periode pembanding): Normal, Kurir, Selesai, 1× Bolognese L, lunas Cash 65.000.
+ * - 1 Mar: Normal, Kurir Internal, Selesai, 2× Bolognese L = 130.000, lunas Bank.
+ * - 2 Mar: Hampers, Instant, Dikirim, 1× Choco Bon Bon = 40.000, lunas E-Wallet.
+ * - 2 Mar: Normal, Pick Up, Baru, 1× Bolognese L = 65.000, belum bayar.
  * - 3 Mar: Dibatalkan, 5× Bolognese L (tidak dihitung).
  */
 export async function seedReportOrders(code: string) {
@@ -211,7 +211,7 @@ export async function seedReportOrders(code: string) {
       const rows = [
         {
           day: "2021-02-27",
-          type: "personal",
+          type: "normal",
           status: "selesai",
           ship: "kurir_internal",
           item: bolo,
@@ -220,7 +220,7 @@ export async function seedReportOrders(code: string) {
         },
         {
           day: "2021-03-01",
-          type: "personal",
+          type: "normal",
           status: "selesai",
           ship: "kurir_internal",
           item: bolo,
@@ -229,7 +229,7 @@ export async function seedReportOrders(code: string) {
         },
         {
           day: "2021-03-02",
-          type: "hadiah",
+          type: "hampers",
           status: "dikirim",
           ship: "instant",
           item: choco,
@@ -238,7 +238,7 @@ export async function seedReportOrders(code: string) {
         },
         {
           day: "2021-03-02",
-          type: "personal",
+          type: "normal",
           status: "baru",
           ship: "pick_up",
           item: bolo,
@@ -247,7 +247,7 @@ export async function seedReportOrders(code: string) {
         },
         {
           day: "2021-03-03",
-          type: "personal",
+          type: "normal",
           status: "dibatalkan",
           ship: "kurir_internal",
           item: bolo,

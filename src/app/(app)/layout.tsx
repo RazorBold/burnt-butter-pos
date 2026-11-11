@@ -1,4 +1,3 @@
-import Image from "next/image"
 import { Suspense, type ReactNode } from "react"
 
 import { AppNavbar } from "@/components/app/app-navbar"
@@ -23,25 +22,11 @@ import packageJson from "../../../package.json"
 
 /**
  * Kerangka aplikasi (mockup Nov 2026): sidebar kiri 248 px mulai 1280 px (xl), topbar, lalu isi
- * halaman di atas latar ilustrasi (box di kanan atas) yang menempel di layar.
+ * halaman di atas latar putih ber-pattern halus.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative isolate flex min-h-dvh flex-col bg-page xl:pl-[248px]">
-      {/* Ponsel/tablet: latar polos supaya ilustrasi tidak menimpa judul halaman. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 hidden lg:block xl:left-[248px]"
-      >
-        <Image
-          src="/images/brand/bg-app.webp"
-          alt=""
-          fill
-          priority
-          sizes="(min-width: 1280px) calc(100vw - 248px), 100vw"
-          className="object-cover object-[right_top]"
-        />
-      </div>
+    <div className="bg-page-pattern relative isolate flex min-h-dvh flex-col xl:pl-[248px]">
       {/* Navbar membaca sesi, jadi berada di dalam Suspense; konten halaman tidak ikut menunggu. */}
       <Suspense fallback={<NavbarSkeleton />}>
         <Navbar />

@@ -123,6 +123,7 @@ export async function listOrders(filters: OrderFilters) {
   const db = getDb()
   const where = and(
     createdBetween(filters.from, filters.to),
+    filters.kind ? eq(orders.kind, filters.kind) : undefined,
     filters.type ? eq(orders.type, filters.type) : undefined,
     filters.status ? eq(orders.status, filters.status) : undefined,
     filters.method ? eq(shipments.method, filters.method) : undefined,
@@ -180,8 +181,8 @@ export async function getDailyOrderStats(from: string, to: string): Promise<Dail
     .select({
       day,
       orders: count().mapWith(Number),
-      personal: sql<number>`count(*) filter (where ${orders.type} = 'personal')`.mapWith(Number),
-      hadiah: sql<number>`count(*) filter (where ${orders.type} = 'hadiah')`.mapWith(Number),
+      normal: sql<number>`count(*) filter (where ${orders.type} = 'normal')`.mapWith(Number),
+      hampers: sql<number>`count(*) filter (where ${orders.type} in ('hampers', 'normal_hampers'))`.mapWith(Number),
       value: sql<number>`coalesce(sum(${orders.total}), 0)`.mapWith(Number),
     })
     .from(orders)

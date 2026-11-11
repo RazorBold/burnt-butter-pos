@@ -151,7 +151,7 @@ async function PaymentList({ searchParams }: { searchParams: SearchParams }) {
                         <span className="block font-medium text-text-strong">
                           {row.customerName}
                         </span>
-                        {row.type === "hadiah" && row.senderName && (
+                        {row.senderName && (
                           <span className="block text-[13px] text-text-body">
                             dari {row.senderName}
                           </span>

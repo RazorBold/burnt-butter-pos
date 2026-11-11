@@ -92,7 +92,7 @@ test.describe("Produksi", () => {
     const selesai = page.getByRole("region", { name: /^Selesai masak/ })
     await expect(belum.getByRole("article")).toHaveCount(2)
     await expect(
-      belum.getByRole("article", { name: hadiah }).getByText("Hadiah + kartu"),
+      belum.getByRole("article", { name: hadiah }).getByText("Hampers", { exact: true }),
     ).toBeVisible()
     await expect(
       belum.getByRole("article", { name: personal }).getByText("Sausnya dipisah ya kak"),

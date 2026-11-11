@@ -13,7 +13,7 @@ const base: DetailSnapshot = {
   address: "Jl. Melati 1",
   deliveryDate: "2026-11-10",
   kind: "po",
-  type: "personal",
+  type: "normal",
   method: "instant",
   request: null,
   senderName: null,

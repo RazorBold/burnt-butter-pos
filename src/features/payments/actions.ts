@@ -6,6 +6,7 @@ import { z } from "zod"
 
 import { getDb } from "@/db"
 import { orders, paymentMethods, payments } from "@/db/schema"
+import { deductOrderStock, returnOrderStock } from "@/features/packagings/order-stock"
 import { AuthorizationError, requireRole } from "@/lib/auth"
 import { BULK_LIMIT, type BulkResult, type BulkSkip, summarizeBulk } from "@/lib/bulk"
 
@@ -75,10 +76,14 @@ export async function markOrderPaid(input: unknown): Promise<ActionResult> {
     paidAt: new Date(),
     recordedBy: userId,
   }
-  await db
-    .insert(payments)
-    .values({ orderId, ...values })
-    .onConflictDoUpdate({ target: payments.orderId, set: { ...values, updatedAt: new Date() } })
+
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(payments)
+      .values({ orderId, ...values })
+      .onConflictDoUpdate({ target: payments.orderId, set: { ...values, updatedAt: new Date() } })
+    await deductOrderStock(tx, [{ id: orderId, orderNo: order.orderNo }], userId)
+  })
 
   revalidatePayments(order.orderNo)
   return { ok: true, message: `${order.orderNo} lunas via ${method.name}.` }
@@ -158,8 +163,17 @@ export async function markOrdersPaid(input: unknown): Promise<BulkResult> {
     for (const row of payable) {
       if (!insertedIds.has(row.id)) skipped.push({ orderNo: row.orderNo, reason: "sudah lunas" })
     }
+    const paidRows = payable.filter((row) => insertedIds.has(row.id))
+    if (paidRows.length > 0) {
+      await deductOrderStock(
+        tx,
+        paidRows.map((r) => ({ id: r.id, orderNo: r.orderNo })),
+        userId,
+      )
+    }
+
     return {
-      done: payable.filter((row) => insertedIds.has(row.id)).map((row) => row.orderNo),
+      done: paidRows.map((row) => row.orderNo),
       skipped,
     }
   })
@@ -186,7 +200,16 @@ export async function cancelOrderPayment(orderId: string): Promise<ActionResult>
     .from(orders)
     .where(eq(orders.id, orderId))
   if (!order) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
-  await db.delete(payments).where(eq(payments.orderId, orderId))
+
+  await db.transaction(async (tx) => {
+    await returnOrderStock(
+      tx,
+      [{ id: orderId, orderNo: order.orderNo }],
+      userId,
+      (no) => `Pembayaran ${no} dibatalkan (stok dikembalikan)`,
+    )
+    await tx.delete(payments).where(eq(payments.orderId, orderId))
+  })
 
   revalidatePayments(order.orderNo)
   return { ok: true, message: `${order.orderNo} kembali jadi Belum bayar.` }

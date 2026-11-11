@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import { getDb } from "@/db"
 import {
   customers,
+  menuCategories,
   menus,
   menuVariants,
   orderCounters,
@@ -26,6 +27,7 @@ import { normalizePhone } from "@/lib/phone"
 
 import { isMarketplace, ORDER_CHANNEL_LABEL, type OrderChannel } from "./constants"
 import { type DraftField, draftIssues, parseRupiahInput } from "./draft"
+import { orderTypeFromMenus } from "./order-type"
 import {
   type DetailSnapshot,
   describeDetailChanges,
@@ -153,9 +155,14 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
     const result = await getDb().transaction(async (tx) => {
       // Harga selalu dari database, bukan dari browser. Menu yang baru dinonaktifkan ditolak.
       const variants = await tx
-        .select({ id: menuVariants.id, price: menuVariants.price })
+        .select({
+          id: menuVariants.id,
+          price: menuVariants.price,
+          categoryName: menuCategories.name,
+        })
         .from(menuVariants)
         .innerJoin(menus, eq(menus.id, menuVariants.menuId))
+        .leftJoin(menuCategories, eq(menuCategories.id, menus.categoryId))
         .where(
           and(
             inArray(
@@ -199,7 +206,10 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
           customerName: draft.name.trim(),
           channel: draft.channel,
           marketplaceOrderNo,
-          type: marketplace ? "normal" : draft.type,
+          // Olshop: menu dipilih manual, jadi tipe mengikuti kategori menunya.
+          type: marketplace
+            ? orderTypeFromMenus(variants.map((variant) => variant.categoryName))
+            : draft.type,
           kind: draft.kind,
           deliveryDate: draft.deliveryDate,
           request: optional(draft.request),
@@ -545,7 +555,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     address,
     deliveryDate: draft.deliveryDate,
     kind: draft.kind,
-    type: marketplace ? "normal" : draft.type,
+    type: marketplace ? current.type : draft.type,
     method,
     request: optional(draft.request),
     senderName: optional(draft.senderName),
@@ -569,7 +579,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
         customerName: draft.name.trim(),
         marketplaceOrderNo,
         total,
-        type: marketplace ? "normal" : draft.type,
+        type: marketplace ? current.type : draft.type,
         kind: draft.kind,
         deliveryDate: draft.deliveryDate,
         request: optional(draft.request),
@@ -710,10 +720,21 @@ export async function updateOrderItems(input: unknown): Promise<UpdateOrderItems
       // Log edit: nama menu + ukuran untuk semua varian yang terlibat.
       const variantIds = [...new Set([...oldPrice.keys(), ...merged.keys()])]
       const names = await tx
-        .select({ id: menuVariants.id, name: menus.name, size: menuVariants.size })
+        .select({
+          id: menuVariants.id,
+          name: menus.name,
+          size: menuVariants.size,
+          categoryName: menuCategories.name,
+        })
         .from(menuVariants)
         .innerJoin(menus, eq(menus.id, menuVariants.menuId))
+        .leftJoin(menuCategories, eq(menuCategories.id, menus.categoryId))
         .where(inArray(menuVariants.id, variantIds))
+      if (isMarketplace(order.channel)) {
+        const categoryOf = new Map(names.map((row) => [row.id, row.categoryName]))
+        const type = orderTypeFromMenus(rows.map((row) => categoryOf.get(row.menuVariantId)))
+        await tx.update(orders).set({ type }).where(eq(orders.id, orderId))
+      }
       const labelOf = new Map(
         names.map((row) => [
           row.id,

@@ -258,37 +258,19 @@ Choco Bon Bon :
 Special Bundle
 Bundle of 3 : 1`
 
-/** Template pesanan Olshop (Shopee/Tokopedia), dari pemilik toko (November 2026). */
+/**
+ * Template pesanan Olshop (Shopee/Tokopedia), dari pemilik toko (November 2026): hanya data
+ * pesanan. Menu (biasa atau hampers) dipilih manual di form; tipe pesanan mengikuti menunya.
+ */
 export const OLSHOP_TEMPLATE = `Marketplace: Tokopedia/Shopee
 Tanggal pengiriman:
-Nama Penerima: 
-Nomor Invoice: 
+Nama Penerima:
+Nomor Invoice:`
 
-Pilihan Menu (mohon meng-isi jumlah):
-
-Size Large
-A. Spaghetti Classico Bologna Brulee : 
-B. Not Your Mac and Cheese  : 
-C. Potato Gratin Lasagna : 
-D. Melt My Mac and Cheese  : 
-E. Spaghetti Aglio E Olio  : 
-
-Size Regular
-A. Spaghetti Classico Bologna Brulee : 
-B. Not Your Mac and Cheese  : 
-C. Potato Gratin Lasagna : 
-D. Melt My Mac and Cheese  : 
-E. Spaghetti Aglio E Olio  : 
-
-Dessert
-Choco Bon Bon : 
-
-Special Bundle
-Bundle of 3 :
-
-Jika ada notes/request tambahan:`
-
-/** Contoh template Olshop yang sudah diisi: Shopee, request dua baris di bawah menu. */
+/**
+ * Contoh Olshop format lama (dengan daftar menu dan request). Parser tetap membacanya, jadi pesan
+ * lama yang masih ditempel lengkap tidak rusak.
+ */
 export const OLSHOP_SAMPLE = `Marketplace: Shopee
 Tanggal pengiriman: 27/10/2026
 Nama Penerima: Nadia Rahma

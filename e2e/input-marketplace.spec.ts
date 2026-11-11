@@ -12,7 +12,7 @@ function farDate() {
   return new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10)
 }
 
-/** Template Olshop yang sudah diisi: satu Choco Bon Bon dan request di bawah menu. */
+/** Template Olshop 4 baris yang sudah diisi (menu dipilih manual di form). */
 function olshopText(values: { marketplace: string; no: string; name: string; date: string }) {
   const [year, month, day] = values.date.split("-")
   return OLSHOP_TEMPLATE.replace(
@@ -20,11 +20,18 @@ function olshopText(values: { marketplace: string; no: string; name: string; dat
     `Marketplace: ${values.marketplace}`,
   )
     .replace("Tanggal pengiriman:", `Tanggal pengiriman: ${day}/${month}/${year}`)
-    .replace("Nama Penerima: ", `Nama Penerima: ${values.name}`)
-    .replace("Nomor Invoice: ", `Nomor Invoice: ${values.no}`)
-    .replace("Choco Bon Bon : ", "Choco Bon Bon : 1")
-    .replace("Jika ada notes/request tambahan:", "Jika ada notes/request tambahan: QA saus dipisah")
+    .replace("Nama Penerima:", `Nama Penerima: ${values.name}`)
+    .replace("Nomor Invoice:", `Nomor Invoice: ${values.no}`)
 }
+
+/** Admin memilih menu manual setelah Isi Otomatis. */
+async function pickMenus(page: Page, picks: Record<string, number>) {
+  for (const [label, qty] of Object.entries(picks)) {
+    await page.getByLabel(`Jumlah ${label}`, { exact: true }).fill(String(qty))
+  }
+}
+
+const MENU_HINT = /Pilih menu \(biasa atau hampers\) di daftar menu/
 
 /** Tempel template di panel kiri halaman Input Pesanan, lalu Isi Otomatis. */
 async function pasteOlshop(page: Page, text: string) {
@@ -62,7 +69,8 @@ test.describe("Input Pesanan marketplace", () => {
     )
     await expect(page.getByLabel("Nomor invoice")).toHaveValue("INV/QA/1")
     await expect(page.getByLabel("Nama penerima")).toHaveValue("QA Penerima")
-    await expect(page.getByLabel("Request")).toHaveValue("QA saus dipisah")
+    await expect(page.getByText(MENU_HINT)).toBeVisible()
+    await pickMenus(page, { "Choco Bon Bon": 1 })
     // Template Olshop tanpa no. HP dan alamat.
     await expect(page.getByLabel("No. telp")).toHaveCount(0)
     await expect(page.getByLabel("Alamat lengkap")).toHaveCount(0)
@@ -90,7 +98,9 @@ test.describe("Input Pesanan marketplace", () => {
     await expect(page.getByLabel("Kurir")).toHaveCount(0)
     await expect(page.getByLabel("Nomor resi")).toHaveCount(0)
     await pasteOlshop(page, text)
-    await expect(page.getByText("Terbaca 3 dari 3 isian wajib dan 1 menu.")).toBeVisible()
+    await expect(page.getByText(MENU_HINT)).toBeVisible()
+    await expect(page.getByText(/^Terbaca 3 dari 3 isian wajib\./)).toBeVisible()
+    await pickMenus(page, { "Choco Bon Bon": 1 })
     await expect(page.getByLabel("Nomor invoice")).toHaveValue(no)
     // Total kosong = harga menu; diisi = total marketplace (voucher/diskon).
     await expect(page.getByLabel("Total pembayaran")).toHaveValue("")
@@ -118,6 +128,7 @@ test.describe("Input Pesanan marketplace", () => {
     // Nomor invoice yang sama ditolak.
     await page.goto("/pesanan/baru?sumber=shopee")
     await pasteOlshop(page, text)
+    await pickMenus(page, { "Choco Bon Bon": 1 })
     await page.getByRole("button", { name: "Simpan pesanan" }).click()
     await expect(
       page.getByText(`No. pesanan ini sudah diinput sebagai ${orderNo}.`).first(),
@@ -169,6 +180,36 @@ test.describe("Input Pesanan marketplace", () => {
       shipment_status: "selesai",
       tracking_no: null,
       tracking_url: null,
+    })
+  })
+
+  test("Tokopedia: menu dipilih manual, tipe mengikuti menu (Normal & Hampers)", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    const stamp = Date.now()
+    const no = `QA-TKP-${stamp}`
+    const text = olshopText({
+      marketplace: "Tokopedia",
+      no,
+      name: `QA Customer ${stamp}`,
+      date: farDate(),
+    })
+    await loginAs(page, admin.email!, admin.password!, "/pesanan/baru?sumber=tokopedia")
+    await pasteOlshop(page, text)
+    await expect(page.getByText(MENU_HINT)).toBeVisible()
+    await pickMenus(page, { "Classico Red Large": 1, "Choco Bon Bon": 1 })
+    await expect(page.getByText("Data pesanan lengkap.")).toBeVisible()
+    await page.getByRole("button", { name: "Simpan pesanan" }).click()
+    const dialog = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
+    const orderNo = await dialog.getByTestId("saved-order-no").innerText()
+    saved.push(orderNo)
+    expect(await readOrder(orderNo)).toMatchObject({
+      channel: "tokopedia",
+      marketplace_order_no: no,
+      type: "normal_hampers",
+      items: 2,
+      payments: 1,
     })
   })
 })

@@ -50,7 +50,15 @@ describe("parseOrderFilters", () => {
 
   it("nilai asing diabaikan, tanggal terbalik ditukar, satu tanggal = satu hari", () => {
     const parsed = parseOrderFilters(
-      { jenis: "aneh", tipe: "grosir", status: "hilang", kirim: "kapal", sumber: "tiktok", hal: "-2", dari: "2026-02-30" },
+      {
+        jenis: "aneh",
+        tipe: "grosir",
+        status: "hilang",
+        kirim: "kapal",
+        sumber: "tiktok",
+        hal: "-2",
+        dari: "2026-02-30",
+      },
       TODAY,
     )
     expect(parsed).toMatchObject({

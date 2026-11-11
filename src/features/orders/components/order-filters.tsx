@@ -32,8 +32,8 @@ const ALL = "semua"
 export function OrderFilters({ from, to, today }: { from: string; to: string; today: string }) {
   const { current, update, pending } = useUrlFilters()
   const [query, setQuery] = useDebouncedQuery(current, update)
-  const hasFilters = ["q", "dari", "sampai", "jenis", "tipe", "status", "kirim", "sumber"].some((key) =>
-    current.has(key),
+  const hasFilters = ["q", "dari", "sampai", "jenis", "tipe", "status", "kirim", "sumber"].some(
+    (key) => current.has(key),
   )
 
   const select = (

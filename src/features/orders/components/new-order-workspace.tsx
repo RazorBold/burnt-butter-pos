@@ -447,8 +447,17 @@ export function NewOrderWorkspace({
             {summary && (
               <div className="mt-4 rounded-lg bg-nav-active/70 px-3.5 py-3 text-sm text-text-strong">
                 <p>
-                  Terbaca {summary.filled} dari {summary.checked} isian wajib dan {summary.items}{" "}
-                  menu.
+                  {marketplace && summary.items === 0 ? (
+                    <>
+                      Terbaca {summary.filled} dari {summary.checked} isian wajib. Pilih menu (biasa
+                      atau hampers) di daftar menu; tipe pesanan mengikuti menunya.
+                    </>
+                  ) : (
+                    <>
+                      Terbaca {summary.filled} dari {summary.checked} isian wajib dan{" "}
+                      {summary.items} menu.
+                    </>
+                  )}
                   {flagged.size > 0 && " Isian bertanda kuning perlu dicek."}
                 </p>
                 {summary.guessedChannel && (

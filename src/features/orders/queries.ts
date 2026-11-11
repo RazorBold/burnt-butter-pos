@@ -182,7 +182,10 @@ export async function getDailyOrderStats(from: string, to: string): Promise<Dail
       day,
       orders: count().mapWith(Number),
       normal: sql<number>`count(*) filter (where ${orders.type} = 'normal')`.mapWith(Number),
-      hampers: sql<number>`count(*) filter (where ${orders.type} in ('hampers', 'normal_hampers'))`.mapWith(Number),
+      hampers:
+        sql<number>`count(*) filter (where ${orders.type} in ('hampers', 'normal_hampers'))`.mapWith(
+          Number,
+        ),
       value: sql<number>`coalesce(sum(${orders.total}), 0)`.mapWith(Number),
     })
     .from(orders)

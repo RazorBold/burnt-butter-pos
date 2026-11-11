@@ -176,8 +176,11 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /** Data customer/penerima, pengiriman, request, dan (Hadiah) pengirim + kartu ucapan. */
 export function OrderInfo({ order }: { order: OrderDetail }) {
-  const hasGift = order.type === "hampers" || order.type === "normal_hampers" || Boolean(order.senderName)
-  const hasGiftCard = Boolean(order.cardTo || order.cardWishes || order.cardFrom || order.senderName)
+  const hasGift =
+    order.type === "hampers" || order.type === "normal_hampers" || Boolean(order.senderName)
+  const hasGiftCard = Boolean(
+    order.cardTo || order.cardWishes || order.cardFrom || order.senderName,
+  )
   const shipping =
     order.shipment.method === "kurir_internal"
       ? `Kurir Internal Burnt Butter${order.shipment.courierName ? ` (${order.shipment.courierName})` : ""}`

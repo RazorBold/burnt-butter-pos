@@ -105,7 +105,10 @@ describe("parseWaOrder: template kosong dan variasi", () => {
   })
 
   it("nomor yang bukan nomor HP tetap disimpan mentah untuk dicek", () => {
-    const parsed = parseWaOrder(PERSONAL_TEMPLATE.replace(/No\.Telp:\s*\n/, "No.Telp: 12345\n"), TODAY)
+    const parsed = parseWaOrder(
+      PERSONAL_TEMPLATE.replace(/No\.Telp:\s*\n/, "No.Telp: 12345\n"),
+      TODAY,
+    )
     expect(parsed.phone).toBeNull()
     expect(parsed.phoneRaw).toBe("12345")
   })

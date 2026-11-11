@@ -49,14 +49,11 @@ export const SUBSECTION_ACCESS = {
   "/master-data/pengaturan": ["owner"],
 } as const satisfies Record<string, readonly Role[]>
 
-/** Role yang mengelola Master Data (kurir, metode bayar, bahan baku, staf, pengaturan). */
+/** Role yang mengelola Master Data (kurir, metode bayar, staf, pengaturan). */
 export const CAN_MANAGE_MASTER: readonly Role[] = ["owner"]
 
 /** Role yang boleh mencatat stok packaging (masuk, hitung ulang) di menu Stok Packaging. */
 export const CAN_EDIT_STOCK: readonly Role[] = ["admin", "produksi", "owner"]
-
-/** Role yang boleh mencatat stok bahan baku (di Master Data, khusus Owner sejak Nov 2026). */
-export const CAN_EDIT_RAW_STOCK: readonly Role[] = ["owner"]
 
 /** Role yang boleh mengubah data customer di Master Data. Customer baru tetap dibuat dari pesanan. */
 export const CAN_EDIT_CUSTOMER: readonly Role[] = ["owner"]

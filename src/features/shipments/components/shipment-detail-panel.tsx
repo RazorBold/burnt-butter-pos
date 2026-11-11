@@ -115,9 +115,7 @@ export async function ShipmentDetailPanel({
         <ul className="space-y-2.5 text-sm text-text-strong">
           <InfoRow icon={UserRound}>
             {order.customer.name}
-            {order.senderName && (
-              <span className="text-text-body"> (dari {order.senderName})</span>
-            )}
+            {order.senderName && <span className="text-text-body"> (dari {order.senderName})</span>}
           </InfoRow>
           {order.customer.phone && (
             <InfoRow icon={Phone}>

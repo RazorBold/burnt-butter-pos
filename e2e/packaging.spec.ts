@@ -38,7 +38,9 @@ test.describe("Packaging", () => {
     packagingName = undefined
   })
 
-  test("packing Hampers tanpa memotong stok lagi; batal packing", async ({ page }, info) => {
+  test("selesai packing satu klik sesuai tipe pesanan, stok tetap; batal packing", async ({
+    page,
+  }, info) => {
     code = `${Date.now()}`
     const orderNo = `QA${code}01`
     const date = farDate(code)
@@ -75,23 +77,17 @@ test.describe("Packaging", () => {
         .getByText("Pesanan belum di-packing (lihat menu Packaging)."),
     ).toBeVisible()
 
-    // Dialog: pesanan Normal terpilih Normal; Hampers tanpa isian box (box dan loyang sudah
-    // dipotong otomatis saat Lunas), jadi packing tidak mengubah stok.
+    // Satu klik tanpa dialog: jenis packing mengikuti tipe pesanan (Normal); stok tidak berubah
+    // (box dan loyang sudah dipotong otomatis saat Lunas).
     await page.goto(`/packaging?tanggal=${date}`)
-    await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
-    const dialog = page.getByRole("dialog", { name: `Packing ${orderNo}` })
-    await expect(dialog.getByRole("radio", { name: "Normal" })).toHaveAttribute(
-      "aria-checked",
-      "true",
+    await expect(waiting.getByRole("article", { name: orderNo })).toContainText(
+      "Packing Normal (sesuai tipe pesanan)",
     )
-    await dialog.getByRole("radio", { name: "Hampers" }).click()
-    await expect(dialog.getByText(/^Packing hampers. Box hampers dan loyang sudah dipotong/)).toBeVisible()
-    await expect(dialog.getByRole("textbox", { name: /^Jumlah / })).toHaveCount(0)
-    await page.screenshot({ path: "test-results/packaging-dialog-desktop.png" })
-    await dialog.getByRole("button", { name: "Simpan & selesai packing" }).click()
-    await expect(page.getByText(`${orderNo} selesai packing hampers, siap dikirim.`)).toBeVisible()
+    await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
+    await expect(page.getByText(`${orderNo} selesai packing normal, siap dikirim.`)).toBeVisible()
+    await expect(page.getByRole("dialog")).toHaveCount(0)
     const packed = done.getByRole("article", { name: orderNo })
-    await expect(packed).toContainText("Packing Hampers")
+    await expect(packed).toContainText("Packing Normal")
     expect(await readPackagingStock(name)).toBe(5)
     expect(await readOrder(orderNo)).toMatchObject({
       status: "siap_kirim",

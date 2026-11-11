@@ -23,12 +23,32 @@ function addDays(iso: string, days: number) {
   return toIso(date)
 }
 
+type Preset = { label: string; range: (today: string) => Range }
+
+function endOfMonth(iso: string) {
+  const date = parseISO(`${iso.slice(0, 8)}01`)
+  date.setMonth(date.getMonth() + 1)
+  date.setDate(0)
+  return toIso(date)
+}
+
 /** Preset dihitung dari "hari ini" WIB saat dipilih, bukan saat halaman dimuat. */
-const PRESETS: { label: string; range: (today: string) => Range }[] = [
+const PAST_PRESETS: Preset[] = [
   { label: "Hari ini", range: (today) => ({ from: today, to: today }) },
   { label: "Kemarin", range: (today) => ({ from: addDays(today, -1), to: addDays(today, -1) }) },
   { label: "7 hari terakhir", range: (today) => ({ from: addDays(today, -6), to: today }) },
   { label: "Bulan ini", range: (today) => ({ from: `${today.slice(0, 8)}01`, to: today }) },
+]
+
+/** Untuk tanggal kirim: ke depan. */
+const FUTURE_PRESETS: Preset[] = [
+  { label: "Hari ini", range: (today) => ({ from: today, to: today }) },
+  { label: "Besok", range: (today) => ({ from: addDays(today, 1), to: addDays(today, 1) }) },
+  { label: "7 hari ke depan", range: (today) => ({ from: today, to: addDays(today, 6) }) },
+  {
+    label: "Bulan ini",
+    range: (today) => ({ from: `${today.slice(0, 8)}01`, to: endOfMonth(today) }),
+  },
 ]
 
 /**
@@ -40,12 +60,15 @@ export function DateRangePicker({
   to,
   onChange,
   label = "Rentang tanggal",
+  presets = "past",
   className,
 }: {
   from: string
   to: string
   onChange: (range: Range) => void
   label?: string
+  /** "future" untuk tanggal kirim (Besok, 7 hari ke depan). */
+  presets?: "past" | "future"
   className?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -85,7 +108,7 @@ export function DateRangePicker({
       <PopoverContent align="start" className="w-auto rounded-xl p-0">
         <div className="flex flex-col sm:flex-row">
           <ul className="flex flex-wrap gap-1 border-b border-border p-2 sm:w-40 sm:flex-col sm:border-r sm:border-b-0">
-            {PRESETS.map((preset) => (
+            {(presets === "future" ? FUTURE_PRESETS : PAST_PRESETS).map((preset) => (
               <li key={preset.label}>
                 <button
                   suppressHydrationWarning

@@ -35,17 +35,7 @@ export function TypeBadge({ type, className }: { type: OrderType; className?: st
         ? "bg-amber-100 text-amber-900 border border-amber-300"
         : "bg-personal text-personal-fg"
 
-  return (
-    <span
-      className={cn(
-        BADGE,
-        colorClass,
-        className,
-      )}
-    >
-      {ORDER_TYPE_LABEL[type]}
-    </span>
-  )
+  return <span className={cn(BADGE, colorClass, className)}>{ORDER_TYPE_LABEL[type]}</span>
 }
 
 const KIND_ICON = { po: CalendarClock, ready_stock: PackageCheck, made_to_order: ChefHat } as const

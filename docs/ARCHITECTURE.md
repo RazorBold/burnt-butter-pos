@@ -98,7 +98,7 @@ Uang disimpan sebagai `integer` dalam rupiah (tanpa desimal). Waktu disimpan seb
 | `packaging_categories` | name (unik), sort_order | Diatur Owner. Urutan kelompok di Stok Packaging dan dialog packing (`groupByCategory` di `src/features/packagings/categories.ts`) |
 | `packagings` | name, photo_path, stock, capacity, unit, min_stock, category_id, is_active, size, per_order_qty | `category_id` → `packaging_categories` (null = "Lainnya"). `is_active = false` = diarsipkan (packaging lama atau dihapus Owner padahal sudah punya riwayat stok), tidak tampil di mana pun. Kolom lama `size` tidak dipakai lagi (diganti kategori). `per_order_qty` belum dipakai |
 | `menu_variant_packagings` | menu_variant_id, packaging_id (PK gabungan), qty | Belum dipakai (Nov 2026): disiapkan untuk aturan packaging otomatis per menu. Sekarang admin mengisi packaging per pesanan di menu Packaging |
-| `raw_materials` | name, unit, stock, min_stock | status Cukup/Menipis/Habis dihitung, tidak disimpan |
+| `raw_materials` | name, unit, stock, min_stock | tidak dipakai lagi (menu Bahan Baku dihapus Nov 2026), dibiarkan tanpa UI |
 | `stock_movements` | item_type, item_id, direction, qty, order_id, note, created_by | `direction`: `in`, `out`. Packing mencatat `out` dengan `order_id`; batal packing / pesanan dibatalkan mencatat `in` dengan `order_id` yang sama. Pemakaian bersih per pesanan = out − in (`changeStatuses` di `src/features/orders/status-change.ts`, satu transaksi dengan perubahan status) |
 | `chat_messages` | author_id, body, mentions_all, created_at | Chat Tim: satu ruang untuk semua staf. Mention dibaca server dari isi pesan (`src/features/chat/mentions.ts`) |
 | `chat_mentions` | message_id, profile_id (PK gabungan) | Staf yang disebut `@Nama` di pesan |

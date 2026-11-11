@@ -4,7 +4,7 @@ import type { StockStatus } from "@/features/packagings/stock"
 
 export type StockAlert = {
   id: string
-  kind: "packaging" | "raw_material"
+  kind: "packaging"
   name: string
   stock: number
   minStock: number | null

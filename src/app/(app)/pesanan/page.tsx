@@ -89,7 +89,7 @@ async function OrderKpis({ searchParams }: { searchParams: SearchParams }) {
   const { filters } = await readFilters(searchParams)
   const statsRange = kpiWindow(filters.from, filters.to)
   const kpis = computeKpis(
-    await getDailyOrderStats(statsRange.from, statsRange.to),
+    await getDailyOrderStats(statsRange.from, statsRange.to, filters.basis),
     filters.from,
     filters.to,
   )
@@ -147,16 +147,17 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
     filters.method ||
     filters.channel,
   )
-  const rangeText = singleDay
+  const rangeDates = singleDay
     ? filters.from === today
       ? "hari ini"
       : `tanggal ${formatTanggal(filters.from)}`
     : `${formatTanggal(filters.from)} sampai ${formatTanggal(filters.to)}`
+  const rangeText = filters.basis === "kirim" ? `yang dikirim ${rangeDates}` : rangeDates
 
   return (
     <>
       <div className="mt-6">
-        <OrderFilters from={filters.from} to={filters.to} today={today} />
+        <OrderFilters basis={filters.basis} from={filters.from} to={filters.to} today={today} />
       </div>
 
       <div

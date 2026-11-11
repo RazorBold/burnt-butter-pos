@@ -8,6 +8,7 @@ describe("parseOrderFilters", () => {
   it("tanpa parameter: hari ini, halaman 1, tanpa filter", () => {
     expect(parseOrderFilters({}, TODAY)).toEqual({
       q: undefined,
+      basis: "dibuat",
       from: TODAY,
       to: TODAY,
       kind: undefined,
@@ -37,6 +38,7 @@ describe("parseOrderFilters", () => {
       ),
     ).toEqual({
       q: "Siti",
+      basis: "dibuat",
       from: "2026-10-01",
       to: "2026-10-24",
       kind: "ready_stock",
@@ -80,6 +82,13 @@ describe("parseOrderFilters", () => {
     })
   })
 
+  it("?tgl=kirim memakai tanggal kirim; nilai lain = tanggal dibuat", () => {
+    const parsed = parseOrderFilters({ tgl: "kirim", dari: "2026-10-30" }, TODAY)
+    expect(parsed).toMatchObject({ basis: "kirim", from: "2026-10-30", to: "2026-10-30" })
+    expect(filterParams(parsed, TODAY)).toMatchObject({ tgl: "kirim", dari: "2026-10-30" })
+    expect(parseOrderFilters({ tgl: "lain" }, TODAY).basis).toBe("dibuat")
+  })
+
   it("rentang dibatasi 366 hari", () => {
     expect(parseOrderFilters({ dari: "2020-01-01", sampai: "2026-10-24" }, TODAY).from).toBe(
       "2025-10-24",
@@ -103,6 +112,7 @@ describe("previousRange dan filterParams", () => {
     const filters = parseOrderFilters({ status: "baru" }, TODAY)
     expect(filterParams(filters, TODAY)).toEqual({
       q: undefined,
+      tgl: undefined,
       dari: undefined,
       sampai: undefined,
       jenis: undefined,

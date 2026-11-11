@@ -13,41 +13,17 @@ import {
 } from "@/db/schema"
 
 import { ensureLoyangItems } from "./loyang"
+import { hampersBoxName } from "./stock-needs"
+import { isHampersCategory } from "@/features/orders/order-type"
 
 type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0]
 type OrderRef = { id: string; orderNo: string }
 
 /**
- * Normalisasi nama menu hampers ke nama box packaging yang sesuai.
- */
-function resolveBoxName(menuName: string, size: "large" | "regular"): string {
-  const lower = menuName.toLowerCase()
-  const sizeLabel = size === "large" ? "(Large)" : "(Regular)"
-
-  if (lower.includes("classico") || lower.includes("classic")) {
-    return `Classic Red ${sizeLabel}`
-  }
-  if (lower.includes("mac") && lower.includes("joy")) {
-    return `Mac & Joy ${sizeLabel}`
-  }
-  if (lower.includes("melted") || lower.includes("melt")) {
-    return `Melted Cheese ${sizeLabel}`
-  }
-  if (lower.includes("holy") || lower.includes("olio")) {
-    return `Holy E Olio ${sizeLabel}`
-  }
-  return ""
-}
-
-/**
  * Potong stok loyang (Large & Regular) dan box packaging hampers saat pesanan TERBAYAR (LUNAS).
  * Idempoten: aman dipanggil berulang kali untuk pesanan yang sama.
  */
-export async function deductOrderStock(
-  tx: Tx,
-  paidOrders: OrderRef[],
-  userId: string,
-) {
+export async function deductOrderStock(tx: Tx, paidOrders: OrderRef[], userId: string) {
   if (paidOrders.length === 0) return
 
   const loyangMap = await ensureLoyangItems(tx)
@@ -73,19 +49,16 @@ export async function deductOrderStock(
     .select({ id: packagings.id, name: packagings.name })
     .from(packagings)
     .where(
-      inArray(
-        sql`lower(${packagings.name})`,
-        [
-          "classic red (large)",
-          "classic red (regular)",
-          "mac & joy (large)",
-          "mac & joy (regular)",
-          "melted cheese (large)",
-          "melted cheese (regular)",
-          "holy e olio (large)",
-          "holy e olio (regular)",
-        ],
-      ),
+      inArray(sql`lower(${packagings.name})`, [
+        "classic red (large)",
+        "classic red (regular)",
+        "mac & joy (large)",
+        "mac & joy (regular)",
+        "melted cheese (large)",
+        "melted cheese (regular)",
+        "holy e olio (large)",
+        "holy e olio (regular)",
+      ]),
     )
 
   const boxMap = new Map<string, string>()
@@ -98,7 +71,8 @@ export async function deductOrderStock(
   const requiredByOrder = new Map<string, Map<string, { name: string; qty: number }>>()
 
   for (const item of items) {
-    const orderReq = requiredByOrder.get(item.orderId) ?? new Map<string, { name: string; qty: number }>()
+    const orderReq =
+      requiredByOrder.get(item.orderId) ?? new Map<string, { name: string; qty: number }>()
 
     // 1. Loyang
     if (item.size === "large") {
@@ -113,9 +87,9 @@ export async function deductOrderStock(
 
     // 2. Box Hampers: hanya menu di kategori Hampers. Menu pasta biasa (mis. "Spaghetti Classico",
     // "Melt My Mac", "Aglio E Olio") tidak boleh ikut memotong box walau namanya mirip.
-    const isHampersMenu = /hampers/i.test(item.categoryName ?? "")
+    const isHampersMenu = isHampersCategory(item.categoryName)
     if (isHampersMenu && (item.size === "large" || item.size === "regular")) {
-      const boxName = resolveBoxName(item.menuName, item.size)
+      const boxName = hampersBoxName(item.menuName, item.size)
       if (boxName) {
         const boxId = boxMap.get(boxName.toLowerCase())
         if (boxId) {
@@ -130,7 +104,11 @@ export async function deductOrderStock(
   }
 
   // Kumpulkan semua item ID yang relevan
-  const allItemIds = new Set<string>([loyangMap.large.id, loyangMap.regular.id, ...boxRows.map((b) => b.id)])
+  const allItemIds = new Set<string>([
+    loyangMap.large.id,
+    loyangMap.regular.id,
+    ...boxRows.map((b) => b.id),
+  ])
 
   // Cek mutasi yang sudah pernah ada untuk pesanan-pesanan ini (idempoten)
   const existingMovements = await tx
@@ -216,19 +194,16 @@ export async function returnOrderStock(
     .select({ id: packagings.id })
     .from(packagings)
     .where(
-      inArray(
-        sql`lower(${packagings.name})`,
-        [
-          "classic red (large)",
-          "classic red (regular)",
-          "mac & joy (large)",
-          "mac & joy (regular)",
-          "melted cheese (large)",
-          "melted cheese (regular)",
-          "holy e olio (large)",
-          "holy e olio (regular)",
-        ],
-      ),
+      inArray(sql`lower(${packagings.name})`, [
+        "classic red (large)",
+        "classic red (regular)",
+        "mac & joy (large)",
+        "mac & joy (regular)",
+        "melted cheese (large)",
+        "melted cheese (regular)",
+        "holy e olio (large)",
+        "holy e olio (regular)",
+      ]),
     )
 
   const allItemIds = [loyangMap.large.id, loyangMap.regular.id, ...boxRows.map((b) => b.id)]

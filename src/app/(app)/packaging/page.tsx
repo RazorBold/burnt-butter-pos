@@ -19,7 +19,7 @@ const PATH = "/packaging"
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 // Desain belum ada. Keputusan pemilik toko (Nov 2026): setelah selesai masak, pesanan di-packing
-// dulu baru dikirim. Saat Selesai packing, admin memilih Normal atau Hampers. Stok box hampers
+// dulu baru dikirim. Selesai packing cukup satu klik; jenisnya mengikuti tipe pesanan. Stok box hampers
 // dan loyang tidak dipotong di sini, karena sudah terpotong otomatis saat pesanan Lunas.
 export default function PackagingPage({ searchParams }: PageProps<"/packaging">) {
   return (
@@ -60,7 +60,7 @@ async function Packing({
     <>
       <PageHeader
         title="Packaging"
-        description={`Packing pesanan yang sudah selesai dimasak untuk dikirim ${dateLabel}: Normal atau Hampers. Stok box dan loyang sudah terpotong saat Lunas.`}
+        description={`Packing pesanan yang sudah selesai dimasak untuk dikirim ${dateLabel}. Tipe box mengikuti pesanan; tinggal tandai selesai. Stok box dan loyang sudah terpotong saat Lunas.`}
         actions={<DeliveryDatePicker date={date} today={today} />}
       />
 

@@ -50,7 +50,7 @@ test.describe("Stok Packaging", () => {
     await login(page, admin.email!, "/stok-packaging")
     await expect(page.getByRole("heading", { name: "Packaging & Loyang", level: 1 })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Classic Red (Large)" })).toBeVisible()
-    await expect(page.getByRole("heading", { name: /^Box Hampers/, level: 2 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /^Box Hampers Large/, level: 2 })).toBeVisible()
     await expect(page.getByRole("heading", { name: /^Loyang/, level: 2 })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Paper Bag" })).toHaveCount(0)
     await page.screenshot({
@@ -77,7 +77,7 @@ test.describe("Stok Packaging", () => {
     // Kategori baru; nama kembar ditolak.
     await categories.getByRole("button", { name: "Tambah kategori" }).click()
     let dialog = page.getByRole("dialog", { name: "Tambah kategori stok" })
-    await dialog.getByLabel("Nama kategori").fill("size large")
+    await dialog.getByLabel("Nama kategori").fill("box hampers large")
     await dialog.getByRole("button", { name: "Tambah kategori" }).click()
     await expect(dialog.getByText("Kategori dengan nama ini sudah ada.")).toBeVisible()
     await dialog.getByLabel("Nama kategori").fill(category)

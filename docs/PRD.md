@@ -55,7 +55,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 - **F-01** Top navbar: Dashboard, Pesanan, Pembayaran, Produksi, Packaging, Pengiriman, Laporan, Stok Packaging, Master Data. Menu aktif diberi latar dan garis bawah cokelat.
 - **F-02** Tombol **+ Input Pesanan** selalu tampil di navbar dan membuka modal Input Pesanan dari halaman mana pun.
-- **F-03** Ikon notifikasi dengan titik merah untuk item belum dibaca; menu profil (avatar, nama, dropdown).
+- **F-03** Lonceng notifikasi = **aktivitas terbaru** (keputusan pemilik toko, 11 Nov 2026): pesanan baru, pesanan lunas (stok loyang & box terpotong), perubahan status, edit pesanan, tanda URGENT, dan perubahan stok manual (masuk/keluar/hitung ulang), plus daftar "Perlu restock". Diperbarui tiap ±20 detik; update dari orang lain muncul sebagai **alert** (toast) dan dihitung di angka merah lonceng sampai lonceng dibuka. Produksi tidak melihat nominal uang; update stok hanya untuk role yang membuka Stok Packaging. Menu profil (avatar, nama, dropdown).
 - **F-04** Semua kartu KPI menampilkan nilai, sparkline, dan badge perubahan (hijau naik, merah turun) dibanding periode sebelumnya.
 
 ### Dashboard
@@ -70,7 +70,9 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 - **F-17** Pesanan per Metode Pengiriman: Pick Up, Instant, Kurir Internal (jumlah, persen, bar).
 - **F-18** Rekap Produksi Hari Ini: foto menu + total porsi/pcs per menu dari pesanan yang dikirim hari itu.
 - **F-19** Stok Packaging (Ringkas): stok saat ini / kapasitas dengan bar berwarna (hijau, kuning, merah).
+- **F-19b** Pantauan stok dari pesanan **belum bayar** (Nov 2026) di kartu Packaging & Loyang: jumlah pesanan belum lunas (total dan yang dikirim pada tanggal Dashboard); untuk Loyang Large/Regular dan Box Hampers Large/Regular ditampilkan kebutuhan pesanan belum bayar dan **sisa bila lunas** (merah bila kurang). Stok yang tampil sudah dikurangi pesanan lunas; hitungan kebutuhan sama dengan pemotongan saat Lunas (`stockNeeds` di `src/features/packagings/stock-needs.ts`).
 - **F-19a** Evaluasi & Masukan (permintaan pemilik toko, Nov 2026), kartu paling bawah, mengikuti tanggal acuan (tidak ikut pilihan periode). **Pertumbuhan** Harian (vs kemarin), Mingguan (7 hari vs 7 hari sebelumnya), Bulanan (bulan berjalan vs tanggal yang sama bulan lalu): pesanan, omzet lunas, rata-rata per pesanan, dengan persen naik/turun (Produksi: pesanan dan porsi saja). **Masukan otomatis** dari aturan sederhana: tren pesanan/omzet 7 hari (±10% = naik/turun, selain itu stabil), proyeksi omzet akhir bulan (bila acuan = hari ini, mulai tanggal 3), hari tersibuk/tersepi (4 minggu), menu terlaris 7 hari + menu yang naik ≥20%, persentase pelanggan lama, rasio pembatalan ≥5%, dan perubahan rata-rata per pesanan. Pesanan dibatalkan tidak dihitung kecuali untuk rasio pembatalan.
+- **F-19c** Kalender Pengiriman (permintaan pemilik toko, 11 Nov 2026), kartu lebar penuh di bawah KPI: grid bulan Senin–Minggu, tiap tanggal menampilkan jumlah pesanan yang dikirim tanggal itu (tidak termasuk dibatalkan) dan jumlah yang belum bayar; makin gelap makin sibuk. Panah ganti bulan (`?bulan=YYYY-MM`). Panel "Pengingat 7 hari ke depan" (Hari ini, Besok, …): pesanan, porsi, sudah dikirim, belum bayar. Klik tanggal → Daftar Pesanan dengan filter tanggal kirim (Produksi → menu Produksi tanggal itu).
 
 ### Input Pesanan
 
@@ -88,6 +90,7 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 - **F-30** KPI periode: Total Pesanan, Personal, Hadiah, Total Pembayaran.
 - **F-31** Filter: cari (nama, no. pesanan, no. telp), rentang tanggal, tipe, status, metode pengiriman, Reset.
+- **F-31a** Filter tanggal berdasarkan **Tgl Pesan** (default) atau **Tgl Kirim** (`?tgl=kirim`, Nov 2026). Mode Tgl Kirim: preset Hari ini, Besok, 7 hari ke depan, Bulan ini; daftar diurutkan tanggal kirim lalu waktu dibuat; KPI ikut dihitung per tanggal kirim. Ganti mode mengembalikan rentang ke hari ini.
 - **F-32** Tabel dengan checkbox, No. Pesanan, Waktu, Nama Customer, Tipe, Tgl Kirim, Pengiriman, Total, Status, menu aksi; paginasi 10 baris ("Menampilkan 1–10 dari 24 pesanan").
 - **F-33** Klik baris membuka panel Detail Pesanan: nomor + status, waktu dibuat, Data Customer (bisa Edit), Daftar Menu dengan foto dan qty, Total Pembayaran.
 - **F-34** Aksi panel: dropdown **Ubah Status** dan **Lihat Detail Lengkap** (halaman belum didesain).
@@ -119,11 +122,11 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 ### Master Data
 
-Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode Pembayaran, Customer, User / Staff, Pengaturan. Tiap tabel punya tombol Tambah, ikon edit, dan menu aksi.
+Sidebar: Produk & Menu, Stok Packaging, Kurir & Pengiriman, Metode Pembayaran, Customer, User / Staff, Pengaturan. Tiap tabel punya tombol Tambah, ikon edit, dan menu aksi.
 
 - **F-60** Produk & Menu (diatur **Owner saja**; role lain hanya melihat, keputusan pemilik toko Nov 2026): foto, nama, deskripsi singkat, kategori, harga, status Aktif; cari + filter kategori. **Kategori menu bisa ditambah, diubah, digeser urutannya, dan dihapus** (mis. kategori event). Tiap kategori bertipe "Large & Regular" (dua harga, seperti Pasta) atau "Satu harga" (seperti Dessert, Special Bundle); tipe terkunci selama masih ada menu. Urutan kategori = urutan kelompok di form pesanan dan template WA. Kategori hanya bisa dihapus bila kosong. **Hapus menu**: yang belum pernah dipesan dihapus, yang sudah pernah dipesan diarsipkan (hilang dari daftar dan form, pesanan lama dan laporan tetap utuh). Parser WA membaca judul bagian kategori baru (mis. "Event Natal") sebagai kategori satu harga.
 - **F-61** Stok Packaging (diatur **Owner saja**; role lain hanya melihat, keputusan pemilik toko Nov 2026): foto, nama, kategori, stok, satuan, status Cukup/Menipis. **Jenis stok** bisa ditambah (dengan stok awal), diubah, dan dihapus; yang sudah punya riwayat stok diarsipkan (riwayat dan pesanan lama tetap utuh), yang belum pernah dicatat dihapus. **Kategori stok** bisa ditambah, diganti nama, digeser urutannya, dan dihapus (hanya bila kosong); kategori awal "Size Large" dan "Size Regular". Urutan kategori = urutan kelompok di menu Stok Packaging dan dialog packing Hampers; packaging tanpa kategori tampil di "Lainnya". Pencatatan stok masuk / hitung ulang **tetap di menu Stok Packaging** (Admin, Produksi), bukan di Master Data.
-- **F-62** Bahan Baku: nama, satuan, stok saat ini, stok minimum, status Cukup/Menipis/Habis. Rumus sama dengan packaging: Habis bila stok 0, Menipis bila stok ≤ minimum, selain itu Cukup. Stok boleh pecahan (2 angka di belakang koma, mis. 2,5 kg) dan dicatat lewat masuk/keluar/hitung ulang oleh Admin dan Produksi.
+- **F-62** ~~Bahan Baku~~ **dihapus** (keputusan pemilik toko, 11 Nov 2026): menu dan halaman Bahan Baku tidak dipakai lagi. Tabel `raw_materials` dibiarkan di DB tanpa UI.
 - **F-63** Kurir & Pengiriman: nama, tipe (Kurir Internal/Eksternal), no. telp, status.
 - **F-64** Metode Pembayaran: nama, tipe (Bank, E-Wallet, Cash), status.
 - **F-65** User / Staff: nama, role, status.
@@ -144,6 +147,7 @@ Sidebar: Produk & Menu, Stok Packaging, Bahan Baku, Kurir & Pengiriman, Metode P
 - **F-72** Stok Packaging: box hampers dikelompokkan per **kategori stok** (F-61; awalnya Size Large / Size Regular × Classic Red, Mac & Joy, Melted Cheese, Holy E Olio); packaging lama (Box Large/Regular/Dessert, Cup Dessert, Paper Bag) diarsipkan, data dan riwayatnya tetap ada (keputusan pemilik toko, Nov 2026). Stok masuk dan hitung ulang (revisi bila ada selisih) beserta riwayatnya. Stok keluar **terpotong otomatis** saat packing Hampers (F-73), jadi tidak ada stok keluar manual.
 - **F-73** Packaging (menu baru antara Produksi dan Pengiriman, Admin + Produksi): papan Menunggu packing / Selesai packing per tanggal kirim. **Selesai packing** = Siap Packing → Siap Kirim, dengan pilihan jenis packing: **Normal** (packaging biasa, stok tidak dicatat, langsung Siap Kirim) atau **Hampers** (isi jumlah tiap box hampers, dikelompokkan Size Large / Size Regular seperti template "PESANAN BOX HAMPERS"; stoknya terpotong). Jenis packing disimpan di pesanan (`orders.packaging_type`). Stok box kurang = tidak bisa disimpan (tambah/revisi stok dulu). **Batal packing**, atau pesanan ter-packing dibatalkan, mengembalikan stoknya. Siap Kirim hanya bisa dicapai lewat menu ini (keputusan pemilik toko, Nov 2026).
   - **Revisi Nov 2026:** dialog Packing tidak lagi memotong stok. Box hampers (sesuai menu kategori Hampers) dan loyang (per porsi Large/Regular) terpotong otomatis saat pesanan **Lunas**; kembali bila pembayaran atau pesanan dibatalkan. Batal packing tidak mengubah stok. Menu pasta biasa tidak memotong box walau namanya mirip (mis. "Spaghetti Classico").
+  - **Revisi 11 Nov 2026:** dialog Packing dihapus. Tipe box sudah ditentukan saat input pesanan, jadi tombol **Selesai packing** langsung memindahkan pesanan ke Siap Kirim (satu klik); jenis packing tercatat mengikuti tipe pesanan (Normal → Normal, Hampers / Normal & Hampers → Hampers). Salah klik dibatalkan dengan **Batal packing**.
 
 ## Alur pengguna
 

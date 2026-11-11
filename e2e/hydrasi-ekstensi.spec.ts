@@ -53,7 +53,6 @@ test.describe("Atribut dari ekstensi browser tidak memicu error hydration", () =
     "/produksi",
     "/pengiriman",
     "/laporan",
-    "/master-data/bahan-baku",
   ]) {
     // Laporan dan Master Data khusus Owner.
     const ownerOnly = path === "/laporan" || path.startsWith("/master-data")

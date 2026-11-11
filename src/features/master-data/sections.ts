@@ -1,6 +1,5 @@
 import {
   Box,
-  Leaf,
   type LucideIcon,
   Settings,
   Truck,
@@ -31,12 +30,6 @@ export const MASTER_DATA_SECTIONS: MasterDataSection[] = [
     label: "Stok Packaging",
     icon: Box,
     planned: "Box hampers per ukuran, stok saat ini, dan statusnya (Cukup / Menipis).",
-  },
-  {
-    slug: "bahan-baku",
-    label: "Bahan Baku",
-    icon: Leaf,
-    planned: "Bahan baku utama, stok minimum, dan status Cukup / Menipis / Habis.",
   },
   {
     slug: "kurir",

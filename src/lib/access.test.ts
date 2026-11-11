@@ -61,7 +61,6 @@ describe("canAccessPath", () => {
       "/master-data/customer",
       "/master-data/user-staff",
       "/master-data/pengaturan",
-      "/master-data/bahan-baku",
     ]) {
       expect(canAccessPath("owner", path)).toBe(true)
       for (const role of ["admin", "kasir", "produksi"] as const) {

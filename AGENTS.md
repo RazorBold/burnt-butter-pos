@@ -101,7 +101,6 @@ PRD dan backlog dicatat di Multica (workspace **Bellatrix**, project **Web Manag
 | Kategori stok (diatur Owner)                                                                 | `packaging_categories` (`sort_order`), `packagings.category_id`                            |
 | Packaging (menu packing)                                                                     | `src/features/packing`                                                                     |
 | Chat Tim                                                                                     | `src/features/chat`, `chat_messages`, `chat_mentions`, `chat_reads`                        |
-| Bahan Baku                                                                                   | `raw_materials`                                                                            |
 | Kurir                                                                                        | `couriers`                                                                                 |
 | User / Staff, role                                                                           | `profiles.role`: `admin`, `kasir`, `produksi`, `owner`                                     |
 

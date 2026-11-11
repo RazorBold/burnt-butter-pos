@@ -12,6 +12,7 @@ import {
   isNotNull,
   like,
   lt,
+  lte,
   ne,
   or,
   sql,
@@ -35,7 +36,7 @@ import type { CatalogVariant } from "./catalog"
 import type { OrderChannel } from "./constants"
 import type { OrderExportRow } from "./csv"
 import type { OrderEditPart } from "./edit-log"
-import { addDays, type OrderFilters, type OrderStatus } from "./filters"
+import { addDays, type DateBasis, type OrderFilters, type OrderStatus } from "./filters"
 import type { DailyOrderStats } from "./kpis"
 import type { ShipmentStatus } from "./status"
 
@@ -121,8 +122,11 @@ function searchCondition(q: string | undefined) {
 /** Daftar pesanan sesuai filter, 10 per halaman, urut waktu dibuat (antrean hari itu). */
 export async function listOrders(filters: OrderFilters) {
   const db = getDb()
+  const byDelivery = filters.basis === "kirim"
   const where = and(
-    createdBetween(filters.from, filters.to),
+    byDelivery
+      ? and(gte(orders.deliveryDate, filters.from), lte(orders.deliveryDate, filters.to))
+      : createdBetween(filters.from, filters.to),
     filters.kind ? eq(orders.kind, filters.kind) : undefined,
     filters.type ? eq(orders.type, filters.type) : undefined,
     filters.status ? eq(orders.status, filters.status) : undefined,
@@ -167,16 +171,31 @@ export async function listOrders(filters: OrderFilters) {
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
     .leftJoin(payments, and(eq(payments.orderId, orders.id), eq(payments.status, "lunas")))
     .where(where)
-    .orderBy(asc(orders.createdAt), asc(orders.orderNo))
+    // Mode tanggal kirim: urut tanggal kirim dulu, lalu antrean waktu dibuat.
+    .orderBy(
+      ...(byDelivery ? [asc(orders.deliveryDate)] : []),
+      asc(orders.createdAt),
+      asc(orders.orderNo),
+    )
     .limit(ORDER_PAGE_SIZE)
     .offset((page - 1) * ORDER_PAGE_SIZE)
 
   return { rows, total, page, pageCount }
 }
 
-/** Rekap harian (WIB) pesanan yang tidak dibatalkan, untuk KPI dan sparkline. */
-export async function getDailyOrderStats(from: string, to: string): Promise<DailyOrderStats[]> {
-  const day = sql<string>`to_char(${orders.createdAt} at time zone 'Asia/Jakarta', 'YYYY-MM-DD')`
+/**
+ * Rekap harian (WIB) pesanan yang tidak dibatalkan, untuk KPI dan sparkline. `basis` "kirim"
+ * mengelompokkan per tanggal kirim, bukan waktu dibuat.
+ */
+export async function getDailyOrderStats(
+  from: string,
+  to: string,
+  basis: DateBasis = "dibuat",
+): Promise<DailyOrderStats[]> {
+  const byDelivery = basis === "kirim"
+  const day = byDelivery
+    ? sql<string>`to_char(${orders.deliveryDate}, 'YYYY-MM-DD')`
+    : sql<string>`to_char(${orders.createdAt} at time zone 'Asia/Jakarta', 'YYYY-MM-DD')`
   return getDb()
     .select({
       day,
@@ -189,7 +208,14 @@ export async function getDailyOrderStats(from: string, to: string): Promise<Dail
       value: sql<number>`coalesce(sum(${orders.total}), 0)`.mapWith(Number),
     })
     .from(orders)
-    .where(and(createdBetween(from, to), ne(orders.status, "dibatalkan")))
+    .where(
+      and(
+        byDelivery
+          ? and(gte(orders.deliveryDate, from), lte(orders.deliveryDate, to))
+          : createdBetween(from, to),
+        ne(orders.status, "dibatalkan"),
+      ),
+    )
     .groupBy(day)
 }
 

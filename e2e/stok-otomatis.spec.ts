@@ -128,4 +128,48 @@ test.describe("Stok otomatis saat lunas (loyang & box hampers)", () => {
     const restored = await readStocks()
     expect(restored).toEqual(before)
   })
+
+  test("Dashboard: pesanan belum bayar tampil sebagai pantauan, stok belum dipotong", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    test.setTimeout(90_000)
+    const unpaidOf = async (label: string) => {
+      const text = await page.getByTestId(`belum-bayar-${label}`).innerText()
+      return Number(/Belum bayar:\s*(\d+)/.exec(text)?.[1] ?? NaN)
+    }
+    const readAll = async () => ({
+      loyangLarge: await unpaidOf("Loyang Large"),
+      loyangRegular: await unpaidOf("Loyang Regular"),
+      boxLarge: await unpaidOf("Box Hampers Large"),
+    })
+
+    await loginAs(page, admin.email!, admin.password!, "/dashboard")
+    const before = await readAll()
+    const stockBefore = await readStocks()
+
+    // Pesanan Hampers belum dibayar: 2 Classico Red Large + 1 Holy E Olio Regular.
+    await page.goto("/pesanan/baru")
+    await page.getByRole("textbox", { name: "Pesan WhatsApp" }).fill(
+      fillTemplate(FO2_TEMPLATE, `QA Customer ${Date.now()} Pantau`, [
+        ["Size Large", "Classico Red", 2],
+        ["Size Regular", "Holy E Olio", 1],
+      ]),
+    )
+    await page.getByRole("button", { name: "Isi Otomatis" }).click()
+    await page.getByRole("button", { name: "Simpan pesanan" }).click()
+    const savedDialog = page.getByRole("dialog", { name: "Pesanan sudah terinput" })
+    saved.push(await savedDialog.getByTestId("saved-order-no").innerText())
+
+    await page.goto("/dashboard")
+    const after = await readAll()
+    expect(after.loyangLarge).toBe(before.loyangLarge + 2)
+    expect(after.loyangRegular).toBe(before.loyangRegular + 1)
+    expect(after.boxLarge).toBe(before.boxLarge + 2)
+    // Belum dibayar = stok asli belum terpotong.
+    expect(await readStocks()).toEqual(stockBefore)
+    await page
+      .getByRole("region", { name: "Packaging & Loyang" })
+      .screenshot({ path: "test-results/dashboard-belum-bayar-desktop.png" })
+  })
 })

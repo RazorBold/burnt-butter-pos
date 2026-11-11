@@ -8,15 +8,11 @@ describe("calculateNetLoyangDeduction", () => {
   })
 
   it("pesanan yang sudah pernah dipotong penuh: tidak potong lagi (0)", () => {
-    expect(
-      calculateNetLoyangDeduction(3, [{ direction: "out", qty: 3 }]),
-    ).toBe(0)
+    expect(calculateNetLoyangDeduction(3, [{ direction: "out", qty: 3 }])).toBe(0)
   })
 
   it("pesanan yang baru dipotong sebagian: potong kekurangannya saja", () => {
-    expect(
-      calculateNetLoyangDeduction(5, [{ direction: "out", qty: 2 }]),
-    ).toBe(3)
+    expect(calculateNetLoyangDeduction(5, [{ direction: "out", qty: 2 }])).toBe(3)
   })
 
   it("pesanan yang pernah dikembalikan: potong kembali sesuai sisa yang dibutuhkan", () => {

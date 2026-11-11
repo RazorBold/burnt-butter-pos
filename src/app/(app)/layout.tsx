@@ -4,12 +4,12 @@ import { AppNavbar } from "@/components/app/app-navbar"
 import { Wordmark } from "@/components/app/wordmark"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChatDock } from "@/features/chat/components/chat-dock"
+import { listActivity } from "@/features/activity/queries"
 import { listChatMembers } from "@/features/chat/queries"
 import { countNewOrders } from "@/features/orders/queries"
 import { UrgentWatcher } from "@/features/urgent/components/urgent-watcher"
 import { listStockAlerts } from "@/features/stock-alerts/queries"
 import {
-  CAN_EDIT_RAW_STOCK,
   CAN_EDIT_STOCK,
   CAN_INPUT_ORDER,
   canAccessPath,
@@ -62,20 +62,17 @@ async function Navbar() {
   const allowedSections = (Object.keys(SECTION_ACCESS) as Section[]).filter((section) =>
     canAccessPath(user.role, section),
   )
-  const [stockAlerts, newOrderCount] = await Promise.all([
-    // Peringatan stok hanya untuk role yang bisa restock: packaging (Admin, Produksi), bahan baku (Owner).
-    CAN_EDIT_STOCK.includes(user.role) || CAN_EDIT_RAW_STOCK.includes(user.role)
-      ? listStockAlerts({
-          packaging: CAN_EDIT_STOCK.includes(user.role),
-          rawMaterials: CAN_EDIT_RAW_STOCK.includes(user.role),
-        })
-      : Promise.resolve(null),
+  const [stockAlerts, newOrderCount, activity] = await Promise.all([
+    // Peringatan stok hanya untuk role yang bisa restock packaging (Admin, Produksi, Owner).
+    CAN_EDIT_STOCK.includes(user.role) ? listStockAlerts() : Promise.resolve(null),
     canAccessPath(user.role, "/pesanan") ? countNewOrders() : Promise.resolve(null),
+    listActivity(user.role, user.name.startsWith("QA ")),
   ])
 
   return (
     <AppNavbar
-      user={{ name: user.name, email: user.email, role: user.role }}
+      user={{ id: user.id, name: user.name, email: user.email, role: user.role }}
+      activity={activity}
       allowedSections={allowedSections}
       canInputOrder={CAN_INPUT_ORDER.includes(user.role)}
       stockAlerts={stockAlerts}

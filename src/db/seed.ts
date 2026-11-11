@@ -76,28 +76,32 @@ const MENUS: MenuSeed[] = [
     name: "Classico Red",
     slug: "classico-red",
     category: "hampers",
-    description: "Baked spaghetti bolognese brulee edisi hampers dengan lelehan keju mozarella creamy.",
+    description:
+      "Baked spaghetti bolognese brulee edisi hampers dengan lelehan keju mozarella creamy.",
     prices: { large: 65000, regular: 50000 },
   },
   {
     name: "Mac & Joy",
     slug: "mac-joy",
     category: "hampers",
-    description: "Mac and cheese creamy spesial hampers dengan keju melimpah yang dipanggang keemasan.",
+    description:
+      "Mac and cheese creamy spesial hampers dengan keju melimpah yang dipanggang keemasan.",
     prices: { large: 65000, regular: 50000 },
   },
   {
     name: "Melted Cheese",
     slug: "melted-cheese",
     category: "hampers",
-    description: "Pasta makaroni panggang dengan lelehan keju lumer dan saus keju gurih spesial edisi hampers.",
+    description:
+      "Pasta makaroni panggang dengan lelehan keju lumer dan saus keju gurih spesial edisi hampers.",
     prices: { large: 65000, regular: 50000 },
   },
   {
     name: "Holy E Olio",
     slug: "holy-e-olio",
     category: "hampers",
-    description: "Spaghetti aglio e olio harum dengan minyak zaitun, bawang putih renyah, dan cabai aromatik.",
+    description:
+      "Spaghetti aglio e olio harum dengan minyak zaitun, bawang putih renyah, dan cabai aromatik.",
     prices: { large: 60000, regular: 45000 },
   },
 ]

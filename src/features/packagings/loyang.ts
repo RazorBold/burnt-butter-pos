@@ -3,7 +3,13 @@ import "server-only"
 import { and, eq, gte, inArray, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { menuVariants, orderItems, packagingCategories, packagings, stockMovements } from "@/db/schema"
+import {
+  menuVariants,
+  orderItems,
+  packagingCategories,
+  packagings,
+  stockMovements,
+} from "@/db/schema"
 import { toJakartaDateString } from "@/lib/format"
 
 import {
@@ -108,10 +114,10 @@ export async function ensureLoyangItems(
     })
     .from(packagings)
     .where(
-      inArray(
-        sql`lower(${packagings.name})`,
-        [LOYANG_LARGE_NAME.toLowerCase(), LOYANG_REGULAR_NAME.toLowerCase()],
-      ),
+      inArray(sql`lower(${packagings.name})`, [
+        LOYANG_LARGE_NAME.toLowerCase(),
+        LOYANG_REGULAR_NAME.toLowerCase(),
+      ]),
     )
 
   const large = rows.find((r) => r.name.toLowerCase() === LOYANG_LARGE_NAME.toLowerCase())!
@@ -124,11 +130,7 @@ export async function ensureLoyangItems(
  * Potong stok loyang saat pesanan berubah menjadi Selesai.
  * Item menu Large memotong Loyang Large; item menu Regular memotong Loyang Regular.
  */
-export async function deductLoyang(
-  tx: Tx,
-  completedOrders: OrderRef[],
-  userId: string,
-) {
+export async function deductLoyang(tx: Tx, completedOrders: OrderRef[], userId: string) {
   if (completedOrders.length === 0) return
   const loyangMap = await ensureLoyangItems(tx)
 
@@ -340,8 +342,14 @@ export async function getLoyangSummary(
   const flows = await db
     .select({
       itemId: stockMovements.itemId,
-      inToday: sql<number>`coalesce(sum(${stockMovements.qty}) filter (where ${stockMovements.direction} = 'in'), 0)`.mapWith(Number),
-      outToday: sql<number>`coalesce(sum(${stockMovements.qty}) filter (where ${stockMovements.direction} = 'out'), 0)`.mapWith(Number),
+      inToday:
+        sql<number>`coalesce(sum(${stockMovements.qty}) filter (where ${stockMovements.direction} = 'in'), 0)`.mapWith(
+          Number,
+        ),
+      outToday:
+        sql<number>`coalesce(sum(${stockMovements.qty}) filter (where ${stockMovements.direction} = 'out'), 0)`.mapWith(
+          Number,
+        ),
     })
     .from(stockMovements)
     .where(

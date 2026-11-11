@@ -24,7 +24,6 @@ import {
   parseQty,
   planMovement,
 } from "@/features/packagings/stock"
-import { recordRawMaterialMovement } from "@/features/raw-materials/actions"
 import { formatJumlah } from "@/lib/format"
 
 const modeOptions = (kind: StockKind) =>
@@ -40,18 +39,13 @@ const NOTE_PLACEHOLDER: Record<StockKind, Record<MovementMode, string>> = {
     keluar: "Mis. rusak, dipakai untuk sampel",
     hitung: "Mis. stok opname akhir bulan",
   },
-  raw_material: {
-    masuk: "Mis. belanja pasar pagi",
-    keluar: "Mis. dipakai produksi hari ini",
-    hitung: "Mis. ditimbang ulang akhir hari",
-  },
 }
 
-export type StockKind = "packaging" | "raw_material"
+export type StockKind = "packaging"
 
 /**
- * Dialog catat stok masuk / keluar / hitung ulang untuk satu packaging (bilangan bulat) atau
- * bahan baku (boleh 2 angka di belakang koma). Dibuka terkontrol.
+ * Dialog catat stok masuk / hitung ulang untuk satu packaging atau loyang (bilangan bulat).
+ * Dibuka terkontrol.
  */
 export function StockMovementDialog({
   item,
@@ -67,7 +61,7 @@ export function StockMovementDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const id = useId()
-  const decimals = kind === "raw_material" ? 2 : 0
+  const decimals = 0
   const [mode, setMode] = useState<MovementMode>(initialMode)
   const [qty, setQty] = useState("")
   const [note, setNote] = useState("")
@@ -101,10 +95,7 @@ export function StockMovementDialog({
       return
     }
     startTransition(async () => {
-      const result =
-        kind === "raw_material"
-          ? await recordRawMaterialMovement({ rawMaterialId: item.id, mode, qty: number, note })
-          : await recordStockMovement({ packagingId: item.id, mode, qty: number, note })
+      const result = await recordStockMovement({ packagingId: item.id, mode, qty: number, note })
       if (result.ok) {
         toast.success(result.message)
         onOpenChange(false)

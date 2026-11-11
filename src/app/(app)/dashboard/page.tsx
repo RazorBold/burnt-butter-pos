@@ -4,6 +4,7 @@ import {
   ChartColumn,
   ChartPie,
   ClipboardList,
+  Clock,
   CookingPot,
   FileText,
   Gift,
@@ -27,6 +28,7 @@ import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { STOCK_BAR_COLOR } from "@/components/app/stock-badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PaymentLineChart, StatusBarChart } from "@/features/dashboard/components/dashboard-charts"
+import { DeliveryCalendarCard } from "@/features/dashboard/components/delivery-calendar-card"
 import { EvaluationCard } from "@/features/dashboard/components/evaluation-card"
 import { PeriodPicker } from "@/features/dashboard/components/period-picker"
 import {
@@ -35,6 +37,7 @@ import {
   evaluationRanges,
   evaluationStart,
 } from "@/features/dashboard/evaluation"
+import { parseCalendarMonth } from "@/features/dashboard/delivery-calendar"
 import { parseDashboardPeriod, PERIOD_LABEL } from "@/features/dashboard/period"
 import {
   getEvaluationOrders,
@@ -46,7 +49,7 @@ import { addDays, ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { listLatestOrders } from "@/features/orders/queries"
 import { isUrgent } from "@/features/orders/status"
 import { summarizeCategories } from "@/features/packagings/categories"
-import { listPackagings } from "@/features/packagings/queries"
+import { getUnpaidStockNeeds, listPackagings } from "@/features/packagings/queries"
 import { getLoyangSummary } from "@/features/packagings/loyang"
 import { listProductionOrders } from "@/features/production/queries"
 import { summarizeProduction } from "@/features/production/summary"
@@ -93,7 +96,9 @@ export default function DashboardPage({ searchParams }: PageProps<"/dashboard">)
 async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   const user = await requirePageAccess("/dashboard")
   const today = toJakartaDateString(new Date())
-  const { anchor, period, from, to } = parseDashboardPeriod(await searchParams, today)
+  const params = await searchParams
+  const { anchor, period, from, to } = parseDashboardPeriod(params, today)
+  const calendarMonth = parseCalendarMonth(params.bulan, today)
   const role = user.role
   // Dashboard dibuka semua role; kartu dan tautan mengikuti hak akses (PRD "Pengguna & peran").
   const showOrders = canAccessPath(role, "/pesanan")
@@ -105,7 +110,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
       : null
 
   const weekFrom = addDays(anchor, -6)
-  const [orders, payments, weekPayments, latest, production, packagings, loyang] =
+  const [orders, payments, weekPayments, latest, production, packagings, loyang, unpaid] =
     await Promise.all([
       getReportOrders(from, to),
       getReportPayments(from, to),
@@ -114,6 +119,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
       listProductionOrders(anchor),
       listPackagings(),
       getLoyangSummary(),
+      getUnpaidStockNeeds(anchor),
     ])
   const report = buildReport(orders, payments, from, to)
   const week = buildReport([], weekPayments, weekFrom, anchor).kpis.payments
@@ -125,6 +131,19 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   const trend = (percent: number | null) => (percent === null ? undefined : { percent })
   const totalOrders = kpis.orders.value
   const pct = (value: number) => (totalOrders ? Math.round((value / totalOrders) * 100) : 0)
+  // Kebutuhan box dari pesanan belum bayar, dijumlahkan per kategori stok (Large/Regular).
+  const categoryOfBox = new Map(packagings.map((item) => [item.name, item.categoryId ?? "lain"]))
+  const unpaidBoxes = (boxes: Record<string, number>) => {
+    const byCategory = new Map<string, number>()
+    for (const [name, qty] of Object.entries(boxes)) {
+      const key = categoryOfBox.get(name)
+      if (key) byCategory.set(key, (byCategory.get(key) ?? 0) + qty)
+    }
+    return byCategory
+  }
+  const unpaidBoxAll = unpaidBoxes(unpaid.all.boxes)
+  const unpaidBoxOnDate = unpaidBoxes(unpaid.onDate.boxes)
+  const anchorShort = formatTanggalPendek(anchor).slice(0, 5)
   // Ringkasan stok box hampers per kategori agar ringkas di dashboard.
   const hampersCategories = summarizeCategories(
     packagings.filter((item) => !item.name.toLowerCase().includes("loyang")),
@@ -182,6 +201,18 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           />
         )}
       </div>
+
+      <Suspense fallback={<Skeleton className="mt-4 h-[520px] rounded-2xl" />}>
+        <DeliveryCalendarCard
+          month={calendarMonth}
+          today={today}
+          params={{
+            tanggal: typeof params.tanggal === "string" ? params.tanggal : undefined,
+            periode: typeof params.periode === "string" ? params.periode : undefined,
+          }}
+          dayHref={showOrders ? "pesanan" : canAccessPath(role, "/produksi") ? "produksi" : null}
+        />
+      </Suspense>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)_minmax(0,1fr)]">
         {showOrders && (
@@ -419,6 +450,17 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
               : undefined
           }
         >
+          {/* Pesanan belum bayar belum memotong stok: tampilkan sebagai cadangan yang perlu
+              diantisipasi (total, dan yang dikirim pada tanggal Dashboard). */}
+          <p className="mb-3 flex items-start gap-1.5 rounded-lg bg-status-diproses px-3 py-2 text-[13px] text-status-diproses-fg">
+            <Clock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            <span>
+              <strong className="font-semibold tabular-nums">{unpaid.all.orders}</strong> pesanan
+              belum bayar (
+              <strong className="font-semibold tabular-nums">{unpaid.onDate.orders}</strong> kirim{" "}
+              {anchorShort}). Stok di bawah sudah dikurangi pesanan lunas.
+            </span>
+          </p>
           {/* Sorotan Sisa Loyang Hari Ini (Large & Regular) */}
           <div className="mb-4 grid gap-2.5 sm:grid-cols-2">
             {[loyang.large, loyang.regular].map((item) => (
@@ -461,6 +503,15 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                     </strong>
                   </span>
                 </div>
+                <UnpaidLine
+                  stock={item.stock}
+                  all={item.size === "large" ? unpaid.all.loyangLarge : unpaid.all.loyangRegular}
+                  onDate={
+                    item.size === "large" ? unpaid.onDate.loyangLarge : unpaid.onDate.loyangRegular
+                  }
+                  dateLabel={anchorShort}
+                  testId={`belum-bayar-${item.name}`}
+                />
               </div>
             ))}
           </div>
@@ -476,7 +527,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                 return (
                   <li
                     key={cat.key}
-                    className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
+                    className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-sm"
                   >
                     <span className="flex min-w-0 items-center gap-2 text-text-strong">
                       <Package className="size-4 shrink-0 text-brand-ink" aria-hidden />
@@ -512,6 +563,14 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                         <span className="font-normal text-text-body"> / {cat.capacity}</span>
                       )}
                     </span>
+                    <UnpaidLine
+                      className="col-span-3 pl-6"
+                      stock={cat.stock}
+                      all={unpaidBoxAll.get(cat.key) ?? 0}
+                      onDate={unpaidBoxOnDate.get(cat.key) ?? 0}
+                      dateLabel={anchorShort}
+                      testId={`belum-bayar-${cat.title}`}
+                    />
                   </li>
                 )
               })}
@@ -609,6 +668,46 @@ function Card({
       </div>
       {children}
     </section>
+  )
+}
+
+/** Baris pantauan: kebutuhan dari pesanan belum bayar dan sisa stok bila semuanya jadi lunas. */
+function UnpaidLine({
+  stock,
+  all,
+  onDate,
+  dateLabel,
+  className,
+  testId,
+}: {
+  stock: number
+  all: number
+  onDate: number
+  dateLabel: string
+  className?: string
+  testId: string
+}) {
+  const left = stock - all
+  return (
+    <p data-testid={testId} className={cn("mt-1.5 text-xs text-text-body", className)}>
+      Belum bayar: <strong className="font-semibold text-text-strong tabular-nums">{all}</strong>
+      {onDate > 0 && (
+        <>
+          {" "}
+          ({onDate} kirim {dateLabel})
+        </>
+      )}{" "}
+      · Sisa bila lunas:{" "}
+      <strong
+        className={cn(
+          "font-semibold tabular-nums",
+          left < 0 ? "text-trend-down-fg" : "text-text-strong",
+        )}
+      >
+        {left}
+      </strong>
+      {left < 0 && <span className="text-trend-down-fg"> (kurang)</span>}
+    </p>
   )
 }
 

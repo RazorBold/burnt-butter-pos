@@ -1,6 +1,6 @@
 // Status stok dan perubahan stok manual (masuk, keluar, hitung ulang). Murni supaya bisa diuji
-// dan dipakai di klien (pratinjau) maupun server (validasi). Dipakai Stok Packaging (bilangan
-// bulat) dan Bahan Baku (boleh 2 angka di belakang koma, mis. 2,5 kg).
+// dan dipakai di klien (pratinjau) maupun server (validasi). Dipakai Stok Packaging & Loyang
+// (bilangan bulat; parameter desimal tetap ada untuk satuan lain).
 
 import { formatJumlah } from "@/lib/format"
 

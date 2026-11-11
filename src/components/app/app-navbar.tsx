@@ -1,12 +1,11 @@
 "use client"
 
-import { Bell, CakeSlice, ChevronDown, Leaf, LogOut, Menu, Package, Plus } from "lucide-react"
+import { CakeSlice, ChevronDown, LogOut, Menu, Plus } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useTransition } from "react"
 
 import { isActivePath, NAV_ITEMS, type NavItem } from "@/components/app/nav-items"
-import { StockBadge } from "@/components/app/stock-badge"
 import { Wordmark } from "@/components/app/wordmark"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -25,14 +24,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import type { Activity } from "@/features/activity/feed"
+import { NotificationsMenu } from "@/features/activity/components/notifications-menu"
 import { signOut } from "@/features/auth/actions"
 import { InputOrderDialog } from "@/features/orders/components/input-order-dialog"
 import type { StockAlert } from "@/features/stock-alerts/alerts"
 import { ROLE_LABEL, type Role, type Section } from "@/lib/access"
-import { formatJumlah } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export type NavbarUser = { name: string; email: string; role: Role }
+export type NavbarUser = { id: string; name: string; email: string; role: Role }
 
 const focusRing = "outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
 
@@ -51,6 +51,7 @@ export function AppNavbar({
   allowedSections,
   canInputOrder,
   stockAlerts,
+  activity,
   newOrderCount,
   version,
 }: {
@@ -58,6 +59,7 @@ export function AppNavbar({
   allowedSections: Section[]
   canInputOrder: boolean
   stockAlerts: StockAlert[] | null
+  activity: Activity[]
   /** Pesanan berstatus Baru (badge di menu Pesanan); null = role tanpa akses Pesanan. */
   newOrderCount: number | null
   version: string
@@ -111,7 +113,11 @@ export function AppNavbar({
                 <span className="hidden sm:inline">Input Pesanan</span>
               </Button>
             )}
-            <NotificationsMenu stockAlerts={stockAlerts} />
+            <NotificationsMenu
+              userId={user.id}
+              stockAlerts={stockAlerts}
+              initialActivity={activity}
+            />
             <ProfileMenu user={user} />
           </div>
         </div>
@@ -220,82 +226,6 @@ function AppInfoCard({ version, className }: { version: string; className?: stri
         <span className="block text-xs text-text-body tabular-nums">v{version}</span>
       </span>
     </div>
-  )
-}
-
-/**
- * Lonceng notifikasi (F-03). Isinya peringatan stok packaging dan bahan baku yang Menipis atau
- * Habis (BELL-33), hanya untuk role yang bisa restock. `stockAlerts` null = role lain.
- */
-function NotificationsMenu({ stockAlerts }: { stockAlerts: StockAlert[] | null }) {
-  const count = stockAlerts?.length ?? 0
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative size-11 rounded-full text-brand-ink"
-          aria-label={count > 0 ? `Notifikasi: ${count} stok perlu restock` : "Notifikasi"}
-        >
-          <Bell className="size-[22px]" />
-          {count > 0 && (
-            <span
-              aria-hidden
-              className="absolute top-2 right-2.5 size-2.5 rounded-full bg-[#d93a2b] ring-2 ring-nav"
-            />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[340px] max-w-[calc(100vw-1.5rem)] p-0">
-        <DropdownMenuLabel className="px-4 py-3 text-sm font-semibold text-brand-ink">
-          {count > 0 ? `Stok perlu restock (${count})` : "Notifikasi"}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator className="m-0" />
-        {count === 0 ? (
-          <p className="px-4 py-6 text-sm text-text-body">
-            {stockAlerts
-              ? "Stok aman. Packaging dan bahan baku yang menipis atau habis akan muncul di sini."
-              : "Belum ada notifikasi."}
-          </p>
-        ) : (
-          <div className="max-h-[min(420px,70dvh)] overflow-y-auto p-1.5">
-            {stockAlerts!.map((alert) => {
-              const Icon = alert.kind === "packaging" ? Package : Leaf
-              return (
-                <DropdownMenuItem key={`${alert.kind}-${alert.id}`} asChild className="p-0">
-                  <Link
-                    href={alert.href}
-                    className="flex items-start gap-3 rounded-md px-2.5 py-2.5"
-                  >
-                    <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-icon-bg text-brand-ink">
-                      <Icon className="size-4" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate font-semibold text-text-strong">
-                          {alert.name}
-                        </span>
-                        <StockBadge status={alert.status} className="px-2 py-0.5 text-xs" />
-                      </span>
-                      <span className="block text-[13px] text-text-body tabular-nums">
-                        Sisa {formatJumlah(alert.stock)} {alert.unit}
-                        {alert.minStock !== null &&
-                          `, minimum ${formatJumlah(alert.minStock)} ${alert.unit}`}
-                        <span className="sr-only">
-                          {alert.kind === "packaging" ? " (packaging)" : " (bahan baku)"}
-                        </span>
-                      </span>
-                    </span>
-                  </Link>
-                </DropdownMenuItem>
-              )
-            })}
-          </div>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 

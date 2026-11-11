@@ -1,13 +1,25 @@
 import "server-only"
 
-import { and, asc, count, desc, eq, gte, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, gte, ne, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { packagingCategories, packagings, profiles, stockMovements } from "@/db/schema"
+import {
+  menuCategories,
+  menus,
+  menuVariants,
+  orderItems,
+  orders,
+  packagingCategories,
+  packagings,
+  payments,
+  profiles,
+  stockMovements,
+} from "@/db/schema"
 import { toJakartaDateString } from "@/lib/format"
 
 import { type StockStatus, stockStatus } from "./stock"
 import { ensureLoyangItems } from "./loyang"
+import { type StockNeeds, stockNeeds } from "./stock-needs"
 
 export type PackagingRow = {
   id: string
@@ -151,4 +163,45 @@ export async function getTodayPackagingFlow(): Promise<{ in: number; out: number
       ),
     )
   return row
+}
+
+export type UnpaidStockNeeds = {
+  /** Semua pesanan aktif yang belum Lunas. */
+  all: StockNeeds & { orders: number }
+  /** Yang dikirim pada `date`. */
+  onDate: StockNeeds & { orders: number }
+}
+
+/**
+ * Pantauan Dashboard: loyang dan box hampers yang akan terpotong bila pesanan yang belum dibayar
+ * jadi Lunas. Stok yang tampil sudah dikurangi pesanan Lunas, jadi ini cadangan yang perlu
+ * diantisipasi. Pesanan Dibatalkan tidak dihitung.
+ */
+export async function getUnpaidStockNeeds(date: string): Promise<UnpaidStockNeeds> {
+  const rows = await getDb()
+    .select({
+      orderId: orders.id,
+      deliveryDate: orders.deliveryDate,
+      menuName: menus.name,
+      categoryName: menuCategories.name,
+      size: menuVariants.size,
+      qty: orderItems.qty,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(menuVariants, eq(menuVariants.id, orderItems.menuVariantId))
+    .innerJoin(menus, eq(menus.id, menuVariants.menuId))
+    .leftJoin(menuCategories, eq(menuCategories.id, menus.categoryId))
+    .where(
+      and(
+        ne(orders.status, "dibatalkan"),
+        sql`not exists (select 1 from ${payments} where ${payments.orderId} = ${orders.id} and ${payments.status} = 'lunas')`,
+      ),
+    )
+  const onDate = rows.filter((row) => row.deliveryDate === date)
+  const orderCount = (list: typeof rows) => new Set(list.map((row) => row.orderId)).size
+  return {
+    all: { ...stockNeeds(rows), orders: orderCount(rows) },
+    onDate: { ...stockNeeds(onDate), orders: orderCount(onDate) },
+  }
 }

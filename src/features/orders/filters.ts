@@ -1,4 +1,4 @@
-// Filter Daftar Pesanan dari URL (?q=&dari=&sampai=&jenis=&tipe=&status=&kirim=&sumber=&hal=).
+// Filter Daftar Pesanan dari URL (?q=&tgl=&dari=&sampai=&jenis=&tipe=&status=&kirim=&sumber=&hal=).
 // Murni supaya bisa dipakai di server dan diuji.
 
 import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
@@ -34,9 +34,14 @@ export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
   normal_hampers: "Normal & Hampers",
 }
 
+/** Dasar rentang tanggal: waktu pesanan dibuat (default) atau tanggal kirim (?tgl=kirim). */
+export const DATE_BASES = ["dibuat", "kirim"] as const
+export type DateBasis = (typeof DATE_BASES)[number]
+
 export type OrderFilters = {
   q?: string
-  /** Rentang tanggal pesanan dibuat (WIB), "YYYY-MM-DD", inklusif. */
+  basis: DateBasis
+  /** Rentang tanggal (WIB) sesuai `basis`, "YYYY-MM-DD", inklusif. */
   from: string
   to: string
   kind?: OrderKind
@@ -90,6 +95,7 @@ export function parseOrderFilters(params: Params, today: string): OrderFilters {
   const page = Number(one("hal"))
   return {
     q: one("q")?.trim() || undefined,
+    basis: one("tgl") === "kirim" ? "kirim" : "dibuat",
     from,
     to,
     kind: pick(ORDER_KINDS, one("jenis")),
@@ -115,6 +121,7 @@ export function filterParams(
   const isToday = filters.from === today && filters.to === today
   return {
     q: filters.q,
+    tgl: filters.basis === "kirim" ? "kirim" : undefined,
     dari: isToday ? undefined : filters.from,
     sampai: isToday ? undefined : filters.to,
     jenis: filters.kind,

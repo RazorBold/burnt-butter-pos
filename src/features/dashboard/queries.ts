@@ -1,11 +1,12 @@
 import "server-only"
 
-import { and, eq, gte, lt, ne, sql } from "drizzle-orm"
+import { and, eq, gte, lt, lte, ne, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
 import { menus, menuVariants, orderItems, orders, payments, shipments } from "@/db/schema"
 import { addDays } from "@/features/orders/filters"
 
+import type { DeliveryDay } from "./delivery-calendar"
 import type { EvalOrder, EvalPayment, MenuQty } from "./evaluation"
 
 const startOfDay = (day: string) => new Date(`${day}T00:00:00+07:00`)
@@ -54,4 +55,28 @@ export async function getMenuQty(from: string, to: string): Promise<MenuQty[]> {
     .innerJoin(menus, eq(menus.id, menuVariants.menuId))
     .where(and(ne(orders.status, "dibatalkan"), between(orders.createdAt, from, to)))
     .groupBy(menus.id, menus.name)
+}
+
+/** Rekap per tanggal kirim untuk Kalender Pengiriman (pesanan dibatalkan tidak dihitung). */
+export async function getDeliveryCalendar(from: string, to: string): Promise<DeliveryDay[]> {
+  const portions = sql<number>`coalesce((select sum(${orderItems.qty}) from ${orderItems} where ${orderItems.orderId} = ${orders.id}), 0)`
+  const paid = sql`exists (select 1 from ${payments} where ${payments.orderId} = ${orders.id} and ${payments.status} = 'lunas')`
+  const rows = await getDb()
+    .select({
+      date: orders.deliveryDate,
+      orders: sql<number>`count(*)::int`,
+      portions: sql<number>`coalesce(sum(${portions}), 0)::int`,
+      unpaid: sql<number>`(count(*) filter (where not ${paid}))::int`,
+      pending: sql<number>`(count(*) filter (where ${orders.status} not in ('dikirim', 'selesai')))::int`,
+    })
+    .from(orders)
+    .where(
+      and(
+        ne(orders.status, "dibatalkan"),
+        gte(orders.deliveryDate, from),
+        lte(orders.deliveryDate, to),
+      ),
+    )
+    .groupBy(orders.deliveryDate)
+  return rows.map((row) => ({ ...row, portions: Number(row.portions) }))
 }

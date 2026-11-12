@@ -9,6 +9,7 @@ import {
   PencilLine,
   ShoppingBag,
   Siren,
+  Trash2,
   Wallet,
 } from "lucide-react"
 import Link from "next/link"
@@ -39,6 +40,7 @@ const KIND_ICON: Record<ActivityKind, LucideIcon> = {
   status: ArrowRightLeft,
   edit: PencilLine,
   urgent: Siren,
+  deleted: Trash2,
   stock: Package,
 }
 
@@ -48,6 +50,7 @@ const KIND_TONE: Record<ActivityKind, string> = {
   status: "bg-status-diproses text-status-diproses-fg",
   edit: "bg-icon-bg text-brand-ink",
   urgent: "bg-trend-down text-trend-down-fg",
+  deleted: "bg-trend-down text-trend-down-fg",
   stock: "bg-status-packing text-status-packing-fg",
 }
 

@@ -11,9 +11,10 @@ import {
   StickyNote,
   Wallet,
   Siren,
+  Trash2,
 } from "lucide-react"
 import Link from "next/link"
-import { createContext, type ReactNode, useContext, useState, useTransition } from "react"
+import { createContext, type ReactNode, useContext, useId, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { OrderStatusBadge } from "@/components/app/order-badges"
@@ -39,7 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { exportOrdersCsv, updateOrderStatuses } from "@/features/orders/actions"
+import { deleteOrders, exportOrdersCsv, updateOrderStatuses } from "@/features/orders/actions"
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/features/orders/filters"
 import { OrderNoteDialog } from "@/features/orders/components/order-note-dialog"
 import { UrgentDialog } from "@/features/orders/components/urgent-dialog"
@@ -80,7 +81,7 @@ const canChange = (row: OrderActionRow, target: OrderStatus) =>
   ) === null
 const canPay = (row: OrderActionRow) => !row.paid && row.status !== "dibatalkan"
 
-type DialogKind = "paid" | "cancel" | "note" | "urgent"
+type DialogKind = "paid" | "cancel" | "delete" | "note" | "urgent"
 type OpenDialog = { kind: DialogKind; rows: OrderActionRow[] } | null
 
 type OrderActions = {
@@ -196,6 +197,14 @@ function OrderActionsInner({
       {dialog?.kind === "cancel" && (
         <CancelOrdersDialog open={dialogOpen} onOpenChange={setDialogOpen} rows={dialog.rows} />
       )}
+      {dialog?.kind === "delete" && (
+        <DeleteOrdersDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          rows={dialog.rows}
+          onDone={clear}
+        />
+      )}
     </ActionsContext>
   )
 }
@@ -289,6 +298,10 @@ function OrderBulkBar({ rows }: { rows: OrderActionRow[] }) {
         <Ban aria-hidden />
         Batalkan{partial(cancellable.length)}
       </BulkActionButton>
+      <BulkActionButton disabled={pending} onClick={() => openDialog("delete", rows)}>
+        <Trash2 aria-hidden />
+        Hapus
+      </BulkActionButton>
       <BulkActionButton disabled={exporting} onClick={download}>
         {exporting ? (
           <LoaderCircle className="animate-spin" aria-hidden />
@@ -345,6 +358,115 @@ function CancelOrdersDialog({
           >
             {pending && <LoaderCircle className="animate-spin" aria-hidden />}
             {single ? "Batalkan pesanan" : `Batalkan ${rows.length} pesanan`}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * Hapus permanen: untuk pesanan dobel atau salah input. Berbeda dengan Batalkan, pesanan hilang
+ * dari daftar dan database; tercatat di lonceng notifikasi beserta alasannya.
+ */
+function DeleteOrdersDialog({
+  open,
+  onOpenChange,
+  rows,
+  onDone,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  rows: OrderActionRow[]
+  onDone: () => void
+}) {
+  const id = useId()
+  const [reason, setReason] = useState("")
+  const [error, setError] = useState<string>()
+  const [pending, startTransition] = useTransition()
+  const single = rows.length === 1
+  const paid = rows.filter((row) => row.paid).length
+
+  function remove() {
+    startTransition(async () => {
+      const result = await deleteOrders({ orderIds: rows.map((row) => row.id), reason })
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      showResult(result)
+      setReason("")
+      onDone()
+      onOpenChange(false)
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-2xl font-bold text-brand-ink">
+            {single ? `Hapus ${rows[0].orderNo}?` : `Hapus ${rows.length} pesanan?`}
+          </DialogTitle>
+          <DialogDescription className="text-text-body">
+            Pesanan hilang dari daftar dan database beserta item, pembayaran, dan pengirimannya, dan
+            tidak bisa dikembalikan. Stok loyang dan box yang sempat terpotong dikembalikan. Semua
+            staf melihatnya di notifikasi. Bila hanya batal pesan, pakai Batalkan.
+          </DialogDescription>
+        </DialogHeader>
+        {!single && (
+          <p className="mt-4 text-sm leading-relaxed text-text-strong tabular-nums">
+            {rows.map((row) => row.orderNo).join(", ")}
+          </p>
+        )}
+        {paid > 0 && (
+          <p className="mt-4 flex items-start gap-2 rounded-lg bg-trend-down px-3 py-2.5 text-sm text-trend-down-fg">
+            <Wallet className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {single
+              ? "Pesanan ini sudah lunas; pembayarannya ikut terhapus dari laporan."
+              : `${paid} pesanan sudah lunas; pembayarannya ikut terhapus dari laporan.`}
+          </p>
+        )}
+        <div className="mt-5 space-y-1.5">
+          <label htmlFor={`${id}-reason`} className="text-sm font-medium text-text-strong">
+            Alasan <span className="font-normal text-text-body">(opsional)</span>
+          </label>
+          <input
+            id={`${id}-reason`}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            maxLength={200}
+            placeholder="Mis. pesanan dobel, salah input"
+            className="h-11 w-full rounded-lg border border-border bg-white px-3 text-sm text-text-strong outline-none placeholder:text-text-body/70 focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </div>
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-lg bg-trend-down px-3 py-2.5 text-sm text-trend-down-fg"
+          >
+            {error}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="h-11 rounded-lg bg-white px-5"
+          >
+            Jangan hapus
+          </Button>
+          <Button
+            onClick={remove}
+            disabled={pending}
+            className="h-11 rounded-lg bg-trend-down-fg px-5 text-white hover:bg-trend-down-fg/90"
+          >
+            {pending ? (
+              <LoaderCircle className="animate-spin" aria-hidden />
+            ) : (
+              <Trash2 aria-hidden />
+            )}
+            {single ? "Hapus pesanan" : `Hapus ${rows.length} pesanan`}
           </Button>
         </div>
       </DialogContent>
@@ -425,6 +547,15 @@ export function OrderRowMenu({ id }: { id: string }) {
             </DropdownMenuItem>
           </>
         )}
+        {!cancellable && <DropdownMenuSeparator />}
+        <DropdownMenuItem
+          variant="destructive"
+          className="h-10"
+          onSelect={() => openDialog("delete", [row])}
+        >
+          <Trash2 aria-hidden />
+          Hapus pesanan
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

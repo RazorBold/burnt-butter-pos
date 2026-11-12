@@ -4,6 +4,7 @@ import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
 import {
+  orderDeletions,
   orderEditLogs,
   orders,
   orderStatusLogs,
@@ -22,6 +23,7 @@ import { type Activity, ACTIVITY_LIMIT, mergeActivity } from "./feed"
 
 /** Data uji e2e ("QA Customer 1794…", "QA Packaging 1794…") tidak tampil untuk staf asli. */
 const notTestOrder = sql`${orders.customerName} !~ '^QA Customer [0-9]'`
+const notTestDeletion = sql`${orderDeletions.customerName} !~ '^QA Customer [0-9]'`
 const notTestPackaging = sql`${packagings.name} !~ '^QA Packaging [0-9]'`
 
 /** "Rp 40.000" tanpa terpotong di antara Rp dan angka. */
@@ -45,7 +47,7 @@ export async function listActivity(role: Role, includeTest = false): Promise<Act
         : null
   const orderFilter = includeTest ? undefined : notTestOrder
 
-  const [created, paid, statuses, edits, urgents, stocks] = await Promise.all([
+  const [created, paid, statuses, edits, urgents, deletions, stocks] = await Promise.all([
     db
       .select({
         id: orders.id,
@@ -124,6 +126,24 @@ export async function listActivity(role: Role, includeTest = false): Promise<Act
       .leftJoin(profiles, eq(profiles.id, orders.urgentBy))
       .where(and(isNotNull(orders.urgentAt), orderFilter))
       .orderBy(desc(orders.urgentAt))
+      .limit(ACTIVITY_LIMIT),
+    db
+      .select({
+        id: orderDeletions.id,
+        orderNo: orderDeletions.orderNo,
+        at: orderDeletions.deletedAt,
+        customerName: orderDeletions.customerName,
+        type: orderDeletions.type,
+        status: orderDeletions.status,
+        total: orderDeletions.total,
+        reason: orderDeletions.reason,
+        actorId: orderDeletions.deletedBy,
+        actorName: profiles.name,
+      })
+      .from(orderDeletions)
+      .leftJoin(profiles, eq(profiles.id, orderDeletions.deletedBy))
+      .where(includeTest ? undefined : notTestDeletion)
+      .orderBy(desc(orderDeletions.deletedAt))
       .limit(ACTIVITY_LIMIT),
     showStock
       ? db
@@ -205,6 +225,25 @@ export async function listActivity(role: Role, includeTest = false): Promise<Act
       title: `${row.orderNo} ditandai URGENT`,
       detail: row.note,
       href: orderHref(row.orderNo),
+      actorId: row.actorId,
+      actorName: row.actorName,
+    })),
+    // Pesanan sudah tidak ada, jadi tanpa tautan.
+    deletions.map((row) => ({
+      id: `deleted:${row.id}`,
+      kind: "deleted" as const,
+      at: iso(row.at),
+      title: `Pesanan ${row.orderNo} dihapus`,
+      detail: [
+        row.customerName,
+        ORDER_TYPE_LABEL[row.type],
+        ORDER_STATUS_LABEL[row.status],
+        showMoney ? rupiah(row.total) : null,
+        row.reason ? `Alasan: ${row.reason}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      href: null,
       actorId: row.actorId,
       actorName: row.actorName,
     })),

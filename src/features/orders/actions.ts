@@ -11,6 +11,7 @@ import {
   menus,
   menuVariants,
   orderCounters,
+  orderDeletions,
   orderEditLogs,
   orderItems,
   orders,
@@ -18,6 +19,7 @@ import {
   paymentMethods,
   payments,
   shipments,
+  stockMovements,
 } from "@/db/schema"
 import { CAN_INPUT_ORDER, CAN_PRODUCE } from "@/lib/access"
 import { AuthorizationError, requireRole } from "@/lib/auth"
@@ -839,4 +841,89 @@ export async function setOrderUrgent(input: unknown): Promise<ActionResult> {
       ? `${order.orderNo} ditandai URGENT. Semua staf mendapat pemberitahuan.`
       : `Tanda urgent ${order.orderNo} dihapus.`,
   }
+}
+
+const deleteSchema = z.object({
+  orderIds: z.array(z.uuid()).min(1).max(BULK_LIMIT),
+  reason: z.string().trim().max(200, "Alasan maksimal 200 karakter.").optional(),
+})
+
+/**
+ * Hapus pesanan permanen (Admin, Kasir, Owner), untuk pesanan dobel atau salah input. Berbeda
+ * dengan Batalkan, pesanan hilang dari daftar dan dari database beserta item, pembayaran,
+ * pengiriman, dan lognya. Stok packaging yang sempat terpotong pesanan ini dikembalikan dan
+ * riwayat potongannya dihapus. Ringkasannya dicatat di order_deletions untuk lonceng notifikasi.
+ */
+export async function deleteOrders(input: unknown): Promise<BulkResult> {
+  let userId: string
+  try {
+    userId = await requireOrderEditor()
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const parsed = deleteSchema.safeParse(input)
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message:
+        parsed.error.issues[0]?.message ?? "Pilihan pesanan tidak terbaca. Muat ulang halaman.",
+    }
+  }
+  const { orderIds, reason } = parsed.data
+
+  const deleted = await getDb().transaction(async (tx) => {
+    const rows = await tx
+      .select({
+        id: orders.id,
+        orderNo: orders.orderNo,
+        customerName: orders.customerName,
+        type: orders.type,
+        status: orders.status,
+        total: orders.total,
+        deliveryDate: orders.deliveryDate,
+      })
+      .from(orders)
+      .where(inArray(orders.id, orderIds))
+      .for("update")
+    if (rows.length === 0) return []
+    const ids = rows.map((row) => row.id)
+
+    // Kembalikan stok bersih yang masih terpotong (keluar − masuk) lalu hapus riwayatnya, supaya
+    // stok kembali seperti sebelum pesanan ini ada.
+    await tx.execute(sql`
+      update packagings p set stock = p.stock + n.qty
+      from (
+        select item_id,
+          sum(case when direction = 'out' then qty else -qty end)::int as qty
+        from stock_movements
+        where item_type = 'packaging' and ${inArray(stockMovements.orderId, ids)}
+        group by item_id
+      ) n
+      where p.id = n.item_id and n.qty <> 0`)
+    await tx.delete(stockMovements).where(inArray(stockMovements.orderId, ids))
+
+    await tx.insert(orderDeletions).values(
+      rows.map((row) => ({
+        orderNo: row.orderNo,
+        customerName: row.customerName,
+        type: row.type,
+        status: row.status,
+        total: row.total,
+        deliveryDate: row.deliveryDate,
+        reason: reason || null,
+        deletedBy: userId,
+      })),
+    )
+    await tx.delete(orders).where(inArray(orders.id, ids))
+    return rows.map((row) => row.orderNo)
+  })
+
+  revalidateOrders(deleted)
+  return summarizeBulk({
+    done: deleted,
+    skipped: [],
+    one: (orderNo) => `${orderNo} dihapus.`,
+    many: (count) => `${count} pesanan dihapus.`,
+  })
 }

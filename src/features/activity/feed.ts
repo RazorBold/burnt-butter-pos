@@ -1,7 +1,16 @@
-// Aktivitas terbaru untuk lonceng notifikasi: pesanan baru, lunas, status, edit, urgent, dan stok.
+// Aktivitas terbaru untuk lonceng notifikasi: pesanan baru, lunas, status, edit, urgent, dihapus,
+// dan stok.
 // Murni (tanpa DB) supaya bisa diuji dan dipakai di klien.
 
-export const ACTIVITY_KINDS = ["order", "paid", "status", "edit", "urgent", "stock"] as const
+export const ACTIVITY_KINDS = [
+  "order",
+  "paid",
+  "status",
+  "edit",
+  "urgent",
+  "deleted",
+  "stock",
+] as const
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number]
 
 export type Activity = {

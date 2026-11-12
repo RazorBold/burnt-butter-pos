@@ -294,6 +294,7 @@ export async function removeQaOrders(code: string) {
       )
       await tx`delete from orders where order_no like ${`QA${code}%`}`
       await tx`delete from customers where name = ${`QA Customer ${code}`}`
+      await tx`delete from order_deletions where customer_name = ${`QA Customer ${code}`}`
     })
   } finally {
     await sql.end()

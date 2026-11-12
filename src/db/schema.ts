@@ -280,6 +280,27 @@ export const orderEditLogs = pgTable(
   (t) => [index("order_edit_logs_order_idx").on(t.orderId, t.editedAt)],
 ).enableRLS()
 
+/**
+ * Jejak pesanan yang dihapus permanen (Nov 2026). Pesanannya sendiri beserta item, pembayaran,
+ * pengiriman, dan lognya ikut terhapus, jadi ringkasannya disalin ke sini untuk lonceng notifikasi.
+ */
+export const orderDeletions = pgTable(
+  "order_deletions",
+  {
+    id: id(),
+    orderNo: text("order_no").notNull(),
+    customerName: text("customer_name").notNull(),
+    type: orderType("type").notNull(),
+    status: orderStatus("status").notNull(),
+    total: integer("total").notNull(),
+    deliveryDate: date("delivery_date"),
+    reason: text("reason"),
+    deletedBy: uuid("deleted_by").references(() => profiles.id, { onDelete: "set null" }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("order_deletions_deleted_at_idx").on(t.deletedAt)],
+).enableRLS()
+
 // ── Pengiriman ──────────────────────────────────────────────────────────────
 
 export const couriers = pgTable("couriers", {

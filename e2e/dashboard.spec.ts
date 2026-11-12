@@ -6,6 +6,7 @@ import { loginAs } from "./helpers/login"
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 const kasirEmail = process.env.E2E_KASIR_EMAIL
 const produksiEmail = process.env.E2E_PRODUKSI_EMAIL
+const ownerEmail = process.env.E2E_OWNER_EMAIL
 
 async function login(page: Page, email: string, target: string) {
   await loginAs(page, email, admin.password!, target)
@@ -25,10 +26,13 @@ test.describe("Dashboard", () => {
     code = undefined
   })
 
-  test("Admin: KPI, pesanan terbaru, grafik, rekap produksi, stok", async ({ page }, info) => {
+  test("Owner: KPI, pesanan terbaru, grafik, rekap produksi, stok, evaluasi", async ({
+    page,
+  }, info) => {
+    test.skip(!ownerEmail, "butuh akun QA Owner")
     code = `${Date.now()}`
     await seedReportOrders(code)
-    await login(page, admin.email!, URL)
+    await login(page, ownerEmail!, URL)
 
     await expect(page.getByRole("heading", { name: /^Halo, .+!$/ })).toBeVisible()
     await expect(page.getByRole("button", { name: "7 Hari" })).toHaveAttribute(
@@ -49,6 +53,11 @@ test.describe("Dashboard", () => {
     await expect(methods.getByRole("listitem").filter({ hasText: "Kurir Internal" })).toContainText(
       "2 (50%)",
     )
+    // Pesanan per Jenis: data uji tanpa jenis khusus = PO semua.
+    const kinds = page.getByRole("region", { name: "Pesanan per Jenis" })
+    await expect(kinds.getByTestId("jenis-po")).toContainText("4 (100%)")
+    await expect(kinds.getByTestId("jenis-ready_stock")).toContainText("0 (0%)")
+    await expect(kinds.getByTestId("jenis-made_to_order")).toContainText("Made to Order")
     const status = page.getByRole("region", { name: "Status Pesanan 7 Hari" })
     await expect(status.getByRole("table", { name: "Pesanan per status" })).toContainText(
       "Selesai2",
@@ -82,7 +91,7 @@ test.describe("Dashboard", () => {
     })
   })
 
-  test("isi menyesuaikan role: Produksi tanpa uang & daftar pesanan, Kasir ke Pembayaran", async ({
+  test("isi menyesuaikan role: Admin & Produksi tanpa pembayaran/evaluasi, Kasir ke Pembayaran", async ({
     page,
     browser,
   }, info) => {
@@ -90,13 +99,20 @@ test.describe("Dashboard", () => {
       !produksiEmail || !kasirEmail || info.project.name !== "desktop",
       "butuh akun QA Produksi & Kasir, desktop saja",
     )
+    // Admin: fokus pesanan; tanpa Total Pembayaran dan Evaluasi (khusus Owner).
+    await login(page, admin.email!, "/dashboard")
+    await expect(page.getByText("Total Porsi Hari Ini")).toBeVisible()
+    await expect(page.getByText("Total Pembayaran Hari Ini")).toHaveCount(0)
+    await expect(page.getByRole("region", { name: "Total Pembayaran" })).toHaveCount(0)
+    await expect(page.getByRole("region", { name: "Daftar Pesanan Terbaru" })).toBeVisible()
+    await expect(page.getByRole("region", { name: "Pesanan per Jenis" })).toBeVisible()
+    await expect(page.getByRole("region", { name: "Evaluasi & Masukan" })).toHaveCount(0)
+
     await login(page, produksiEmail!, "/dashboard")
     await expect(page.getByText("Total Porsi Hari Ini")).toBeVisible()
     await expect(page.getByText("Total Pembayaran Hari Ini")).toHaveCount(0)
     await expect(page.getByRole("region", { name: "Daftar Pesanan Terbaru" })).toHaveCount(0)
-    const evaluation = page.getByRole("region", { name: "Evaluasi & Masukan" })
-    await expect(evaluation.getByText("Porsi", { exact: true }).first()).toBeVisible()
-    await expect(evaluation.getByText("Omzet (lunas)")).toHaveCount(0)
+    await expect(page.getByRole("region", { name: "Evaluasi & Masukan" })).toHaveCount(0)
 
     const kasir = await browser.newPage()
     await login(kasir, kasirEmail!, "/dashboard")

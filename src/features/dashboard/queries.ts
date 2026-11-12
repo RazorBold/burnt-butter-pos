@@ -25,6 +25,7 @@ export async function getEvaluationOrders(from: string, to: string): Promise<Eva
     .select({
       day: jakartaDay(orders.createdAt),
       type: orders.type,
+      kind: orders.kind,
       status: orders.status,
       method: shipments.method,
       total: orders.total,

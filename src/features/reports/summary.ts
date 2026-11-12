@@ -3,12 +3,14 @@
 // dihitung, kecuali jumlahnya sendiri.
 
 import { addDays, type OrderStatus, previousRange } from "@/features/orders/filters"
-import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 export type ReportOrder = {
   /** Tanggal dibuat (WIB), "YYYY-MM-DD". */
   day: string
   type: OrderType
+  /** Jenis pesanan: PO / Ready Stock / Made to Order. */
+  kind: OrderKind
   status: OrderStatus
   method: ShippingMethod
   total: number
@@ -194,6 +196,7 @@ export function buildReport(
       ["baru", "diproses", "siap_packing", "siap_kirim", "dikirim", "selesai"] as const,
       (order) => order.status,
     ),
+    kinds: count(["po", "ready_stock", "made_to_order"] as const, (order) => order.kind),
     cancelled: orders.filter(
       (order) => order.status === "dibatalkan" && inRange(order.day, from, to),
     ).length,

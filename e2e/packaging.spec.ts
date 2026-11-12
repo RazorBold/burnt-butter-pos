@@ -67,6 +67,31 @@ test.describe("Packaging", () => {
     })
     const width = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(width).toBeLessThanOrEqual(page.viewportSize()!.width)
+
+    // Filter Tipe dan Sumber (pesanan uji: Normal dari WhatsApp).
+    const card = waiting.getByRole("article", { name: orderNo })
+    await expect(card).toContainText("WhatsApp")
+    await expect(card.getByTestId("packing-type")).toHaveText("Normal")
+    const tipe = page.getByRole("group", { name: "Tipe" })
+    const sumber = page.getByRole("group", { name: "Sumber" })
+    await tipe.getByRole("button", { name: "Hampers" }).click()
+    await expect(page).toHaveURL(/tipe=hampers/)
+    await expect(card).toHaveCount(0)
+    await expect(page.getByText(/Tidak ada pesanan yang cocok dengan filter/)).toBeVisible()
+    await tipe.getByRole("button", { name: "Normal" }).click()
+    await expect(card).toBeVisible()
+    await sumber.getByRole("button", { name: "Olshop" }).click()
+    await expect(card).toHaveCount(0)
+    await sumber.getByRole("button", { name: "WhatsApp" }).click()
+    await expect(card).toBeVisible()
+    await expect(sumber.getByRole("button", { name: "WhatsApp" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+    await page.screenshot({ path: `test-results/packaging-filter-${info.project.name}.png` })
+    await tipe.getByRole("button", { name: "Semua" }).click()
+    await sumber.getByRole("button", { name: "Semua" }).click()
+    await expect(page).not.toHaveURL(/tipe=|sumber=/)
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
 
     // Pengiriman menahan pesanan yang belum di-packing.

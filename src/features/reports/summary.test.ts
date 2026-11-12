@@ -5,6 +5,7 @@ import { buildReport, type ReportOrder, type ReportPayment } from "./summary"
 const order = (day: string, extra: Partial<ReportOrder> = {}): ReportOrder => ({
   day,
   type: "normal",
+  kind: "po",
   status: "selesai",
   method: "kurir_internal",
   total: 100_000,
@@ -66,6 +67,28 @@ describe("buildReport", () => {
       { type: "ewallet", amount: 150_000, share: 0.375 },
       { type: "cash", amount: 0, share: 0 },
       { type: "marketplace", amount: 0, share: 0 },
+    ])
+  })
+})
+
+describe("buildReport: pesanan per jenis", () => {
+  it("menghitung PO / Ready Stock / Made to Order di periode ini, tanpa yang dibatalkan", () => {
+    const report = buildReport(
+      [
+        order("2026-10-05", { kind: "po" }),
+        order("2026-10-05", { kind: "po" }),
+        order("2026-10-06", { kind: "ready_stock" }),
+        order("2026-10-06", { kind: "made_to_order", status: "dibatalkan" }),
+        order("2026-10-02", { kind: "made_to_order" }),
+      ],
+      [],
+      "2026-10-04",
+      "2026-10-06",
+    )
+    expect(report.kinds).toEqual([
+      { key: "po", value: 2 },
+      { key: "ready_stock", value: 1 },
+      { key: "made_to_order", value: 0 },
     ])
   })
 })

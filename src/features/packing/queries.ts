@@ -4,6 +4,7 @@ import { and, asc, eq, gt, inArray } from "drizzle-orm"
 
 import { getDb } from "@/db"
 import { packagingCategories, packagings, stockMovements } from "@/db/schema"
+import type { OrderChannel } from "@/features/orders/constants"
 import type { OrderStatus } from "@/features/orders/filters"
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
 
@@ -24,6 +25,8 @@ export type PackingOrder = {
   orderNo: string
   status: OrderStatus
   type: OrderType
+  /** Sumber pesanan: WhatsApp, Shopee, Tokopedia. */
+  channel: OrderChannel
   customerName: string
   senderName: string | null
   shippingMethod: ShippingMethod
@@ -112,6 +115,7 @@ export async function listPackingOrders(
     orderNo: row.orderNo,
     status: row.status,
     type: row.type,
+    channel: row.channel,
     customerName: row.customerName,
     senderName: row.senderName,
     shippingMethod: row.shipment?.method ?? "kurir_internal",

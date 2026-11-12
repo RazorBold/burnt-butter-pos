@@ -7,7 +7,9 @@ import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PACKED_STATUSES, urgentFirst } from "@/features/orders/status"
+import { PackingFiltersBar } from "@/features/packing/components/packing-filters"
 import { PackingOrderCard } from "@/features/packing/components/packing-order-card"
+import { filterPackingOrders, parsePackingFilters } from "@/features/packing/filters"
 import { listPackingOrders, listPackingPackagings } from "@/features/packing/queries"
 import { CAN_PACK } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
@@ -47,8 +49,11 @@ async function Packing({
       ? params.tanggal
       : today
 
+  const filters = parsePackingFilters(params)
+  const filtered = Boolean(filters.type || filters.source)
   const packagings = await listPackingPackagings()
-  const orders = await listPackingOrders(date, packagings)
+  const allOrders = await listPackingOrders(date, packagings)
+  const orders = filterPackingOrders(allOrders, filters)
   const waiting = urgentFirst(orders.filter((order) => order.status === "siap_packing"))
   const packed = orders.filter((order) => PACKED_STATUSES.includes(order.status))
   const cooking = orders.filter(
@@ -64,7 +69,9 @@ async function Packing({
         actions={<DeliveryDatePicker date={date} today={today} />}
       />
 
-      <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-3">
+      <PackingFiltersBar filters={filters} />
+
+      <div className="kpi-grid mt-4 grid gap-4 sm:grid-cols-3">
         <KpiCard icon={PackageOpen} label="Menunggu Packing" value={`${waiting.length} pesanan`} />
         <KpiCard icon={PackageCheck} label="Selesai Packing" value={`${packed.length} pesanan`} />
         <KpiCard icon={ChefHat} label="Masih Dimasak" value={`${cooking} pesanan`} />
@@ -72,7 +79,9 @@ async function Packing({
 
       {orders.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-dashed border-border px-6 py-12 text-center text-text-body">
-          Belum ada pesanan yang dikirim {dateLabel}.
+          {filtered && allOrders.length > 0
+            ? `Tidak ada pesanan yang cocok dengan filter (${allOrders.length} pesanan lain dikirim ${dateLabel}).`
+            : `Belum ada pesanan yang dikirim ${dateLabel}.`}
         </p>
       ) : (
         <>

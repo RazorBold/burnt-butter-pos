@@ -1,6 +1,8 @@
 import {
   ArrowRight,
   Bike,
+  CalendarClock,
+  ChefHat,
   ChartColumn,
   ChartPie,
   ClipboardList,
@@ -44,7 +46,7 @@ import {
   getEvaluationPayments,
   getMenuQty,
 } from "@/features/dashboard/queries"
-import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
+import { ORDER_KIND_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { addDays, ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { listLatestOrders } from "@/features/orders/queries"
 import { isUrgent } from "@/features/orders/status"
@@ -70,6 +72,12 @@ import { photoSrc } from "@/lib/photos"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = { title: "Dashboard" }
+
+const KIND_ICON = {
+  po: CalendarClock,
+  ready_stock: PackageCheck,
+  made_to_order: ChefHat,
+} as const
 
 const METHOD_ICON = {
   pick_up: Store,
@@ -103,6 +111,10 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   // Dashboard dibuka semua role; kartu dan tautan mengikuti hak akses (PRD "Pengguna & peran").
   const showOrders = canAccessPath(role, "/pesanan")
   const showMoney = role !== "produksi"
+  // Pembayaran & Evaluasi untuk Owner (keputusan pemilik toko, 12 Nov 2026). Kasir tetap melihat
+  // pembayaran karena tugasnya mencatat pembayaran; Admin fokus ke pesanan sampai pengiriman.
+  const showPayments = role === "owner" || role === "kasir"
+  const showEvaluation = role === "owner"
   const paymentLink = canAccessPath(role, "/laporan")
     ? "/laporan"
     : canAccessPath(role, "/pembayaran")
@@ -183,7 +195,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           trend={trend(kpis.hampers.percent)}
           series={kpis.hampers.series}
         />
-        {showMoney ? (
+        {showPayments ? (
           <KpiCard
             icon={Wallet}
             label={`Total Pembayaran${suffix}`}
@@ -337,7 +349,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           />
         </Card>
 
-        {showMoney && (
+        {showPayments && (
           <Card
             icon={Wallet}
             tone="sage"
@@ -378,6 +390,43 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                     <span
                       className="block h-full rounded-full"
                       style={{ width: `${pct(value)}%`, background: REPORT_COLORS[method] }}
+                    />
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+
+        {/* PO / Ready Stock / Made to Order (permintaan pemilik toko, 12 Nov 2026). Saat kartu
+            Total Pembayaran tampil, kartu ini selebar baris supaya grid tidak bolong. */}
+        <Card
+          icon={ClipboardList}
+          tone="sky"
+          title="Pesanan per Jenis"
+          className={showPayments ? "xl:col-span-3" : undefined}
+        >
+          <ul className={showPayments ? "grid gap-4 sm:grid-cols-3" : "space-y-4"}>
+            {(["po", "ready_stock", "made_to_order"] as const).map((kind) => {
+              const value = report.kinds.find((row) => row.key === kind)?.value ?? 0
+              const Icon = KIND_ICON[kind]
+              return (
+                <li
+                  key={kind}
+                  data-testid={`jenis-${kind}`}
+                  className="grid grid-cols-[minmax(0,1.3fr)_64px_minmax(0,1fr)] items-center gap-3 text-sm"
+                >
+                  <span className="flex items-center gap-2.5 whitespace-nowrap text-text-strong">
+                    <Icon className="size-5 shrink-0 text-brand-ink" aria-hidden />
+                    {ORDER_KIND_LABEL[kind]}
+                  </span>
+                  <span className="font-semibold text-text-strong tabular-nums">
+                    {value} <span className="font-normal text-text-body">({pct(value)}%)</span>
+                  </span>
+                  <span aria-hidden className="h-2.5 overflow-hidden rounded-full bg-nav-active">
+                    <span
+                      className="block h-full rounded-full"
+                      style={{ width: `${pct(value)}%`, background: REPORT_COLORS[kind] }}
                     />
                   </span>
                 </li>
@@ -579,9 +628,11 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
         </Card>
       </div>
 
-      <Suspense fallback={<Skeleton className="mt-4 h-[420px] rounded-2xl" />}>
-        <Evaluation anchor={anchor} today={today} showMoney={showMoney} />
-      </Suspense>
+      {showEvaluation && (
+        <Suspense fallback={<Skeleton className="mt-4 h-[420px] rounded-2xl" />}>
+          <Evaluation anchor={anchor} today={today} showMoney={showMoney} />
+        </Suspense>
+      )}
     </>
   )
 }

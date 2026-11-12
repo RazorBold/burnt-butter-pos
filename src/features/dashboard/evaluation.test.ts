@@ -11,6 +11,7 @@ import {
 const order = (day: string, extra: Partial<EvalOrder> = {}): EvalOrder => ({
   day,
   type: "normal",
+  kind: "po",
   status: "selesai",
   method: "pick_up",
   total: 100_000,

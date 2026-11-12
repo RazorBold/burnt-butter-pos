@@ -4,6 +4,7 @@ import {
   Gift,
   LoaderCircle,
   MessageSquareText,
+  Package,
   PackageCheck,
   StickyNote,
   Undo2,
@@ -11,7 +12,7 @@ import {
 import { useTransition } from "react"
 import { toast } from "sonner"
 
-import { OrderStatusBadge, UrgentBadge } from "@/components/app/order-badges"
+import { ChannelBadge, OrderStatusBadge, UrgentBadge } from "@/components/app/order-badges"
 import { isUrgent } from "@/features/orders/status"
 import { Button } from "@/components/ui/button"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
@@ -78,12 +79,26 @@ export function PackingOrderCard({
         </div>
         <div className="flex flex-wrap gap-1.5">
           {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
-          {order.type !== "normal" && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-hadiah px-2 py-0.5 text-xs font-medium text-hadiah-fg">
+          <ChannelBadge channel={order.channel} />
+          {/* Tipe pesanan selalu tampil (ikon + teks), juga sebelum di-packing. */}
+          <span
+            data-testid="packing-type"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
+              order.type === "normal" ? "bg-personal text-personal-fg" : "bg-hadiah text-hadiah-fg",
+            )}
+          >
+            {order.type === "normal" ? (
+              <Package className="size-3.5" aria-hidden />
+            ) : (
               <Gift className="size-3.5" aria-hidden />
-              {order.type === "normal_hampers" ? "Normal & Hampers" : "Hampers"}
-            </span>
-          )}
+            )}
+            {order.type === "normal"
+              ? "Normal"
+              : order.type === "normal_hampers"
+                ? "Normal & Hampers"
+                : "Hampers"}
+          </span>
           {!waiting && <OrderStatusBadge status={order.status} />}
         </div>
       </div>

@@ -9,6 +9,10 @@ export const REPORT_COLORS = {
   instant: "#d98a1e",
   pick_up: "#4f8a55",
   ekspedisi: "#2f6f9f",
+  // Jenis pesanan (Dashboard "Pesanan per Jenis").
+  po: "#2f6f9f",
+  ready_stock: "#4f8a55",
+  made_to_order: "#d98a1e",
   baru: "#d9a877",
   diproses: "#c4874f",
   siap_packing: "#ad6c37",

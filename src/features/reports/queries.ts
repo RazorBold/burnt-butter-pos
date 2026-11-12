@@ -28,6 +28,7 @@ export async function getReportOrders(from: string, to: string): Promise<ReportO
     .select({
       day: jakartaDay(orders.createdAt),
       type: orders.type,
+      kind: orders.kind,
       status: orders.status,
       method: shipments.method,
       total: orders.total,

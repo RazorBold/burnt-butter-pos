@@ -175,9 +175,7 @@ function MenuTable({
                 <TableCell>{sizesLabel(menu)}</TableCell>
                 <TableCell className="tabular-nums">
                   {pricesLabel(menu)}
-                  <span className="block text-[13px] text-text-body">
-                    {loyangLabel(menu)}
-                  </span>
+                  <span className="block text-[13px] text-text-body">{loyangLabel(menu)}</span>
                 </TableCell>
                 <TableCell>
                   <ActiveBadge active={menu.isActive} />

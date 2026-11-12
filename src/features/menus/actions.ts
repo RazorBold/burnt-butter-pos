@@ -95,13 +95,37 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
     photoPath = uploaded.path
   }
 
-  const prices: { size: Size; price: number }[] =
+  type VariantValues = {
+    size: Size
+    price: number
+    loyangQty: number
+    loyangSize: "large" | "regular" | null
+  }
+  const singleLoyang = input.loyangSingleSize === "none" ? null : input.loyangSingleSize
+  const prices: VariantValues[] =
     input.sizing === "two_sizes"
       ? [
-          { size: "large", price: input.priceLarge! },
-          { size: "regular", price: input.priceRegular! },
+          {
+            size: "large",
+            price: input.priceLarge!,
+            loyangQty: input.loyangLarge,
+            loyangSize: null,
+          },
+          {
+            size: "regular",
+            price: input.priceRegular!,
+            loyangQty: input.loyangRegular,
+            loyangSize: null,
+          },
         ]
-      : [{ size: "single", price: input.priceSingle! }]
+      : [
+          {
+            size: "single",
+            price: input.priceSingle!,
+            loyangQty: singleLoyang ? input.loyangSingle : 0,
+            loyangSize: singleLoyang,
+          },
+        ]
 
   await db.transaction(async (tx) => {
     const values = {
@@ -118,13 +142,13 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
           .values({ ...values, slug })
           .returning({ id: menus.id })
 
-    for (const { size, price } of prices) {
+    for (const { size, price, loyangQty, loyangSize } of prices) {
       await tx
         .insert(menuVariants)
-        .values({ menuId: menu.id, size, price, isActive: true })
+        .values({ menuId: menu.id, size, price, loyangQty, loyangSize, isActive: true })
         .onConflictDoUpdate({
           target: [menuVariants.menuId, menuVariants.size],
-          set: { price, isActive: true },
+          set: { price, loyangQty, loyangSize, isActive: true },
         })
     }
     // Ukuran yang tidak dipakai lagi dinonaktifkan, bukan dihapus: pesanan lama masih merujuknya.

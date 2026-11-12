@@ -111,6 +111,21 @@ function sizesLabel(menu: MenuRow) {
     : "–"
 }
 
+/**
+ * Loyang per porsi, ringkas seperti kolom harga: "Loyang 1 / 1" (Large / Regular),
+ * "Loyang 3 Regular" (menu satu harga), atau "Tanpa loyang".
+ */
+function loyangLabel(menu: MenuRow) {
+  const single = menu.variants.find((v) => v.size === "single")
+  if (single) {
+    return single.loyangSize && single.loyangSize !== "single" && single.loyangQty > 0
+      ? `Loyang ${single.loyangQty} ${single.loyangSize === "large" ? "Large" : "Regular"}`
+      : "Tanpa loyang"
+  }
+  const qty = menu.variants.map((v) => v.loyangQty)
+  return qty.every((value) => value <= 0) ? "Tanpa loyang" : `Loyang ${qty.join(" / ")}`
+}
+
 function pricesLabel(menu: MenuRow) {
   return menu.variants.length ? menu.variants.map((v) => formatRupiah(v.price)).join(" / ") : "–"
 }
@@ -158,7 +173,12 @@ function MenuTable({
                 </TableCell>
                 <TableCell>{menu.category?.name ?? "–"}</TableCell>
                 <TableCell>{sizesLabel(menu)}</TableCell>
-                <TableCell className="tabular-nums">{pricesLabel(menu)}</TableCell>
+                <TableCell className="tabular-nums">
+                  {pricesLabel(menu)}
+                  <span className="block text-[13px] text-text-body">
+                    {loyangLabel(menu)}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <ActiveBadge active={menu.isActive} />
                 </TableCell>

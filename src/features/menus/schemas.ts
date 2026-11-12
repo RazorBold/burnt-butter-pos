@@ -22,6 +22,21 @@ export function parseRupiah(input: unknown): number | undefined {
   return digits ? Number(digits) : undefined
 }
 
+/** Loyang per porsi: 0–20, boleh 0 (menu tidak memakai loyang). */
+const loyangQty = (label: string) =>
+  z
+    .number({ error: `${label} wajib diisi.` })
+    .int(`${label} harus bilangan bulat.`)
+    .min(0, `${label} tidak boleh minus.`)
+    .max(20, `${label} maksimal 20.`)
+
+/** "2" → 2; kosong/bukan angka → undefined (supaya pesan "wajib diisi" muncul). */
+export function parseCount(input: unknown): number | undefined {
+  if (typeof input !== "string" || input.trim() === "") return undefined
+  const value = Number(input.trim().replace(",", "."))
+  return Number.isFinite(value) ? value : undefined
+}
+
 const price = (label: string) =>
   z
     .number({ error: `${label} wajib diisi.` })
@@ -43,6 +58,12 @@ export const menuFormSchema = z
     priceLarge: price("Harga Large").optional(),
     priceRegular: price("Harga Regular").optional(),
     priceSingle: price("Harga").optional(),
+    /** Loyang per porsi untuk Large / Regular / menu satu harga. */
+    loyangLarge: loyangQty("Loyang Large").default(1),
+    loyangRegular: loyangQty("Loyang Regular").default(1),
+    loyangSingle: loyangQty("Jumlah loyang").default(0),
+    /** Menu satu harga: loyang yang dipakai ("none" = tanpa loyang). */
+    loyangSingleSize: z.enum(["none", "large", "regular"]).default("none"),
     isActive: z.boolean(),
   })
   .superRefine((value, ctx) => {
@@ -55,8 +76,15 @@ export const menuFormSchema = z
           path: ["priceRegular"],
           message: "Harga Regular wajib diisi.",
         })
-    } else if (value.priceSingle === undefined) {
-      ctx.addIssue({ code: "custom", path: ["priceSingle"], message: "Harga wajib diisi." })
+    } else {
+      if (value.priceSingle === undefined)
+        ctx.addIssue({ code: "custom", path: ["priceSingle"], message: "Harga wajib diisi." })
+      if (value.loyangSingleSize !== "none" && value.loyangSingle < 1)
+        ctx.addIssue({
+          code: "custom",
+          path: ["loyangSingle"],
+          message: "Isi jumlah loyang minimal 1, atau pilih Tanpa loyang.",
+        })
     }
   })
 
@@ -77,6 +105,10 @@ export function menuFormFromData(formData: FormData) {
     priceLarge: parseRupiah(text("priceLarge")),
     priceRegular: parseRupiah(text("priceRegular")),
     priceSingle: parseRupiah(text("priceSingle")),
+    loyangLarge: parseCount(text("loyangLarge")),
+    loyangRegular: parseCount(text("loyangRegular")),
+    loyangSingle: parseCount(text("loyangSingle")),
+    loyangSingleSize: text("loyangSingleSize") ?? "none",
     isActive: text("isActive") !== "false",
   }
 }

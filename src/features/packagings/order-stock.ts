@@ -13,7 +13,7 @@ import {
 } from "@/db/schema"
 
 import { ensureLoyangItems } from "./loyang"
-import { hampersBoxName } from "./stock-needs"
+import { hampersBoxName, loyangNeed } from "./stock-needs"
 import { isHampersCategory } from "@/features/orders/order-type"
 
 type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0]
@@ -37,6 +37,8 @@ export async function deductOrderStock(tx: Tx, paidOrders: OrderRef[], userId: s
       categoryName: menuCategories.name,
       size: menuVariants.size,
       qty: orderItems.qty,
+      loyangQty: menuVariants.loyangQty,
+      loyangSize: menuVariants.loyangSize,
     })
     .from(orderItems)
     .innerJoin(menuVariants, eq(menuVariants.id, orderItems.menuVariantId))
@@ -74,15 +76,13 @@ export async function deductOrderStock(tx: Tx, paidOrders: OrderRef[], userId: s
     const orderReq =
       requiredByOrder.get(item.orderId) ?? new Map<string, { name: string; qty: number }>()
 
-    // 1. Loyang
-    if (item.size === "large") {
-      const cur = orderReq.get(loyangMap.large.id) ?? { name: loyangMap.large.name, qty: 0 }
-      cur.qty += item.qty
-      orderReq.set(loyangMap.large.id, cur)
-    } else if (item.size === "regular") {
-      const cur = orderReq.get(loyangMap.regular.id) ?? { name: loyangMap.regular.name, qty: 0 }
-      cur.qty += item.qty
-      orderReq.set(loyangMap.regular.id, cur)
+    // 1. Loyang, sesuai loyang per porsi yang diatur Owner di Produk & Menu.
+    const loyang = loyangNeed(item)
+    if (loyang) {
+      const target = loyangMap[loyang.size]
+      const cur = orderReq.get(target.id) ?? { name: target.name, qty: 0 }
+      cur.qty += loyang.qty
+      orderReq.set(target.id, cur)
     }
 
     // 2. Box Hampers: hanya menu di kategori Hampers. Menu pasta biasa (mis. "Spaghetti Classico",

@@ -94,6 +94,14 @@ test.describe("Master Data › Produk & Menu", () => {
     await expect(dialog.getByLabel("Harga Large")).toHaveCount(0)
     await dialog.getByLabel("Harga", { exact: true }).fill("90000")
     await expect(dialog.getByLabel("Harga", { exact: true })).toHaveValue("90.000")
+    // Loyang per porsi: menu satu harga bawaannya tanpa loyang; Owner memilih 3 Loyang Regular.
+    await expect(dialog.getByRole("combobox", { name: "Memakai loyang" })).toHaveText(
+      "Tanpa loyang",
+    )
+    await dialog.getByRole("combobox", { name: "Memakai loyang" }).click()
+    await page.getByRole("option", { name: "Loyang Regular" }).click()
+    await dialog.getByLabel("Jumlah loyang per porsi").fill("3")
+    await dialog.screenshot({ path: "test-results/produk-menu-loyang-desktop.png" })
     await dialog
       .getByLabel("Foto menu")
       .setInputFiles(
@@ -102,7 +110,8 @@ test.describe("Master Data › Produk & Menu", () => {
     await dialog.getByRole("button", { name: "Tambah menu" }).click()
     await expect(page.getByText("Menu baru ditambahkan.")).toBeVisible()
     const row = page.getByRole("row", { name: new RegExp(name) })
-    await expect(row.getByText("Rp 90.000", { exact: true })).toBeVisible()
+    await expect(row).toContainText("Rp 90.000")
+    await expect(row.getByText("Loyang 3 Regular")).toBeVisible()
     await expect(row.getByText(category, { exact: true })).toBeVisible()
     await expect(categories).toContainText("1 menu")
 

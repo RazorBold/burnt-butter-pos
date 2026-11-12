@@ -81,6 +81,10 @@ export function MenuFormDialog({
   )
 }
 
+function variantOf(menu: MenuRow | undefined, size: "large" | "regular" | "single") {
+  return menu?.variants.find((variant) => variant.size === size)
+}
+
 function priceOf(menu: MenuRow | undefined, size: "large" | "regular" | "single") {
   const price = menu?.variants.find((variant) => variant.size === size)?.price
   return price ? rupiah.format(price) : ""
@@ -107,6 +111,15 @@ function MenuForm({
     priceRegular: priceOf(menu, "regular"),
     priceSingle: priceOf(menu, "single"),
   })
+  const single = variantOf(menu, "single")
+  const [loyang, setLoyang] = useState({
+    loyangLarge: String(variantOf(menu, "large")?.loyangQty ?? 1),
+    loyangRegular: String(variantOf(menu, "regular")?.loyangQty ?? 1),
+    loyangSingle: String(single?.loyangSize ? single.loyangQty : 1),
+  })
+  const [singleSize, setSingleSize] = useState<"none" | "large" | "regular">(
+    single?.loyangSize === "large" || single?.loyangSize === "regular" ? single.loyangSize : "none",
+  )
   const [active, setActive] = useState(menu?.isActive ?? true)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const handled = useRef<MenuFormState | null>(null)
@@ -122,7 +135,15 @@ function MenuForm({
 
   function onCategoryChange(value: string) {
     setCategoryId(value)
-    markEdited("categoryId", "priceLarge", "priceRegular", "priceSingle")
+    markEdited(
+      "categoryId",
+      "priceLarge",
+      "priceRegular",
+      "priceSingle",
+      "loyangLarge",
+      "loyangRegular",
+      "loyangSingle",
+    )
   }
 
   const fieldError = (name: string) =>
@@ -247,6 +268,77 @@ function MenuForm({
         </div>
       </fieldset>
 
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-text-strong">Loyang per porsi</legend>
+        <p className="text-[13px] text-text-body">
+          Berapa loyang terpakai untuk 1 porsi. Stok loyang dipotong sebanyak ini × jumlah porsi
+          saat pesanan Lunas.
+        </p>
+        <div className="grid gap-3 pt-1 sm:grid-cols-2">
+          {sizing === "two_sizes" ? (
+            <>
+              <CountField
+                id={`${id}-loyangLarge`}
+                name="loyangLarge"
+                label="Large (Loyang Large)"
+                value={loyang.loyangLarge}
+                onChange={(value) => setLoyang((l) => ({ ...l, loyangLarge: value }))}
+                error={errors.loyangLarge}
+              />
+              <CountField
+                id={`${id}-loyangRegular`}
+                name="loyangRegular"
+                label="Regular (Loyang Regular)"
+                value={loyang.loyangRegular}
+                onChange={(value) => setLoyang((l) => ({ ...l, loyangRegular: value }))}
+                error={errors.loyangRegular}
+              />
+            </>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor={`${id}-loyangSingleSize`}
+                  className="text-[13px] font-normal text-text-body"
+                >
+                  Memakai loyang
+                </Label>
+                <Select
+                  name="loyangSingleSize"
+                  value={singleSize}
+                  onValueChange={(value) => {
+                    setSingleSize(value as typeof singleSize)
+                    markEdited("loyangSingle")
+                  }}
+                >
+                  <SelectTrigger
+                    id={`${id}-loyangSingleSize`}
+                    className="h-11! w-full rounded-lg bg-white"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Tanpa loyang</SelectItem>
+                    <SelectItem value="large">Loyang Large</SelectItem>
+                    <SelectItem value="regular">Loyang Regular</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {singleSize !== "none" && (
+                <CountField
+                  id={`${id}-loyangSingle`}
+                  name="loyangSingle"
+                  label="Jumlah loyang per porsi"
+                  value={loyang.loyangSingle}
+                  onChange={(value) => setLoyang((l) => ({ ...l, loyangSingle: value }))}
+                  error={errors.loyangSingle}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </fieldset>
+
       <div className="flex items-start gap-3 rounded-lg border border-border bg-white px-4 py-3">
         <Checkbox
           id={`${id}-active`}
@@ -285,6 +377,51 @@ function MenuForm({
         </Button>
       </div>
     </form>
+  )
+}
+
+function CountField({
+  id,
+  name,
+  label,
+  value,
+  onChange,
+  error,
+}: {
+  id: string
+  name: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  error?: string
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-[13px] font-normal text-text-body">
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          id={id}
+          name={name}
+          inputMode="numeric"
+          autoComplete="off"
+          value={value}
+          onChange={(event) => onChange(event.target.value.replace(/\D/g, "").slice(0, 2))}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className="h-11 rounded-lg bg-white pr-16 tabular-nums"
+        />
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-text-body">
+          loyang
+        </span>
+      </div>
+      {error && (
+        <p id={`${id}-error`} className="text-sm text-trend-down-fg">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 

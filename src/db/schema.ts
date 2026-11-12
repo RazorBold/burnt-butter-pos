@@ -155,6 +155,12 @@ export const menuVariants = pgTable(
     /** Rupiah. */
     price: integer("price").notNull(),
     isActive: boolean("is_active").notNull().default(true),
+    /**
+     * Loyang terpakai per porsi (diatur Owner, Nov 2026). Ukuran Large/Regular memakai loyang
+     * seukurannya; ukuran "single" memakai `loyangSize` (null = tidak memakai loyang).
+     */
+    loyangQty: integer("loyang_qty").notNull().default(1),
+    loyangSize: menuSize("loyang_size"),
   },
   (t) => [uniqueIndex("menu_variants_menu_size_idx").on(t.menuId, t.size)],
 ).enableRLS()

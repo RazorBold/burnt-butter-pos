@@ -186,6 +186,8 @@ export async function getUnpaidStockNeeds(date: string): Promise<UnpaidStockNeed
       categoryName: menuCategories.name,
       size: menuVariants.size,
       qty: orderItems.qty,
+      loyangQty: menuVariants.loyangQty,
+      loyangSize: menuVariants.loyangSize,
     })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))

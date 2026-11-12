@@ -7,7 +7,15 @@ import { menuCategories, menus } from "@/db/schema"
 
 import type { MenuCategoryRef } from "./schemas"
 
-export type MenuVariantRow = { id: string; size: "large" | "regular" | "single"; price: number }
+export type MenuVariantRow = {
+  id: string
+  size: "large" | "regular" | "single"
+  price: number
+  /** Loyang per porsi. */
+  loyangQty: number
+  /** Ukuran "single": loyang yang dipakai, null = tanpa loyang. */
+  loyangSize: "large" | "regular" | "single" | null
+}
 
 export type MenuRow = {
   id: string
@@ -67,7 +75,7 @@ export async function listMenus({
       category: { columns: { id: true, name: true, sized: true, sortOrder: true } },
       variants: {
         where: (variant, { eq }) => eq(variant.isActive, true),
-        columns: { id: true, size: true, price: true },
+        columns: { id: true, size: true, price: true, loyangQty: true, loyangSize: true },
       },
     },
     orderBy: (menu, { asc }) => [asc(menu.createdAt), asc(menu.name)],

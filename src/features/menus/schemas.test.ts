@@ -95,3 +95,48 @@ describe("categoryFormSchema", () => {
     expect(categoryFormSchema.safeParse({ name: "A", sized: true }).success).toBe(false)
   })
 })
+
+describe("loyang per porsi di form menu", () => {
+  const base = {
+    name: "Bundle of 3",
+    categoryId: "6f1c2a52-6a1e-4c1e-9d1a-1b2c3d4e5f60",
+    sizing: "single" as const,
+    priceSingle: 180000,
+    isActive: true,
+  }
+
+  it("default: Large/Regular 1 loyang, satu harga tanpa loyang", () => {
+    const parsed = menuFormSchema.parse({
+      ...base,
+      sizing: "two_sizes",
+      priceLarge: 65000,
+      priceRegular: 50000,
+    })
+    expect(parsed).toMatchObject({ loyangLarge: 1, loyangRegular: 1, loyangSingleSize: "none" })
+  })
+
+  it("satu harga dengan loyang wajib minimal 1", () => {
+    const result = menuFormSchema.safeParse({
+      ...base,
+      loyangSingleSize: "regular",
+      loyangSingle: 0,
+    })
+    expect(result.success).toBe(false)
+    expect(
+      menuFormSchema.parse({ ...base, loyangSingleSize: "regular", loyangSingle: 3 }),
+    ).toMatchObject({ loyangSingle: 3, loyangSingleSize: "regular" })
+  })
+
+  it("menolak angka minus dan pecahan", () => {
+    expect(menuFormSchema.safeParse({ ...base, loyangSingle: -1 }).success).toBe(false)
+    expect(
+      menuFormSchema.safeParse({
+        ...base,
+        sizing: "two_sizes",
+        priceLarge: 65000,
+        priceRegular: 50000,
+        loyangLarge: 1.5,
+      }).success,
+    ).toBe(false)
+  })
+})

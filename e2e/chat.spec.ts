@@ -103,5 +103,18 @@ test.describe("Chat Tim", () => {
       .filter({ hasText: marker })
     await expect(reply).toContainText("menandai kamu", { timeout: 15_000 })
     await kasir.close()
+
+    // Riwayat Chat: log per hari, hari ini berisi pesan yang baru dikirim (hanya baca).
+    await panelOf(page).getByRole("link", { name: "Riwayat chat" }).click()
+    await expect(page.getByRole("heading", { name: "Riwayat Chat", level: 1 })).toBeVisible()
+    const log = page.getByRole("log", { name: "Pesan Hari ini" })
+    await expect(log).toContainText(`${marker} tolong cek pesanan besok`)
+    await expect(log).toContainText(`${marker} siap`)
+    await expect(
+      page
+        .getByRole("navigation", { name: "Tanggal chat" })
+        .getByRole("link", { name: /Hari ini/ }),
+    ).toHaveAttribute("aria-current", "page")
+    await page.screenshot({ path: "test-results/riwayat-chat-desktop.png", fullPage: true })
   })
 })

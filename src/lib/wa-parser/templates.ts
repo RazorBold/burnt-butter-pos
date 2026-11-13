@@ -23,6 +23,7 @@ From:
 Pilih Metode Pengiriman : 
 - Pick Up
 - Instant 
+- Sameday (dikirim di hari yang sama)
 - Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
 
 Request (Jika ada):
@@ -73,6 +74,7 @@ From:
 Pilih Metode Pengiriman : 
 - Pick Up
 - Instant 
+- Sameday (dikirim di hari yang sama)
 - Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
 
 Request (Jika ada):
@@ -115,6 +117,7 @@ From:
 Pilih Metode Pengiriman : 
 - Pick Up
 - Instant 
+- Sameday (dikirim di hari yang sama)
 - Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
 
 Request (Jika ada):

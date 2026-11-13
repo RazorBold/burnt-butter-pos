@@ -34,6 +34,8 @@ export const SECTION_ACCESS = {
   "/laporan": ["owner"],
   "/stok-packaging": ["admin", "produksi", "owner"],
   "/master-data": ["owner"],
+  // Log Chat Tim per hari (tidak tampil di navbar; dibuka dari panel Chat Tim).
+  "/riwayat-chat": ALL,
 } as const satisfies Record<string, readonly Role[]>
 
 export type Section = keyof typeof SECTION_ACCESS

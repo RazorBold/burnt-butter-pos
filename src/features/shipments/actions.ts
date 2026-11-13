@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { getDb } from "@/db"
-import { couriers, orders, shipments } from "@/db/schema"
+import { couriers, orders, shipments, shippingOptions } from "@/db/schema"
 import { sentStatusFor } from "@/features/orders/status"
 import { changeStatuses } from "@/features/orders/status-change"
 import { CAN_MANAGE_SHIPMENT } from "@/lib/access"
@@ -140,13 +140,15 @@ export async function saveTrackingLink(input: unknown): Promise<BulkResult> {
       orderNo: orders.orderNo,
       status: orders.status,
       method: shipments.method,
+      liveTracking: shippingOptions.liveTracking,
       trackingUrl: shipments.trackingUrl,
     })
     .from(orders)
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .leftJoin(shippingOptions, eq(shippingOptions.id, shipments.optionId))
     .where(eq(orders.id, orderId))
   if (!current) return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
-  if (!canSetTrackingLink(current.method, current.status)) {
+  if (!canSetTrackingLink(current.method, current.status, current.liveTracking)) {
     return { ok: false, message: `${current.orderNo} tidak bisa diberi link lacak.` }
   }
 

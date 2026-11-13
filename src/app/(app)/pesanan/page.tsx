@@ -268,7 +268,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                           {formatTanggalPendek(order.deliveryDate)}
                         </TableCell>
                         <TableCell>
-                          {SHIPPING_METHOD_LABEL[order.shippingMethod]}
+                          {order.shippingName || SHIPPING_METHOD_LABEL[order.shippingMethod]}
                           {order.trackingUrl && order.shippingMethod !== "ekspedisi" && (
                             <span className="mt-0.5 block text-[13px]">
                               <TrackingLinkTools

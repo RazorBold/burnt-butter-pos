@@ -24,11 +24,13 @@ export type OrderDraft = {
   cardWishes: string
   cardFrom: string
   shippingMethod: ShippingMethod | ""
+  /** Kategori pengiriman (Master Data); kosong = kategori pertama dari alurnya. */
+  shippingOptionId: string
   request: string
   quantities: Record<string, number>
 }
 
-export type DraftField = Exclude<keyof OrderDraft, "quantities"> | "items"
+export type DraftField = Exclude<keyof OrderDraft, "quantities" | "shippingOptionId"> | "items"
 
 export const EMPTY_DRAFT: OrderDraft = {
   channel: "whatsapp",
@@ -45,6 +47,7 @@ export const EMPTY_DRAFT: OrderDraft = {
   cardWishes: "",
   cardFrom: "",
   shippingMethod: "",
+  shippingOptionId: "",
   request: "",
   quantities: {},
 }

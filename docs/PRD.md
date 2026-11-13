@@ -105,12 +105,13 @@ Setiap modul diturunkan langsung dari elemen di gambar desain. Kode F-xx dipakai
 
 ### Pengiriman
 
-- **F-40** KPI: Perlu Dikirim Hari Ini, Kurir Internal, Instant, Pick Up, Selesai Dikirim Hari Ini.
+- **F-40** KPI: Perlu Dikirim Hari Ini, satu kartu per **kategori pengiriman** aktif (F-47), Selesai Dikirim Hari Ini.
 - **F-41** Tab: Semua, Perlu Dikirim, Dalam Perjalanan, Selesai (dengan jumlah); filter tanggal, metode, kurir, status.
 - **F-42** Tabel: No. Pesanan, Nama Customer, Metode (ikon), Alamat (dipotong), Kurir, Estimasi slot jam, Status.
 - **F-43** Status pengiriman: Menunggu Kurir, Siap Dikirim, Siap Diambil, Dalam Perjalanan, Dikirim, Selesai.
 - **F-44** Panel Detail Pengiriman: info customer, alamat, tanggal, metode + catatan slot ("Pengiriman jam 09.00–17.00"), request, peta mini dengan rute dan tombol **Lihat Rute di Maps**, Daftar Menu.
 - **F-45** Aksi: **Tandai Dikirim**, **Ubah Kurir / Jadwal**, **Lihat Pesanan**. Terimplementasi: tombol utama mengikuti tahap (Tandai Dikirim → Tandai Selesai; Pick Up: Sudah Diambil). Pesanan yang belum selesai dimasak belum bisa dikirim, dan Kurir Internal wajib dipilih kurirnya dulu.
+- **F-47** Kategori pengiriman (permintaan pemilik toko, 13 Nov 2026): Owner mengatur kategori di Master Data › Kurir & Pengiriman (mis. GoSend, Lalamove, Kurir Internal) dengan nama, keterangan, **alur dasar** (Kurir Internal / Instant / Pick Up / Ekspedisi, menentukan alur status), **Live tracking** (boleh diberi link lacak; Pick Up tidak pernah), dan aktif/nonaktif. Kategori aktif menjadi pilihan di Input Pesanan & Edit pesanan dan kartu KPI Pengiriman. Hasil baca WA memilih kategori yang **namanya tertulis** di pesan (mis. "Sameday"), atau kategori pertama dengan alur yang sama. Kategori **Sameday** (alur Instant) ditambahkan 13 Nov 2026 dan masuk ke template WA FO1–FO3. Data awal: Pick Up, Instant, Kurir Internal, Ekspedisi.
 - **F-46** Kurir Internal punya slot 09:00–12:00 dan 13:00–17:00; Instant dan Pick Up tanpa kurir dan slot.
 
 ### Laporan
@@ -139,6 +140,7 @@ Sidebar: Produk & Menu, Stok Packaging, Kurir & Pengiriman, Metode Pembayaran, C
 ### Pesanan urgent
 
 - **F-81** Pesanan dadakan (Admin, Kasir): **Tandai urgent** dari menu ⋮ baris atau panel detail Pesanan, dengan alasan opsional; bisa dihapus lagi. Pesanan urgent berlabel merah "URGENT" (ikon sirene) di Pesanan (baris kemerahan), panel detail, Produksi, Packaging, Pengiriman, dan Dashboard, dan didahulukan di papan Produksi/Packaging. Semua akun yang sedang membuka aplikasi mendapat **popup + bunyi alarm** (cek tiap 10 detik) sampai menekan "Saya mengerti"; yang sudah dilihat diingat per browser per akun, dan menandai ulang memunculkan popup lagi. Label hilang otomatis saat pesanan Selesai/Dibatalkan. Pesanan uji e2e (QA Customer …) hanya memicu popup di akun QA. Keputusan pemilik toko, Nov 2026.
+- **F-81** Chat Tim dimulai kosong setiap hari (00:00 WIB); pesan tidak dihapus, tapi tersimpan sebagai **log per hari** di halaman **Riwayat Chat** (`/riwayat-chat`, semua role, dibuka dari link di panel Chat Tim; hanya baca). Jumlah belum dibaca hanya menghitung pesan hari ini (permintaan pemilik toko, 13 Nov 2026).
 
 ### Chat Tim
 

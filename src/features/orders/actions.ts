@@ -19,6 +19,7 @@ import {
   paymentMethods,
   payments,
   shipments,
+  shippingOptions,
   stockMovements,
 } from "@/db/schema"
 import { CAN_INPUT_ORDER, CAN_PRODUCE } from "@/lib/access"
@@ -229,6 +230,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
       await tx.insert(shipments).values({
         orderId: order.id,
         method: shippingMethod,
+        optionId: await resolveShippingOption(tx, shippingMethod, draft.shippingOptionId),
         // Kosong sampai pesanan Siap Kirim (lihat shipmentStatusFor).
         status: null,
         address,
@@ -278,6 +280,23 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
 }
 
 type ActionResult = { ok: boolean; message: string }
+
+/**
+ * Kategori pengiriman untuk disimpan: yang dipilih (bila aktif dan alurnya cocok), atau kategori
+ * aktif pertama dengan alur yang sama. Null bila Owner belum punya kategori untuk alur ini.
+ */
+async function resolveShippingOption(
+  tx: Tx,
+  method: (typeof shippingOptions.$inferSelect)["flow"],
+  optionId: string,
+): Promise<string | null> {
+  const rows = await tx
+    .select({ id: shippingOptions.id })
+    .from(shippingOptions)
+    .where(and(eq(shippingOptions.flow, method), eq(shippingOptions.isActive, true)))
+    .orderBy(shippingOptions.sortOrder, shippingOptions.createdAt)
+  return rows.find((row) => row.id === optionId)?.id ?? rows[0]?.id ?? null
+}
 
 async function requireOrderEditor(): Promise<string> {
   return (await requireRole(CAN_INPUT_ORDER)).id
@@ -593,7 +612,12 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       .where(eq(orders.id, orderId))
     await tx
       .update(shipments)
-      .set({ method, address, status: shipmentStatusFor(current.status, method) })
+      .set({
+        method,
+        optionId: await resolveShippingOption(tx, method, draft.shippingOptionId),
+        address,
+        status: shipmentStatusFor(current.status, method),
+      })
       .where(eq(shipments.orderId, orderId))
     if (total !== undefined) {
       await tx.update(payments).set({ amount: total }).where(eq(payments.orderId, orderId))

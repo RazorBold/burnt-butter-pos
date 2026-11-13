@@ -462,3 +462,33 @@ describe("parseWaOrder: template FO dengan dua label tanggal", () => {
     expect(parseWaOrder(fill("12/11/2026", "14/11/2026"), TODAY).deliveryDate).toBe("2026-11-14")
   })
 })
+
+describe("parseWaOrder: Sameday", () => {
+  const pick = (choice: string) =>
+    FO1_TEMPLATE.replace(
+      /Pilih Metode Pengiriman :[\s\S]*?\n\n/,
+      `Pilih Metode Pengiriman :\n${choice}\n\n`,
+    )
+
+  it("template FO memuat pilihan Sameday", () => {
+    expect(FO1_TEMPLATE).toContain("- Sameday (dikirim di hari yang sama)")
+  })
+
+  it("Sameday terbaca sebagai alur Instant dengan teks aslinya", () => {
+    const parsed = parseWaOrder(pick("- Sameday (dikirim di hari yang sama)"), TODAY)
+    expect(parsed.shippingMethod).toBe("instant")
+    expect(parsed.shippingText).toContain("Sameday")
+  })
+
+  it("Same day ditulis terpisah dan ditandai di antara pilihan lain", () => {
+    const parsed = parseWaOrder(pick("- Pick Up\n- Same Day ✅\n- Instant"), TODAY)
+    expect(parsed.shippingMethod).toBe("instant")
+    expect(parsed.shippingText).toMatch(/Same Day/)
+  })
+
+  it("Instant biasa tetap Instant", () => {
+    const parsed = parseWaOrder(pick("- Instant"), TODAY)
+    expect(parsed.shippingMethod).toBe("instant")
+    expect(parsed.shippingText).toBe("Instant")
+  })
+})

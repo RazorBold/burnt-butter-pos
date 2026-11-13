@@ -87,6 +87,8 @@ test.describe("Input Pesanan marketplace", () => {
     page,
   }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    // Alur panjang: input, produksi, packing, sampai pengiriman.
+    test.setTimeout(90_000)
     const stamp = Date.now()
     const no = `QA-SHP-${stamp}`
     const name = `QA Customer ${stamp}`
@@ -150,8 +152,6 @@ test.describe("Input Pesanan marketplace", () => {
     // Packing Normal dulu di menu Packaging (stok tidak dicatat), baru bisa dikirim.
     await page.goto(`/packaging?tanggal=${date}`)
     await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
-    const packing = page.getByRole("dialog", { name: `Packing ${orderNo}` })
-    await packing.getByRole("button", { name: "Simpan & selesai packing" }).click()
     await expect(
       page
         .getByRole("region", { name: /^Selesai packing/ })

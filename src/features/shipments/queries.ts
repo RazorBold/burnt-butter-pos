@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, count, eq, inArray, isNull, ne, or, type SQL, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
-import { couriers, orders, shipments } from "@/db/schema"
+import { couriers, orders, shipments, shippingOptions } from "@/db/schema"
 import type { OrderStatus } from "@/features/orders/filters"
 import type { ShipmentStatus } from "@/features/orders/status"
 import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
@@ -20,6 +20,9 @@ export type ShipmentRow = {
   type: OrderType
   orderStatus: OrderStatus
   method: ShippingMethod
+  /** Nama kategori pengiriman (Master Data); null untuk data lama. */
+  optionName: string | null
+  liveTracking: boolean | null
   address: string | null
   courierId: string | null
   courierName: string | null
@@ -95,6 +98,8 @@ export async function listShipments(filters: ShipmentFilters) {
       type: orders.type,
       orderStatus: orders.status,
       method: shipments.method,
+      optionName: shippingOptions.name,
+      liveTracking: shippingOptions.liveTracking,
       address: shipments.address,
       courierId: shipments.courierId,
       courierName: couriers.name,
@@ -108,6 +113,7 @@ export async function listShipments(filters: ShipmentFilters) {
     .from(orders)
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
     .leftJoin(couriers, eq(couriers.id, shipments.courierId))
+    .leftJoin(shippingOptions, eq(shippingOptions.id, shipments.optionId))
     .where(where)
     .orderBy(asc(orders.createdAt), asc(orders.orderNo))
     .limit(SHIPMENT_PAGE_SIZE)
@@ -117,23 +123,40 @@ export async function listShipments(filters: ShipmentFilters) {
 }
 
 /** Ringkasan pengiriman untuk tanggal kirim ini (F-40). */
+/** Jumlah pengiriman per kategori (Master Data) pada tanggal ini. */
+export type ShipmentOptionCount = {
+  optionId: string | null
+  method: ShippingMethod
+  name: string | null
+  count: number
+}
+
 export async function getShipmentSummary(date: string) {
-  const [row] = await getDb()
-    .select({
-      perlu: sql<number>`count(*) filter (where ${tabCondition("perlu")})`.mapWith(Number),
-      kurirInternal:
-        sql<number>`count(*) filter (where ${shipments.method} = 'kurir_internal')`.mapWith(Number),
-      instant: sql<number>`count(*) filter (where ${shipments.method} = 'instant')`.mapWith(Number),
-      pickUp: sql<number>`count(*) filter (where ${shipments.method} = 'pick_up')`.mapWith(Number),
-      ekspedisi: sql<number>`count(*) filter (where ${shipments.method} = 'ekspedisi')`.mapWith(
-        Number,
-      ),
-      selesai: sql<number>`count(*) filter (where ${tabCondition("selesai")})`.mapWith(Number),
-    })
-    .from(orders)
-    .innerJoin(shipments, eq(shipments.orderId, orders.id))
-    .where(and(eq(orders.deliveryDate, date), ne(orders.status, "dibatalkan")))
-  return row
+  const db = getDb()
+  const where = and(eq(orders.deliveryDate, date), ne(orders.status, "dibatalkan"))
+  const [[row], perOption] = await Promise.all([
+    db
+      .select({
+        perlu: sql<number>`count(*) filter (where ${tabCondition("perlu")})`.mapWith(Number),
+        selesai: sql<number>`count(*) filter (where ${tabCondition("selesai")})`.mapWith(Number),
+      })
+      .from(orders)
+      .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .where(where),
+    db
+      .select({
+        optionId: shipments.optionId,
+        method: shipments.method,
+        name: shippingOptions.name,
+        count: count(),
+      })
+      .from(orders)
+      .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .leftJoin(shippingOptions, eq(shippingOptions.id, shipments.optionId))
+      .where(where)
+      .groupBy(shipments.optionId, shipments.method, shippingOptions.name),
+  ])
+  return { ...row, perOption: perOption as ShipmentOptionCount[] }
 }
 
 export type CourierOption = { id: string; name: string; type: "internal" | "eksternal" }

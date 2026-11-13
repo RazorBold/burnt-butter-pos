@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { updateOrderDetails } from "@/features/orders/actions"
 import { isMarketplace, ORDER_CHANNEL_LABEL, ORDER_KIND_OPTIONS } from "@/features/orders/constants"
 import { Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
+import type { ShippingOptionChoice } from "@/features/shipping-options/options"
 import {
   type DraftField,
   draftIssues,
@@ -53,12 +54,19 @@ function draftOf(order: OrderDetail): EditDraft {
     cardWishes: order.cardWishes ?? "",
     cardFrom: order.cardFrom ?? "",
     shippingMethod: order.shipment.method,
+    shippingOptionId: order.shipment.optionId ?? "",
     request: order.request ?? "",
   }
 }
 
 /** Tombol "Edit" di panel detail: ubah data customer, pengiriman, request, dan data hadiah. */
-export function EditOrderDialog({ order }: { order: OrderDetail }) {
+export function EditOrderDialog({
+  order,
+  shippingOptions,
+}: {
+  order: OrderDetail
+  shippingOptions: ShippingOptionChoice[]
+}) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<EditDraft>(() => draftOf(order))
   const [errors, setErrors] = useState<Partial<Record<DraftField, string>>>({})
@@ -265,7 +273,12 @@ export function EditOrderDialog({ order }: { order: OrderDetail }) {
             <ShippingMethodPicker
               compact
               value={draft.shippingMethod}
-              onChange={(method) => update("shippingMethod", method)}
+              optionId={draft.shippingOptionId}
+              options={shippingOptions}
+              onChange={(method, optionId) => {
+                update("shippingMethod", method)
+                update("shippingOptionId", optionId)
+              }}
               flag={errors.shippingMethod}
             />
           )}

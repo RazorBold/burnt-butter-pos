@@ -313,6 +313,24 @@ export const couriers = pgTable("couriers", {
   updatedAt: updatedAt(),
 }).enableRLS()
 
+/**
+ * Kategori pengiriman yang diatur Owner di Master Data › Kurir & Pengiriman (Nov 2026), mis.
+ * "GoSend", "Lalamove", "Kurir Internal". `flow` = alur dasar yang menentukan alur status
+ * (Kurir Internal / Instant / Pick Up / Ekspedisi); `liveTracking` = bisa diberi link lacak.
+ */
+export const shippingOptions = pgTable("shipping_options", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  flow: shippingMethod("flow").notNull(),
+  liveTracking: boolean("live_tracking").notNull().default(false),
+  /** Keterangan singkat di form input pesanan. */
+  note: text("note"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}).enableRLS()
+
 export const shipments = pgTable(
   "shipments",
   {
@@ -322,6 +340,8 @@ export const shipments = pgTable(
       .unique()
       .references(() => orders.id, { onDelete: "cascade" }),
     method: shippingMethod("method").notNull(),
+    /** Kategori pengiriman yang dipilih; `method` = alur dasarnya (disalin saat disimpan). */
+    optionId: uuid("option_id").references(() => shippingOptions.id, { onDelete: "set null" }),
     courierId: uuid("courier_id").references(() => couriers.id),
     /** Hanya untuk kurir_internal. */
     slot: deliverySlot("slot"),
@@ -579,6 +599,10 @@ export const orderEditLogsRelations = relations(orderEditLogs, ({ one }) => ({
 export const shipmentsRelations = relations(shipments, ({ one }) => ({
   order: one(orders, { fields: [shipments.orderId], references: [orders.id] }),
   courier: one(couriers, { fields: [shipments.courierId], references: [couriers.id] }),
+  option: one(shippingOptions, {
+    fields: [shipments.optionId],
+    references: [shippingOptions.id],
+  }),
 }))
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

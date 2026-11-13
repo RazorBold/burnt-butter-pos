@@ -29,12 +29,14 @@ import {
   paymentMethods,
   payments,
   shipments,
+  shippingOptions,
 } from "@/db/schema"
 import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 import type { CatalogVariant } from "./catalog"
 import type { OrderChannel } from "./constants"
 import type { OrderExportRow } from "./csv"
+import { liveTrackingOf } from "@/features/shipping-options/options"
 import type { OrderEditPart } from "./edit-log"
 import { addDays, type DateBasis, type OrderFilters, type OrderStatus } from "./filters"
 import type { DailyOrderStats } from "./kpis"
@@ -91,6 +93,8 @@ export type OrderListRow = {
   kind: OrderKind
   deliveryDate: string
   shippingMethod: ShippingMethod
+  /** Nama kategori pengiriman (Master Data); null untuk data lama. */
+  shippingName: string | null
   total: number
   status: OrderStatus
   /** Sudah ada pembayaran Lunas. */
@@ -155,6 +159,7 @@ export async function listOrders(filters: OrderFilters) {
       kind: orders.kind,
       deliveryDate: orders.deliveryDate,
       shippingMethod: shipments.method,
+      shippingName: shippingOptions.name,
       total: orders.total,
       status: orders.status,
       paid: isNotNull(payments.id).mapWith(Boolean),
@@ -169,6 +174,7 @@ export async function listOrders(filters: OrderFilters) {
     .from(orders)
     .innerJoin(customers, eq(customers.id, orders.customerId))
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .leftJoin(shippingOptions, eq(shippingOptions.id, shipments.optionId))
     .leftJoin(payments, and(eq(payments.orderId, orders.id), eq(payments.status, "lunas")))
     .where(where)
     // Mode tanggal kirim: urut tanggal kirim dulu, lalu antrean waktu dibuat.
@@ -254,6 +260,11 @@ export type OrderDetail = {
   } | null
   shipment: {
     method: ShippingMethod
+    /** Kategori pengiriman dari Master Data; null untuk data lama. */
+    optionId: string | null
+    optionName: string | null
+    /** Kategori memakai live tracking (link lacak). */
+    liveTracking: boolean
     status: ShipmentStatus | null
     address: string | null
     courierId: string | null
@@ -286,7 +297,12 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     where: (order, { eq }) => eq(order.orderNo, orderNo),
     with: {
       customer: { columns: { phone: true } },
-      shipment: { with: { courier: { columns: { name: true } } } },
+      shipment: {
+        with: {
+          courier: { columns: { name: true } },
+          option: { columns: { name: true, liveTracking: true } },
+        },
+      },
       createdByProfile: { columns: { name: true } },
       editLogs: {
         orderBy: (log, { desc }) => [desc(log.editedAt)],
@@ -354,6 +370,9 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
       : null,
     shipment: {
       method: order.shipment.method,
+      optionId: order.shipment.optionId,
+      optionName: order.shipment.option?.name ?? null,
+      liveTracking: liveTrackingOf(order.shipment.method, order.shipment.option?.liveTracking),
       status: order.shipment.status,
       address: order.shipment.address,
       courierId: order.shipment.courierId,
@@ -462,6 +481,7 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
       kind: orders.kind,
       deliveryDate: orders.deliveryDate,
       shippingMethod: shipments.method,
+      shippingName: shippingOptions.name,
       total: orders.total,
       status: orders.status,
       note: orders.note,
@@ -470,6 +490,7 @@ export async function listLatestOrders(from: string, to: string, limit = 5) {
     })
     .from(orders)
     .innerJoin(shipments, eq(shipments.orderId, orders.id))
+    .leftJoin(shippingOptions, eq(shippingOptions.id, shipments.optionId))
     .where(createdBetween(from, to))
     .orderBy(desc(orders.createdAt))
     .limit(limit)
@@ -493,6 +514,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
         senderName: orders.senderName,
         deliveryDate: orders.deliveryDate,
         method: shipments.method,
+        shippingName: shippingOptions.name,
         status: orders.status,
         paidWith: paymentMethods.name,
         note: orders.note,
@@ -505,6 +527,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
       .from(orders)
       .innerJoin(customers, eq(customers.id, orders.customerId))
       .innerJoin(shipments, eq(shipments.orderId, orders.id))
+      .leftJoin(shippingOptions, eq(shippingOptions.id, shipments.optionId))
       .leftJoin(payments, and(eq(payments.orderId, orders.id), eq(payments.status, "lunas")))
       .leftJoin(paymentMethods, eq(paymentMethods.id, payments.paymentMethodId))
       .where(inArray(orders.id, orderIds))

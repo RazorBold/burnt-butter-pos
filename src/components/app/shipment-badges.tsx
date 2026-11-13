@@ -47,7 +47,7 @@ export function ShipmentStatusBadge({
   )
 }
 
-const METHOD_ICON = {
+export const METHOD_ICON = {
   kurir_internal: Truck,
   instant: Bike,
   pick_up: Store,
@@ -55,12 +55,19 @@ const METHOD_ICON = {
 } as const
 
 /** Ikon + nama metode kirim, seperti kolom Metode di desain. */
-export function ShippingMethodLabel({ method }: { method: ShippingMethod }) {
+export function ShippingMethodLabel({
+  method,
+  name,
+}: {
+  method: ShippingMethod
+  /** Nama kategori pengiriman dari Master Data; tanpa nama pakai label alurnya. */
+  name?: string | null
+}) {
   const Icon = METHOD_ICON[method]
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       <Icon className="size-[18px] shrink-0 text-[#c0392b]" aria-hidden />
-      {SHIPPING_METHOD_LABEL[method]}
+      {name || SHIPPING_METHOD_LABEL[method]}
     </span>
   )
 }

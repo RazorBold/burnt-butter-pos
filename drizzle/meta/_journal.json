@@ -162,6 +162,13 @@
       "when": 1794503584590,
       "tag": "0022_unusual_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794537867874,
+      "tag": "0023_tough_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

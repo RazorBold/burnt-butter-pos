@@ -48,6 +48,8 @@ export type ShipmentActionRow = {
   orderNo: string
   orderStatus: OrderStatus
   method: ShippingMethod
+  /** Live tracking dari kategori pengiriman; null = bawaan alurnya. */
+  liveTracking: boolean | null
   courierId: string | null
   slot: DeliverySlot | null
   trackingUrl: string | null
@@ -269,9 +271,13 @@ export function ShipmentTrackingCell({ id }: { id: string }) {
   const { rowById, pending, openLink } = useShipmentActions()
   const row = rowById.get(id)
   if (!row) return null
-  if (!hasTrackingLink(row.method)) return "-"
+  if (!hasTrackingLink(row.method, row.liveTracking)) return "-"
   if (row.trackingUrl) return <TrackingLink url={row.trackingUrl} orderNo={row.orderNo} />
-  if (row.orderStatus !== "dikirim" || !canSetTrackingLink(row.method, row.orderStatus)) return "-"
+  if (
+    row.orderStatus !== "dikirim" ||
+    !canSetTrackingLink(row.method, row.orderStatus, row.liveTracking)
+  )
+    return "-"
   return (
     <Button
       variant="outline"
@@ -293,7 +299,7 @@ export function ShipmentRowMenu({ id }: { id: string }) {
   const row = rowById.get(id)
   if (!row) return null
   const next = nextActionOf(row)
-  const canLink = canSetTrackingLink(row.method, row.orderStatus)
+  const canLink = canSetTrackingLink(row.method, row.orderStatus, row.liveTracking)
   const step = next?.kind === "advance" ? next : null
 
   return (

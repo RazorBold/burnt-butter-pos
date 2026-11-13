@@ -3,6 +3,7 @@
 
 import type { OrderStatus } from "@/features/orders/filters"
 import { sentStatusFor, type ShipmentStatus } from "@/features/orders/status"
+import { liveTrackingOf } from "@/features/shipping-options/options"
 import type { ShippingMethod } from "@/lib/wa-parser"
 
 /** Status pengiriman ditambah "belum_siap" untuk pesanan yang belum selesai dimasak. */
@@ -133,13 +134,24 @@ export function parseShipmentFilters(params: Params, today: string): ShipmentFil
 }
 
 /** Link lacak berlaku untuk pesanan yang diantar toko (bukan Pick Up atau olshop) dan belum berakhir. */
-export function canSetTrackingLink(method: ShippingMethod, orderStatus: OrderStatus): boolean {
-  return hasTrackingLink(method) && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
+export function canSetTrackingLink(
+  method: ShippingMethod,
+  orderStatus: OrderStatus,
+  liveTracking?: boolean | null,
+): boolean {
+  return (
+    hasTrackingLink(method, liveTracking) &&
+    orderStatus !== "selesai" &&
+    orderStatus !== "dibatalkan"
+  )
 }
 
-/** Metode yang memakai link lacak. Olshop diurus ekspedisi marketplace, jadi tidak ditampilkan. */
-export function hasTrackingLink(method: ShippingMethod): boolean {
-  return method !== "pick_up" && method !== "ekspedisi"
+/**
+ * Memakai link lacak? Diatur per kategori pengiriman di Master Data (Live tracking). Tanpa
+ * kategori (data lama): Instant dan Kurir Internal saja. Pick Up tidak pernah.
+ */
+export function hasTrackingLink(method: ShippingMethod, liveTracking?: boolean | null): boolean {
+  return liveTrackingOf(method, liveTracking)
 }
 
 /**

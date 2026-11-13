@@ -23,6 +23,7 @@ export type OrderExportRow = {
   senderName: string | null
   deliveryDate: string
   method: ShippingMethod
+  shippingName?: string | null
   status: OrderStatus
   /** Nama metode bayar bila lunas; `null` = belum bayar. */
   paidWith: string | null
@@ -48,7 +49,7 @@ const COLUMNS: [string, (row: OrderExportRow) => string | number][] = [
   ["Alamat", (row) => row.address ?? ""],
   ["Pengirim Hadiah", (row) => row.senderName ?? ""],
   ["Tanggal Kirim", (row) => row.deliveryDate],
-  ["Pengiriman", (row) => SHIPPING_METHOD_LABEL[row.method]],
+  ["Pengiriman", (row) => row.shippingName || SHIPPING_METHOD_LABEL[row.method]],
   ["Status", (row) => ORDER_STATUS_LABEL[row.status]],
   ["Pembayaran", (row) => (row.paidWith ? "Lunas" : "Belum bayar")],
   ["Dibayar Lewat", (row) => row.paidWith ?? ""],

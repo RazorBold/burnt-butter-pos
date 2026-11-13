@@ -36,6 +36,11 @@ export type ParsedOrder = {
   cardWishes: string | null
   cardFrom: string | null
   shippingMethod: ShippingMethod | null
+  /**
+   * Teks metode yang dipilih customer, mis. "Sameday". Dipakai untuk memilih kategori pengiriman
+   * dari Master Data yang namanya cocok (alurnya tetap dari shippingMethod).
+   */
+  shippingText: string | null
   request: string | null
   /** Hanya menu dengan jumlah > 0. */
   items: ParsedItem[]
@@ -142,7 +147,8 @@ function isStructural(lower: string): boolean {
 export function shippingMethodFrom(text: string): ShippingMethod | null {
   const lower = text.toLowerCase()
   if (/pick\s*-?\s*up|pickup|ambil\s*sendiri|diambil/.test(lower)) return "pick_up"
-  if (/instant|instan|gosend|go-send|grab|gojek|maxim|ojol/.test(lower)) return "instant"
+  if (/instant|instan|gosend|go-send|grab|gojek|maxim|ojol|lalamove|same\s*-?\s*day/.test(lower))
+    return "instant"
   if (/kurir/.test(lower)) return "kurir_internal"
   return null
 }
@@ -325,15 +331,24 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
   }
 
   // Metode pengiriman: isian setelah label, opsi yang ditandai, atau satu-satunya opsi tersisa.
+  let shippingText: string | null = shippingInline
   let shippingMethod: ShippingMethod | null = shippingInline
     ? shippingMethodFrom(shippingInline)
     : null
   if (!shippingMethod) {
     const marked = shippingOptions.filter((option) => option.marked)
-    if (marked.length === 1) shippingMethod = shippingMethodFrom(marked[0].text)
-    else if (shippingOptions.length === 1)
-      shippingMethod = shippingMethodFrom(shippingOptions[0].text)
+    const chosen =
+      marked.length === 1
+        ? marked[0]
+        : shippingOptions.length === 1
+          ? shippingOptions[0]
+          : undefined
+    if (chosen) {
+      shippingMethod = shippingMethodFrom(chosen.text)
+      shippingText = chosen.text
+    }
   }
+  if (!shippingMethod) shippingText = null
 
   const phoneRaw = value("phone")
   const dateRaw = value("date")
@@ -353,6 +368,7 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
     cardWishes: value("cardWishes", "\n"),
     cardFrom: value("cardFrom"),
     shippingMethod,
+    shippingText,
     request: value("request", "\n"),
     items,
     isMarketplace,

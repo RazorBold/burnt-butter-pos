@@ -1,4 +1,4 @@
-import { Bike, CircleCheck, PackageCheck, Store, Truck, UserRound } from "lucide-react"
+import { CircleCheck, Truck } from "lucide-react"
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
@@ -6,7 +6,11 @@ import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { OrderNoteLine } from "@/components/app/order-badges"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { SelectAllHead } from "@/components/app/row-selection"
-import { ShipmentStatusBadge, ShippingMethodLabel } from "@/components/app/shipment-badges"
+import {
+  METHOD_ICON,
+  ShipmentStatusBadge,
+  ShippingMethodLabel,
+} from "@/components/app/shipment-badges"
 import { TablePagination } from "@/components/app/table-pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -37,10 +41,15 @@ import {
 import {
   getShipmentSummary,
   listActiveCouriers,
+  type ShipmentOptionCount,
   listShipments,
   SHIPMENT_PAGE_SIZE,
 } from "@/features/shipments/queries"
+import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
+import type { ShippingOptionChoice } from "@/features/shipping-options/options"
+import { listActiveShippingOptions } from "@/features/shipping-options/queries"
 import { requirePageAccess } from "@/lib/auth"
+import type { ShippingMethod } from "@/lib/wa-parser"
 import { formatHariTanggal, toJakartaDateString } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -99,20 +108,59 @@ function listParams(filters: Filters, today: string, page?: number) {
 async function Summary({ searchParams }: { searchParams: SearchParams }) {
   await requirePageAccess(PATH)
   const { today, filters } = await readFilters(searchParams)
-  const summary = await getShipmentSummary(filters.date)
+  const [summary, options] = await Promise.all([
+    getShipmentSummary(filters.date),
+    listActiveShippingOptions(),
+  ])
   // Tanggalnya sudah terlihat di pemilih tanggal; label cukup menyebut "Hari Ini" bila hari ini.
   const day = filters.date === today ? " Hari Ini" : ""
 
   return (
     <div className="kpi-grid relative mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
       <KpiCard icon={Truck} label={`Perlu Dikirim${day}`} value={String(summary.perlu)} />
-      <KpiCard icon={UserRound} label="Kurir Internal" value={String(summary.kurirInternal)} />
-      <KpiCard icon={Bike} label="Instant" value={String(summary.instant)} />
-      <KpiCard icon={Store} label="Pick Up" value={String(summary.pickUp)} />
-      <KpiCard icon={PackageCheck} label="Ekspedisi" value={String(summary.ekspedisi)} />
+      {optionCards(options, summary.perOption).map((card) => (
+        <KpiCard
+          key={card.key}
+          icon={METHOD_ICON[card.method]}
+          label={card.name}
+          value={String(card.count)}
+        />
+      ))}
       <KpiCard icon={CircleCheck} label={`Selesai Dikirim${day}`} value={String(summary.selesai)} />
     </div>
   )
+}
+
+/**
+ * Satu kartu per kategori pengiriman aktif (Master Data), sesuai urutan Owner. Pesanan tanpa
+ * kategori (data lama) atau dengan kategori yang sudah dinonaktifkan ikut dihitung di kartu
+ * pertama dengan alur yang sama; bila tidak ada, tampil sebagai kartu sendiri.
+ */
+function optionCards(options: ShippingOptionChoice[], counts: ShipmentOptionCount[]) {
+  const cards = options.map((option) => ({
+    key: option.id,
+    method: option.flow,
+    name: option.name,
+    count: 0,
+  }))
+  const byId = new Map(cards.map((card) => [card.key, card]))
+  for (const row of counts) {
+    const card =
+      (row.optionId ? byId.get(row.optionId) : undefined) ??
+      cards.find((each) => each.method === row.method)
+    if (card) card.count += row.count
+    else {
+      const extra = {
+        key: `${row.method}:${row.optionId ?? "lama"}`,
+        method: row.method as ShippingMethod,
+        name: row.name ?? SHIPPING_METHOD_LABEL[row.method],
+        count: row.count,
+      }
+      cards.push(extra)
+      byId.set(extra.key, extra)
+    }
+  }
+  return cards
 }
 
 async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
@@ -168,6 +216,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                 orderNo: row.orderNo,
                 orderStatus: row.orderStatus,
                 method: row.method,
+                liveTracking: row.liveTracking,
                 courierId: row.courierId,
                 slot: row.slot,
                 trackingUrl: row.trackingUrl,
@@ -214,7 +263,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                           <OrderNoteLine note={row.note} />
                         </TableCell>
                         <TableCell>
-                          <ShippingMethodLabel method={row.method} />
+                          <ShippingMethodLabel method={row.method} name={row.optionName} />
                         </TableCell>
                         <TableCell className="max-w-[220px]">
                           <span className="block truncate" title={row.address ?? undefined}>

@@ -24,6 +24,7 @@ import { ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { EditItemsDialog } from "@/features/orders/components/edit-items-dialog"
 import { getOrderCatalog, getOrderDetail, getOrderHistory } from "@/features/orders/queries"
 import { isMenuEditable } from "@/features/orders/status"
+import { listActiveShippingOptions } from "@/features/shipping-options/queries"
 import { requirePageAccess } from "@/lib/auth"
 import { formatRupiah, formatWaktuDibuat } from "@/lib/format"
 import { photoSrc } from "@/lib/photos"
@@ -60,7 +61,11 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
   const { orderNo } = await params
   const order = await getOrderDetail(decodeURIComponent(orderNo))
   if (!order) notFound()
-  const [history, catalog] = await Promise.all([getOrderHistory(order.id), getOrderCatalog()])
+  const [history, catalog, shippingOptions] = await Promise.all([
+    getOrderHistory(order.id),
+    getOrderCatalog(),
+    listActiveShippingOptions(),
+  ])
 
   return (
     <>
@@ -83,7 +88,7 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
       <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-6">
           <div className="rounded-2xl border border-border bg-card [&>section]:border-t-0">
-            <OrderInfo order={order} />
+            <OrderInfo order={order} shippingOptions={shippingOptions} />
           </div>
 
           <section

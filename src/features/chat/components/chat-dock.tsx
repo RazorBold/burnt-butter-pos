@@ -1,6 +1,7 @@
 "use client"
 
-import { AtSign, LoaderCircle, MessagesSquare, SendHorizontal, X } from "lucide-react"
+import { AtSign, History, LoaderCircle, MessagesSquare, SendHorizontal, X } from "lucide-react"
+import Link from "next/link"
 import {
   type KeyboardEvent,
   useCallback,
@@ -39,6 +40,7 @@ export function ChatDock({ me, members }: { me: Me; members: ChatMemberRow[] }) 
   const [unreadMentions, setUnreadMentions] = useState(0)
   const openRef = useRef(open)
   const lastRef = useRef<string | undefined>(undefined)
+  const dayRef = useRef<string | undefined>(undefined)
 
   // Status buka/tutup diingat per browser (bukan data penting, jadi cukup localStorage).
   useEffect(() => {
@@ -63,6 +65,13 @@ export function ChatDock({ me, members }: { me: Me; members: ChatMemberRow[] }) 
   }
 
   const poll = useCallback(async () => {
+    // Hari berganti (WIB): chat mulai kosong lagi, pesan kemarin pindah ke Riwayat Chat.
+    const today = toJakartaDateString(new Date())
+    if (dayRef.current !== today) {
+      if (dayRef.current !== undefined) setMessages([])
+      dayRef.current = today
+      lastRef.current = undefined
+    }
     const result = await fetchChat(lastRef.current)
     if (!result.ok) return
     const { feed } = result
@@ -147,8 +156,15 @@ export function ChatDock({ me, members }: { me: Me; members: ChatMemberRow[] }) 
             <div>
               <h2 className="font-semibold text-brand-ink">Chat Tim</h2>
               <p className="text-[13px] text-text-body">
-                {members.length} staf · ketik @ untuk menandai
+                Hari ini · {members.length} staf · ketik @ untuk menandai
               </p>
+              <Link
+                href="/riwayat-chat"
+                className="mt-0.5 inline-flex items-center gap-1 rounded text-[13px] font-medium text-brand-ink underline-offset-2 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <History className="size-3.5" aria-hidden />
+                Riwayat chat
+              </Link>
             </div>
             <button
               suppressHydrationWarning

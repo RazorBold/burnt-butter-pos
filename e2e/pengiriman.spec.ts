@@ -104,9 +104,8 @@ test.describe("Pengiriman", () => {
     // Packing Normal dulu di menu Packaging (stok tidak dicatat), baru bisa dikirim.
     await page.goto(`/packaging?tanggal=${date.iso}`)
     for (const orderNo of [instant, kurir, pickUp]) {
+      // Satu klik: jenis packing mengikuti tipe pesanan.
       await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
-      const packing = page.getByRole("dialog", { name: `Packing ${orderNo}` })
-      await packing.getByRole("button", { name: "Simpan & selesai packing" }).click()
       await expect(
         page
           .getByRole("region", { name: /^Selesai packing/ })

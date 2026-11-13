@@ -24,6 +24,7 @@ export const orderSubmitSchema = z.object({
     cardWishes: text(300),
     cardFrom: text(60),
     shippingMethod: z.union([z.literal(""), z.enum(SHIPPING_METHODS)]),
+    shippingOptionId: z.union([z.literal(""), z.uuid()]).default(""),
     request: text(300),
     quantities: z.record(z.uuid(), z.number().int().min(0).max(99)),
   }),

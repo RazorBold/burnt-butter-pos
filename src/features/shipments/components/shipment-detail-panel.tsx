@@ -137,12 +137,12 @@ export async function ShipmentDetailPanel({
           </InfoRow>
           <InfoRow icon={CalendarDays}>{formatTanggal(order.deliveryDate)}</InfoRow>
           <li className="flex items-start gap-2.5">
-            <ShippingMethodLabel method={shipment.method} />
+            <ShippingMethodLabel method={shipment.method} name={shipment.optionName} />
           </li>
           <li className="-mt-1.5 pl-[26px] text-[13px] text-text-body">{methodNote}</li>
           {order.request && <InfoRow icon={ClipboardList}>Request: {order.request}</InfoRow>}
           {order.note && <InfoRow icon={StickyNote}>Catatan: {order.note}</InfoRow>}
-          {shipment.trackingUrl && !isExpedition && (
+          {shipment.trackingUrl && shipment.liveTracking && (
             <li className="pl-[26px]">
               <TrackingLink url={shipment.trackingUrl} orderNo={order.orderNo} />
             </li>

@@ -48,6 +48,7 @@ import {
   WA_DRAFT_KEY,
 } from "@/features/orders/constants"
 import { FlagNote, Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
+import { matchOptionByText, type ShippingOptionChoice } from "@/features/shipping-options/options"
 import { OrderMenuPicker } from "@/features/orders/components/order-menu-picker"
 import {
   type DraftField,
@@ -131,9 +132,11 @@ function channelAfterParse(
  */
 export function NewOrderWorkspace({
   catalog,
+  shippingOptions,
   initialChannel,
 }: {
   catalog: CatalogVariant[]
+  shippingOptions: ShippingOptionChoice[]
   initialChannel: OrderChannel
 }) {
   const router = useRouter()
@@ -155,7 +158,14 @@ export function NewOrderWorkspace({
       const parsed = parseWaOrder(text, toJakartaDateString(new Date()))
       const { channel, guessed } = channelAfterParse(parsed, current)
       const { quantities, unmatched } = matchParsedItems(parsed.items, catalog)
-      const next = { ...draftFromParsed(parsed, quantities), channel }
+      const draft = draftFromParsed(parsed, quantities)
+      const next = {
+        ...draft,
+        channel,
+        // "Sameday" di pesan WA langsung memilih kategori Sameday (bukan sekadar Instant).
+        shippingOptionId:
+          matchOptionByText(shippingOptions, parsed.shippingText, draft.shippingMethod)?.id ?? "",
+      }
       const issues = draftIssues(next, toJakartaDateString(new Date()))
       const fields = checkedFields(next)
       const missing = new Set<DraftField>(fields.filter((field) => issues[field]))
@@ -179,7 +189,7 @@ export function NewOrderWorkspace({
         )
       }
     },
-    [catalog, router],
+    [catalog, router, shippingOptions],
   )
 
   // Pesan yang dibawa dari modal Input Pesanan (saat halaman dibuka, atau saat sudah terbuka).
@@ -662,7 +672,12 @@ export function NewOrderWorkspace({
               ) : (
                 <ShippingMethodPicker
                   value={draft.shippingMethod}
-                  onChange={(method) => update("shippingMethod", method)}
+                  optionId={draft.shippingOptionId}
+                  options={shippingOptions}
+                  onChange={(method, optionId) => {
+                    update("shippingMethod", method)
+                    setDraft((current) => ({ ...current, shippingOptionId: optionId }))
+                  }}
                   flag={flagFor("shippingMethod")}
                 />
               )}

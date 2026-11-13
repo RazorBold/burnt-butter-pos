@@ -10,7 +10,9 @@ import {
   UrgentBadge,
 } from "@/components/app/order-badges"
 import { Button } from "@/components/ui/button"
-import { ORDER_CHANNEL_LABEL, SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
+import { ORDER_CHANNEL_LABEL } from "@/features/orders/constants"
+import { shippingName, type ShippingOptionChoice } from "@/features/shipping-options/options"
+import { listActiveShippingOptions } from "@/features/shipping-options/queries"
 import { DetailPanelFrame } from "@/features/orders/components/detail-panel-frame"
 import { TrackingLinkTools } from "@/features/orders/components/tracking-link-tools"
 import { OrderNoteButton } from "@/features/orders/components/order-note-dialog"
@@ -37,10 +39,11 @@ export async function OrderDetailPanel({
   orderNo: string
   closeHref: string
 }) {
-  const [order, methods, catalog] = await Promise.all([
+  const [order, methods, catalog, shippingOptions] = await Promise.all([
     getOrderDetail(orderNo),
     listActivePaymentMethods(),
     getOrderCatalog(),
+    listActiveShippingOptions(),
   ])
 
   if (!order) {
@@ -99,7 +102,7 @@ export async function OrderDetailPanel({
         )}
       </div>
 
-      <OrderInfo order={order} />
+      <OrderInfo order={order} shippingOptions={shippingOptions} />
       <OrderItems
         order={order}
         action={isMenuEditable(order.status) && <EditItemsDialog order={order} catalog={catalog} />}
@@ -175,7 +178,13 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** Data customer/penerima, pengiriman, request, dan (Hadiah) pengirim + kartu ucapan. */
-export function OrderInfo({ order }: { order: OrderDetail }) {
+export function OrderInfo({
+  order,
+  shippingOptions = [],
+}: {
+  order: OrderDetail
+  shippingOptions?: ShippingOptionChoice[]
+}) {
   const hasGift =
     order.type === "hampers" || order.type === "normal_hampers" || Boolean(order.senderName)
   const hasGiftCard = Boolean(
@@ -184,7 +193,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
   const shipping =
     order.shipment.method === "kurir_internal"
       ? `Kurir Internal Burnt Butter${order.shipment.courierName ? ` (${order.shipment.courierName})` : ""}`
-      : SHIPPING_METHOD_LABEL[order.shipment.method]
+      : shippingName(order.shipment.method, order.shipment.optionName)
   const card = [
     order.cardTo && `To: ${order.cardTo}`,
     order.cardWishes,
@@ -199,7 +208,9 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         </h3>
         <div className="flex flex-wrap justify-end gap-2">
           <OrderNoteButton orderId={order.id} orderNo={order.orderNo} note={order.note} />
-          {isEditable(order.status) && <EditOrderDialog order={order} />}
+          {isEditable(order.status) && (
+            <EditOrderDialog order={order} shippingOptions={shippingOptions} />
+          )}
         </div>
       </div>
       <dl className="text-sm">
@@ -214,7 +225,7 @@ export function OrderInfo({ order }: { order: OrderDetail }) {
         <Row label="Alamat">{order.shipment.address ?? "-"}</Row>
         <Row label="Tanggal Kirim">{formatTanggal(order.deliveryDate)}</Row>
         <Row label="Pengiriman">{shipping}</Row>
-        {order.shipment.trackingUrl && order.shipment.method !== "ekspedisi" && (
+        {order.shipment.trackingUrl && order.shipment.liveTracking && (
           <Row label="Link Lacak">
             <TrackingLinkTools
               orderId={order.id}

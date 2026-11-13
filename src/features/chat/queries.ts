@@ -1,14 +1,27 @@
 import "server-only"
 
-import { and, asc, count, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, gt, gte, inArray, lt, ne, or, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
 import { chatMentions, chatMessages, chatReads, profiles } from "@/db/schema"
 import type { Role } from "@/lib/access"
+import { toJakartaDateString } from "@/lib/format"
 
 import type { ChatMember } from "./mentions"
 
 export const CHAT_PAGE_SIZE = 60
+
+/** Awal hari (00:00 WIB) untuk tanggal "YYYY-MM-DD". */
+const startOfDay = (day: string) => new Date(`${day}T00:00:00+07:00`)
+
+/**
+ * Chat Tim dimulai kosong setiap hari (permintaan pemilik toko, 13 Nov 2026): panel hanya
+ * menampilkan pesan hari ini (WIB). Pesan lama tidak dihapus, tapi tersimpan sebagai log per
+ * hari di halaman Riwayat Chat.
+ */
+function sinceToday() {
+  return gte(chatMessages.createdAt, startOfDay(toJakartaDateString(new Date())))
+}
 
 export type ChatMemberRow = ChatMember & { role: Role }
 
@@ -65,7 +78,7 @@ export async function getChatFeed(userId: string, after?: Date): Promise<ChatFee
     })
     .from(chatMessages)
     .leftJoin(profiles, eq(profiles.id, chatMessages.authorId))
-    .where(after ? gt(chatMessages.createdAt, after) : undefined)
+    .where(and(sinceToday(), after ? gt(chatMessages.createdAt, after) : undefined))
     .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
     .limit(CHAT_PAGE_SIZE)
 
@@ -74,6 +87,7 @@ export async function getChatFeed(userId: string, after?: Date): Promise<ChatFee
     .from(chatReads)
     .where(eq(chatReads.profileId, userId))
   const unreadWhere = and(
+    sinceToday(),
     read ? gt(chatMessages.createdAt, read.lastReadAt) : undefined,
     or(sql`${chatMessages.authorId} is null`, ne(chatMessages.authorId, userId)),
   )
@@ -109,4 +123,46 @@ export async function activeProfileIds(ids: string[]): Promise<string[]> {
     .from(profiles)
     .where(and(inArray(profiles.id, ids), eq(profiles.isActive, true)))
   return rows.map((row) => row.id)
+}
+
+export type ChatLogDay = { day: string; count: number }
+
+/** Hari-hari yang punya pesan (WIB), terbaru di atas, untuk daftar Riwayat Chat. */
+export async function listChatLogDays(limit = 60): Promise<ChatLogDay[]> {
+  const day = sql<string>`to_char(${chatMessages.createdAt} at time zone 'Asia/Jakarta', 'YYYY-MM-DD')`
+  return getDb()
+    .select({ day, count: count() })
+    .from(chatMessages)
+    .groupBy(day)
+    .orderBy(desc(day))
+    .limit(limit)
+}
+
+/** Semua pesan pada satu hari (WIB), urut waktu, untuk log Riwayat Chat. */
+export async function getChatLog(day: string, userId: string): Promise<ChatMessageView[]> {
+  const next = new Date(startOfDay(day).getTime() + 86_400_000)
+  const rows = await getDb()
+    .select({
+      id: chatMessages.id,
+      authorId: chatMessages.authorId,
+      authorName: profiles.name,
+      authorRole: profiles.role,
+      body: chatMessages.body,
+      createdAt: chatMessages.createdAt,
+      mentionsAll: chatMessages.mentionsAll,
+    })
+    .from(chatMessages)
+    .leftJoin(profiles, eq(profiles.id, chatMessages.authorId))
+    .where(and(gte(chatMessages.createdAt, startOfDay(day)), lt(chatMessages.createdAt, next)))
+    .orderBy(asc(chatMessages.createdAt), asc(chatMessages.id))
+  return rows.map((row) => ({
+    id: row.id,
+    authorId: row.authorId,
+    authorName: row.authorName ?? "Akun dihapus",
+    authorRole: row.authorRole,
+    body: row.body,
+    createdAt: row.createdAt.toISOString(),
+    mine: row.authorId === userId,
+    mentionsMe: false,
+  }))
 }

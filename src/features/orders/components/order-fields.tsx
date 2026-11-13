@@ -4,11 +4,12 @@ import { CircleAlert } from "lucide-react"
 import { cloneElement, type ReactElement, type ReactNode } from "react"
 
 import { Label } from "@/components/ui/label"
+import { SHIPPING_METHOD_LABEL, WA_SHIPPING_METHODS } from "@/features/orders/constants"
 import {
-  SHIPPING_METHOD_LABEL,
-  SHIPPING_METHOD_NOTE,
-  WA_SHIPPING_METHODS,
-} from "@/features/orders/constants"
+  selectedOption,
+  shippingNote,
+  type ShippingOptionChoice,
+} from "@/features/shipping-options/options"
 import { cn } from "@/lib/utils"
 import type { ShippingMethod } from "@/lib/wa-parser"
 
@@ -65,19 +66,38 @@ export function Field({
   )
 }
 
-/** Kartu radio metode pengiriman dengan keterangan dari template WA. */
+/**
+ * Kartu radio kategori pengiriman (Master Data › Kurir & Pengiriman). Tanpa kategori (data lama
+ * atau belum diatur) jatuh ke tiga alur bawaan WhatsApp. Nilai yang dikirim: alur dasar + id.
+ */
 export function ShippingMethodPicker({
   value,
+  optionId,
+  options,
   onChange,
   flag,
   compact = false,
 }: {
   value: ShippingMethod | ""
-  onChange: (method: ShippingMethod) => void
+  optionId?: string
+  options: readonly ShippingOptionChoice[]
+  onChange: (method: ShippingMethod, optionId: string) => void
   flag?: string
   /** Tanpa keterangan, untuk dialog yang sempit. */
   compact?: boolean
 }) {
+  // Ekspedisi hanya untuk pesanan marketplace (diisi otomatis), jadi tidak ditawarkan di sini.
+  const choices: ShippingOptionChoice[] = options.some((option) => option.flow !== "ekspedisi")
+    ? options.filter((option) => option.flow !== "ekspedisi")
+    : WA_SHIPPING_METHODS.map((method) => ({
+        id: "",
+        name: SHIPPING_METHOD_LABEL[method],
+        flow: method,
+        liveTracking: false,
+        note: null,
+      }))
+  const current = selectedOption(choices, value, optionId)
+
   return (
     <div id="field-shippingMethod" className="scroll-mt-28">
       <div
@@ -86,11 +106,11 @@ export function ShippingMethodPicker({
         aria-describedby={flag ? "shippingMethod-flag" : undefined}
         className="grid gap-2 sm:grid-cols-3"
       >
-        {WA_SHIPPING_METHODS.map((method) => {
-          const checked = value === method
+        {choices.map((choice) => {
+          const checked = current ? current === choice : false
           return (
             <label
-              key={method}
+              key={choice.id || choice.flow}
               className={cn(
                 "flex cursor-pointer gap-3 rounded-lg border bg-white px-3.5 py-3 has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                 checked ? "border-brand bg-nav-active" : "border-border",
@@ -101,18 +121,16 @@ export function ShippingMethodPicker({
                 suppressHydrationWarning
                 type="radio"
                 name="shippingMethod"
-                value={method}
+                value={choice.id || choice.flow}
                 checked={checked}
-                onChange={() => onChange(method)}
+                onChange={() => onChange(choice.flow, choice.id)}
                 className="mt-1 size-4 shrink-0 accent-brand"
               />
               <span>
-                <span className="block font-semibold text-text-strong">
-                  {SHIPPING_METHOD_LABEL[method]}
-                </span>
+                <span className="block font-semibold text-text-strong">{choice.name}</span>
                 {!compact && (
                   <span className="block text-[13px] leading-snug text-text-body">
-                    {SHIPPING_METHOD_NOTE[method]}
+                    {shippingNote(choice)}
                   </span>
                 )}
               </span>

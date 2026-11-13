@@ -55,6 +55,24 @@ test.describe("Input Pesanan", () => {
     await expect(page.getByTestId("order-total")).toHaveText("Rp 365.000")
   })
 
+  test("Sameday di pesan WA langsung memilih kategori Sameday", async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop", "cukup sekali, di desktop")
+    await login(page, "/pesanan/baru")
+    await page
+      .getByRole("textbox", { name: "Pesan WhatsApp" })
+      .fill(
+        PERSONAL_SAMPLE.replace("Sabtu, 25 Oktober 2026", "besok").replace(
+          "Pilih Metode Pengiriman :\n- Instant",
+          "Pilih Metode Pengiriman :\n- Sameday (dikirim di hari yang sama)",
+        ),
+      )
+    await page.getByRole("button", { name: "Isi Otomatis" }).click()
+    const methods = page.getByRole("radiogroup", { name: "Metode pengiriman" })
+    await expect(methods.getByRole("radio", { name: /^Sameday/ })).toBeChecked()
+    await expect(methods.getByRole("radio", { name: /^Instant/ })).not.toBeChecked()
+    await methods.screenshot({ path: "test-results/input-sameday.png" })
+  })
+
   test("Hampers: penerima, pengirim, kartu ucapan, dan Kurir Internal", async ({ page }, info) => {
     test.skip(info.project.name !== "desktop", "cukup sekali, di desktop")
     await login(page, "/pesanan/baru")

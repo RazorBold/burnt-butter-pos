@@ -402,6 +402,20 @@ export async function removeCourierByName(name: string) {
   }
 }
 
+/** Hapus kategori pengiriman uji (nama diawali "QA Kirim "). */
+export async function removeShippingOptionByName(name: string) {
+  if (!name.startsWith("QA Kirim "))
+    throw new Error("Hanya kategori uji (QA Kirim …) yang boleh dihapus")
+  const url = directDatabaseUrl()
+  if (!url) return
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`delete from shipping_options where name = ${name}`
+  } finally {
+    await sql.end()
+  }
+}
+
 /**
  * Hapus satu menu uji (berdasarkan nama persisnya) beserta fotonya di Storage.
  * DB lokal = DB produksi, jadi hanya baris yang dibuat test itu sendiri yang dihapus.

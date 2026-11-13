@@ -303,3 +303,17 @@ Bundle of 3 :
 
 Jika ada notes/request tambahan: Saus dipisah
 Tanpa sendok plastik`
+
+const SHIPPING_BLOCK = /(Pilih Metode Pengiriman :[^\n]*\n)(?:- [^\n]*\n)+/
+
+/**
+ * Template FO dengan pilihan pengiriman dari kategori Master Data. Tanpa kategori, pilihan bawaan
+ * template dipakai.
+ */
+export function withShippingChoices(template: string, choices: readonly string[]): string {
+  if (choices.length === 0) return template
+  return template.replace(
+    SHIPPING_BLOCK,
+    (_, head: string) => head + choices.map((choice) => `- ${choice}\n`).join(""),
+  )
+}

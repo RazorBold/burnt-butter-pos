@@ -90,7 +90,7 @@ test.describe("Input Pesanan", () => {
     await expect(page.getByLabel(/^From/)).toHaveValue("Rizky")
     await expect(page.getByRole("radio", { name: /^Kurir Internal/ })).toBeChecked()
     await expect(page.getByLabel("Jumlah Bundle of 3")).toHaveValue("1")
-    await expect(page.getByTestId("order-total")).toHaveText("Rp 245.000")
+    await expect(page.getByTestId("order-total")).toHaveText("Rp 285.000")
     await page.screenshot({ path: "test-results/input-pesanan-hadiah.png", fullPage: true })
   })
 
@@ -230,7 +230,7 @@ ${HADIAH_SAMPLE}`
       card_wishes: "Happy birthday sayang!\nSemoga suka pastanya",
       method: "pick_up",
       shipment_status: null,
-      total: 245000,
+      total: 285000,
       items: 2,
     })
   })

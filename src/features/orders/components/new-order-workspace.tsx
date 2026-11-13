@@ -48,7 +48,11 @@ import {
   WA_DRAFT_KEY,
 } from "@/features/orders/constants"
 import { FlagNote, Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
-import { matchOptionByText, type ShippingOptionChoice } from "@/features/shipping-options/options"
+import {
+  matchOptionByText,
+  type ShippingOptionChoice,
+  templateShippingLines,
+} from "@/features/shipping-options/options"
 import { OrderMenuPicker } from "@/features/orders/components/order-menu-picker"
 import {
   type DraftField,
@@ -67,6 +71,7 @@ import {
   FO2_TEMPLATE,
   FO3_TEMPLATE,
   OLSHOP_TEMPLATE,
+  withShippingChoices,
 } from "@/lib/wa-parser/templates"
 
 /** Lama popup "Pesanan sudah terinput" sebelum pindah ke daftar pesanan. */
@@ -159,12 +164,13 @@ export function NewOrderWorkspace({
       const { channel, guessed } = channelAfterParse(parsed, current)
       const { quantities, unmatched } = matchParsedItems(parsed.items, catalog)
       const draft = draftFromParsed(parsed, quantities)
+      // Nama kategori di pesan WA (mis. "Sameday", "Paxel") memilih kategori itu beserta alurnya.
+      const matched = matchOptionByText(shippingOptions, parsed.shippingText)
       const next = {
         ...draft,
         channel,
-        // "Sameday" di pesan WA langsung memilih kategori Sameday (bukan sekadar Instant).
-        shippingOptionId:
-          matchOptionByText(shippingOptions, parsed.shippingText, draft.shippingMethod)?.id ?? "",
+        shippingMethod: matched?.flow ?? draft.shippingMethod,
+        shippingOptionId: matched?.id ?? "",
       }
       const issues = draftIssues(next, toJakartaDateString(new Date()))
       const fields = checkedFields(next)
@@ -409,7 +415,9 @@ export function NewOrderWorkspace({
                   suppressHydrationWarning
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(FO1_TEMPLATE)
+                    navigator.clipboard.writeText(
+                      withShippingChoices(FO1_TEMPLATE, templateShippingLines(shippingOptions)),
+                    )
                     toast.success("Format FO1 (Normal) disalin ke clipboard.")
                   }}
                   className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"
@@ -420,7 +428,9 @@ export function NewOrderWorkspace({
                   suppressHydrationWarning
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(FO2_TEMPLATE)
+                    navigator.clipboard.writeText(
+                      withShippingChoices(FO2_TEMPLATE, templateShippingLines(shippingOptions)),
+                    )
                     toast.success("Format FO2 (Hampers) disalin ke clipboard.")
                   }}
                   className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"
@@ -431,7 +441,9 @@ export function NewOrderWorkspace({
                   suppressHydrationWarning
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(FO3_TEMPLATE)
+                    navigator.clipboard.writeText(
+                      withShippingChoices(FO3_TEMPLATE, templateShippingLines(shippingOptions)),
+                    )
                     toast.success("Format FO3 (Normal & Hampers) disalin ke clipboard.")
                   }}
                   className="flex items-center gap-1 rounded border border-border bg-white px-2 py-1 text-xs text-brand-ink transition-colors hover:bg-nav-active"

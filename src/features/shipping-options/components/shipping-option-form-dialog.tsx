@@ -153,10 +153,13 @@ function ShippingOptionForm({
           id={`${id}-note`}
           name="note"
           defaultValue={option?.note ?? ""}
-          placeholder="Tampil di form input pesanan, mis. Diantar Lalamove, ongkir customer"
+          placeholder="Mis. Diantar Lalamove, ongkir ditanggung customer"
           maxLength={120}
           className="h-11 rounded-lg bg-white"
         />
+        <p className="text-[13px] text-text-body">
+          Tampil di form input pesanan dan di template WA untuk customer.
+        </p>
         {errors.note && <p className="text-sm text-trend-down-fg">{errors.note}</p>}
       </div>
 

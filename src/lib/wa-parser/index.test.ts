@@ -486,6 +486,12 @@ describe("parseWaOrder: Sameday", () => {
     expect(parsed.shippingText).toMatch(/Same Day/)
   })
 
+  it("pilihan tanpa kata kunci tetap membawa teksnya (dicocokkan ke Master Data)", () => {
+    const parsed = parseWaOrder(pick("- Pick Up\n- Paxel ✅\n- Instant"), TODAY)
+    expect(parsed.shippingMethod).toBeNull()
+    expect(parsed.shippingText).toBe("Paxel ✅")
+  })
+
   it("Instant biasa tetap Instant", () => {
     const parsed = parseWaOrder(pick("- Instant"), TODAY)
     expect(parsed.shippingMethod).toBe("instant")

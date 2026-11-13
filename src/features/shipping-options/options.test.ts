@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { canSetTrackingLink, hasTrackingLink } from "@/features/shipments/logic"
+import { parseWaOrder } from "@/lib/wa-parser"
+import { FO1_TEMPLATE, withShippingChoices } from "@/lib/wa-parser/templates"
 
 import {
   defaultOptionFor,
@@ -9,6 +11,7 @@ import {
   selectedOption,
   shippingName,
   type ShippingOptionChoice,
+  templateShippingLines,
 } from "./options"
 import { shippingOptionFormSchema } from "./schemas"
 
@@ -66,22 +69,73 @@ describe("kategori pengiriman", () => {
 
 describe("matchOptionByText", () => {
   const options = [
+    option("Pick Up", "pick_up"),
     option("Instant", "instant", true),
     option("Sameday", "instant", true),
     option("Kurir Internal", "kurir_internal", true),
+    option("Paxel", "kurir_internal"),
+    option("Ekspedisi", "ekspedisi"),
   ]
 
   it("memilih kategori yang namanya tertulis di pesan WA", () => {
-    expect(matchOptionByText(options, "Sameday (dikirim di hari yang sama)", "instant")?.id).toBe(
-      "Sameday",
-    )
-    expect(matchOptionByText(options, "Same Day ✅", "instant")?.id).toBe("Sameday")
-    expect(matchOptionByText(options, "Instant", "instant")?.id).toBe("Instant")
+    expect(matchOptionByText(options, "Sameday (Dikirim di hari yang sama)")?.id).toBe("Sameday")
+    expect(matchOptionByText(options, "Same Day ✅")?.id).toBe("Sameday")
+    expect(matchOptionByText(options, "Instant")?.id).toBe("Instant")
   })
 
-  it("tanpa nama yang cocok atau alur berbeda: kosong (pakai bawaan alur)", () => {
-    expect(matchOptionByText(options, "GoSend", "instant")).toBeUndefined()
-    expect(matchOptionByText(options, "Sameday", "kurir_internal")).toBeUndefined()
-    expect(matchOptionByText(options, null, "instant")).toBeUndefined()
+  it("kategori baru tanpa kata kunci tetap terbaca, alurnya dari Master Data", () => {
+    const paxel = matchOptionByText(options, "Paxel ✅")
+    expect(paxel?.id).toBe("Paxel")
+    expect(paxel?.flow).toBe("kurir_internal")
+  })
+
+  it("nama di keterangan (dalam kurung) kalah dari nama di depan", () => {
+    expect(matchOptionByText(options, "Paxel (lebih murah dari Instant)")?.id).toBe("Paxel")
+  })
+
+  it("tanpa nama yang cocok, atau Ekspedisi: kosong (pakai bawaan alur)", () => {
+    expect(matchOptionByText(options, "GoSend")).toBeUndefined()
+    expect(matchOptionByText(options, "Ekspedisi JNE")).toBeUndefined()
+    expect(matchOptionByText(options, null)).toBeUndefined()
+  })
+})
+
+describe("template WA dari kategori", () => {
+  const options: ShippingOptionChoice[] = [
+    {
+      id: "a",
+      name: "Pick Up",
+      flow: "pick_up",
+      liveTracking: false,
+      note: "Ambil sendiri di toko.",
+    },
+    { id: "b", name: "Paxel", flow: "kurir_internal", liveTracking: false, note: null },
+    { id: "c", name: "Ekspedisi", flow: "ekspedisi", liveTracking: false, note: "Marketplace" },
+  ]
+
+  it("baris pilihan mengikuti kategori aktif, tanpa Ekspedisi", () => {
+    expect(templateShippingLines(options)).toEqual(["Pick Up (Ambil sendiri di toko)", "Paxel"])
+  })
+
+  it("blok Pilih Metode Pengiriman diganti, sisanya tetap", () => {
+    const filled = withShippingChoices(FO1_TEMPLATE, templateShippingLines(options))
+    expect(filled).toContain(
+      "Pilih Metode Pengiriman : \n- Pick Up (Ambil sendiri di toko)\n- Paxel\n\nRequest",
+    )
+    expect(filled).not.toContain("- Instant")
+    expect(filled.replace(/Pilih Metode[\s\S]*?\n\n/, "")).toBe(
+      FO1_TEMPLATE.replace(/Pilih Metode[\s\S]*?\n\n/, ""),
+    )
+    expect(withShippingChoices(FO1_TEMPLATE, [])).toBe(FO1_TEMPLATE)
+  })
+
+  it("template hasil Master Data terbaca lagi oleh parser", () => {
+    const filled = withShippingChoices(FO1_TEMPLATE, templateShippingLines(options)).replace(
+      "- Paxel",
+      "- Paxel ✅",
+    )
+    const parsed = parseWaOrder(filled, "2026-11-14")
+    expect(parsed.shippingMethod).toBeNull()
+    expect(matchOptionByText(options, parsed.shippingText)?.id).toBe("b")
   })
 })

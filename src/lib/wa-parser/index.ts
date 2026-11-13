@@ -37,8 +37,8 @@ export type ParsedOrder = {
   cardFrom: string | null
   shippingMethod: ShippingMethod | null
   /**
-   * Teks metode yang dipilih customer, mis. "Sameday". Dipakai untuk memilih kategori pengiriman
-   * dari Master Data yang namanya cocok (alurnya tetap dari shippingMethod).
+   * Teks metode yang dipilih customer, mis. "Sameday" atau "Paxel". Dipakai untuk memilih kategori
+   * pengiriman dari Master Data yang namanya cocok, juga saat shippingMethod tidak terbaca.
    */
   shippingText: string | null
   request: string | null
@@ -331,24 +331,21 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
   }
 
   // Metode pengiriman: isian setelah label, opsi yang ditandai, atau satu-satunya opsi tersisa.
-  let shippingText: string | null = shippingInline
-  let shippingMethod: ShippingMethod | null = shippingInline
-    ? shippingMethodFrom(shippingInline)
-    : null
-  if (!shippingMethod) {
-    const marked = shippingOptions.filter((option) => option.marked)
-    const chosen =
-      marked.length === 1
-        ? marked[0]
-        : shippingOptions.length === 1
-          ? shippingOptions[0]
-          : undefined
-    if (chosen) {
-      shippingMethod = shippingMethodFrom(chosen.text)
-      shippingText = chosen.text
+  // Teks pilihan tetap dibawa walau alurnya tidak dikenali (mis. kategori baru "Paxel"); alurnya
+  // lalu diambil dari kategori Master Data yang namanya cocok.
+  const marked = shippingOptions.filter((option) => option.marked)
+  const chosen =
+    marked.length === 1 ? marked[0] : shippingOptions.length === 1 ? shippingOptions[0] : undefined
+  const candidates = [shippingInline, chosen?.text].filter((text): text is string => !!text)
+  let shippingText: string | null = candidates[0] ?? null
+  let shippingMethod: ShippingMethod | null = null
+  for (const text of candidates) {
+    shippingMethod = shippingMethodFrom(text)
+    if (shippingMethod) {
+      shippingText = text
+      break
     }
   }
-  if (!shippingMethod) shippingText = null
 
   const phoneRaw = value("phone")
   const dateRaw = value("date")

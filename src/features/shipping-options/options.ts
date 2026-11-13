@@ -29,24 +29,48 @@ export function defaultOptionFor(
 
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "")
 
+/** Kategori yang bisa dipilih customer lewat WA (Ekspedisi khusus marketplace). */
+export function waShippingOptions(
+  options: readonly ShippingOptionChoice[],
+): ShippingOptionChoice[] {
+  return options.filter((option) => option.flow !== "ekspedisi" && option.id)
+}
+
+function longestNameIn(options: readonly ShippingOptionChoice[], text: string) {
+  const wanted = normalize(text)
+  return options
+    .filter((option) => {
+      const name = normalize(option.name)
+      return name.length >= 3 && wanted.includes(name)
+    })
+    .sort((a, b) => normalize(b.name).length - normalize(a.name).length)[0]
+}
+
 /**
- * Kategori yang namanya tertulis di pesan WA (mis. "Sameday" → kategori "Sameday"), dengan alur
- * yang sama. Nama terpanjang menang supaya "Kurir Internal Sameday" tidak jatuh ke "Kurir".
+ * Kategori yang namanya tertulis di pesan WA (mis. "Sameday" → kategori "Sameday", "Paxel" →
+ * kategori "Paxel"). Nama kategori menentukan alurnya, jadi kategori baru dari Master Data
+ * langsung terbaca tanpa mengubah kode. Isi kurung (keterangan) dicek terakhir, dan nama
+ * terpanjang menang supaya "Kurir Internal Sameday" tidak jatuh ke "Kurir Internal".
  */
 export function matchOptionByText(
   options: readonly ShippingOptionChoice[],
   text: string | null | undefined,
-  flow: ShippingMethod | "",
 ): ShippingOptionChoice | undefined {
-  if (!text || !flow) return undefined
-  const wanted = normalize(text)
-  return options
-    .filter((option) => option.flow === flow && option.id)
-    .filter((option) => {
-      const name = normalize(option.name)
-      return name.length > 0 && wanted.includes(name)
-    })
-    .sort((a, b) => normalize(b.name).length - normalize(a.name).length)[0]
+  if (!text) return undefined
+  const choices = waShippingOptions(options)
+  const withoutNote = text.replace(/\([^)]*\)?/g, " ")
+  return longestNameIn(choices, withoutNote) ?? longestNameIn(choices, text)
+}
+
+/**
+ * Baris pilihan pengiriman untuk template WA, dari kategori aktif sesuai urutan Master Data:
+ * "Sameday (Dikirim di hari yang sama)".
+ */
+export function templateShippingLines(options: readonly ShippingOptionChoice[]): string[] {
+  return waShippingOptions(options).map((option) => {
+    const note = option.note?.trim().replace(/[.\s]+$/, "")
+    return note ? `${option.name} (${note})` : option.name
+  })
 }
 
 /** Kategori yang sedang terpilih: id yang disimpan, atau bawaan alurnya. */

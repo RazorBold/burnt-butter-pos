@@ -218,3 +218,18 @@
   background-size: 20px 20px;
   background-attachment: fixed;
 }
+
+/* Cetak / PDF Detail Pesanan (14 Nov 2026): kertas A4, latar dan warna ikut tercetak. */
+@page {
+  size: A4;
+  margin: 12mm 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

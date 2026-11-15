@@ -28,6 +28,7 @@ function fill(
     .replace("Alamat Lengkap:", "Alamat Lengkap: Jl. QA No. 1, Bandung")
     .replace(/- Pick Up\s*\n/, "")
     .replace(/- Kurir Internal.*\n/, "")
+    .replace(/- Sameday.*\n/, "")
   if (values.sender) text = text.replace(/Nama Pengirim: ?/, `Nama Pengirim: ${values.sender}`)
   for (const [markers, menu, qty] of picks) {
     let at = 0
@@ -52,7 +53,7 @@ const CASES = [
       [["Size Large"], "Spaghetti Classico Bologna Brulee", 1],
       [["Size Regular"], "Not Your Mac and Cheese", 2],
     ] as [string[], string, number][],
-    total: "Rp 165.000",
+    total: "Rp 305.000",
     items: 2,
   },
   {
@@ -67,7 +68,7 @@ const CASES = [
       [["Size Large"], "Classico Red", 1],
       [["Size Regular"], "Mac & Joy", 1],
     ] as [string[], string, number][],
-    total: "Rp 115.000",
+    total: "Rp 380.000",
     items: 2,
   },
   {
@@ -83,7 +84,7 @@ const CASES = [
       [["#BOX NORMAL", "Dessert"], "Choco Bon Bon", 1],
       [["#BOX CHRISTMAS", "Size Large"], "Holy E Olio", 1],
     ] as [string[], string, number][],
-    total: "Rp 150.000",
+    total: "Rp 370.000",
     items: 3,
   },
 ]

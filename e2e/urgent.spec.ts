@@ -37,7 +37,11 @@ test.describe("Pesanan urgent", () => {
     await dialog.getByLabel(/^Alasan/).fill("QA customer minta jam 10")
     await dialog.getByRole("button", { name: "Tandai urgent" }).click()
     await expect(page.getByText(`${orderNo} ditandai URGENT.`, { exact: false })).toBeVisible()
+    // Admin juga akun QA: popup-nya sendiri muncul di polling berikutnya dan menutupi halaman.
+    await expect(popupOf(page)).toBeVisible({ timeout: 20_000 })
+    await popupOf(page).getByRole("button", { name: "Saya mengerti" }).click()
     await expect(row.getByText("Urgent", { exact: true })).toBeVisible()
+    await page.screenshot({ path: "test-results/urgent-pesanan-desktop.png" })
 
     // Akun lain (Kasir) mendapat popup.
     const kasir = await browser.newPage()
@@ -56,10 +60,7 @@ test.describe("Pesanan urgent", () => {
     await expect(popupOf(kasir)).toBeHidden()
     await kasir.close()
 
-    // Admin juga akun QA: popup-nya ditutup, lalu urgent dihapus dari panel detail.
-    await expect(popupOf(page)).toBeVisible({ timeout: 20_000 })
-    await popupOf(page).getByRole("button", { name: "Saya mengerti" }).click()
-    await page.screenshot({ path: "test-results/urgent-pesanan-desktop.png" })
+    // Urgent dihapus dari panel detail.
     await row.getByRole("link", { name: orderNo }).click()
     const panel = page.getByRole("complementary", { name: "Detail Pesanan" })
     await expect(panel.getByText("Urgent: QA customer minta jam 10")).toBeVisible()

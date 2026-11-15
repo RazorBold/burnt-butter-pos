@@ -1,4 +1,4 @@
-import { ArrowRight, CircleAlert, PencilLine } from "lucide-react"
+import { ArrowRight, CircleAlert, PencilLine, Printer } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
@@ -160,6 +160,12 @@ export async function OrderDetailPanel({
             <Link href={`/pesanan/${order.orderNo}`}>
               Lihat Detail Lengkap
               <ArrowRight aria-hidden />
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-12 rounded-lg bg-white px-4 sm:col-span-2">
+            <Link href={`/pesanan/${order.orderNo}/cetak`} target="_blank" rel="noopener">
+              <Printer aria-hidden />
+              Print / PDF
             </Link>
           </Button>
         </div>

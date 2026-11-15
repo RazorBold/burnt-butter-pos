@@ -39,6 +39,8 @@ test.describe("Detail Pesanan", () => {
   })
 
   test("panel detail, ubah status, edit data, detail lengkap, batal", async ({ page }, info) => {
+    // Alur panjang di database produksi: input pesanan sudah bisa lewat 30 detik.
+    test.setTimeout(90_000)
     const name = `QA Customer ${Date.now()} ${info.project.name}`
     await login(page, "/pesanan")
     // Tunggu login selesai sebelum pindah halaman, supaya sesi sudah tersimpan.
@@ -55,11 +57,9 @@ test.describe("Detail Pesanan", () => {
     await expect(panel.getByText(orderNo, { exact: true })).toBeVisible()
     await expect(panel.getByText(name)).toBeVisible()
     await expect(panel.getByText("Spaghetti Classico Bologna Brulee (Large)")).toBeVisible()
-    await expect(panel.getByText("Rp 325.000")).toBeVisible()
+    await expect(panel.getByText("Rp 680.000")).toBeVisible()
     await page.screenshot({ path: `test-results/detail-pesanan-${info.project.name}.png` })
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
-    // Alur panjang: status, bayar, ubah menu, edit data, detail lengkap, batal.
-    test.setTimeout(90_000)
 
     // Baru → Diproses → Siap Packing. Siap Kirim hanya lewat menu Packaging (stok terpotong).
     await panel.getByRole("button", { name: "Ubah Status" }).click()
@@ -91,16 +91,16 @@ test.describe("Detail Pesanan", () => {
     await menuDialog
       .getByRole("textbox", { name: "Catatan Spaghetti Classico Bologna Brulee Large" })
       .fill("QA extra keju")
-    // 325.000 − 40.000 (Choco) − 50.000 (Mac R) + 45.000 (Aglio R) = 280.000; sudah dibayar 325.000.
-    await expect(menuDialog.getByTestId("edit-total")).toHaveText("Rp 280.000")
-    await expect(menuDialog.getByText(/lebih bayar Rp 45\.000/)).toBeVisible()
+    // Harga 14 Nov 2026: 680.000 − 75.000 (Choco) − 80.000 (Mac R) + 70.000 (Aglio R) = 595.000; sudah dibayar 680.000.
+    await expect(menuDialog.getByTestId("edit-total")).toHaveText("Rp 595.000")
+    await expect(menuDialog.getByText(/lebih bayar Rp 85.000/)).toBeVisible()
     await page.screenshot({ path: "test-results/ubah-menu-desktop.png" })
     await menuDialog.getByRole("button", { name: "Simpan menu" }).click()
-    await expect(page.getByText(`Menu ${orderNo} disimpan. Total Rp 280.000.`)).toBeVisible()
+    await expect(page.getByText(`Menu ${orderNo} disimpan. Total Rp 595.000.`)).toBeVisible()
     await expect(panel.getByText("Catatan: QA pedas")).toBeVisible()
     await expect(panel.getByText("Catatan: QA extra keju")).toBeVisible()
-    await expect(panel.getByText(/Customer lebih bayar Rp 45\.000/)).toBeVisible()
-    expect(await readOrder(orderNo)).toMatchObject({ total: 280000, items: 4 })
+    await expect(panel.getByText(/Customer lebih bayar Rp 85.000/)).toBeVisible()
+    expect(await readOrder(orderNo)).toMatchObject({ total: 595000, items: 4 })
 
     await panel.getByRole("button", { name: "Ubah Status" }).click()
     await expect(page.getByRole("menuitem")).toHaveText(["Siap Packing", "Baru", "Dibatalkan"])

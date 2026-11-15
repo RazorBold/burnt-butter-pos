@@ -7,6 +7,7 @@ import { ChatDock } from "@/features/chat/components/chat-dock"
 import { listActivity } from "@/features/activity/queries"
 import { listChatMembers } from "@/features/chat/queries"
 import { countNewOrders } from "@/features/orders/queries"
+import { PaidWatcher } from "@/features/paid-alert/components/paid-watcher"
 import { UrgentWatcher } from "@/features/urgent/components/urgent-watcher"
 import { listStockAlerts } from "@/features/stock-alerts/queries"
 import {
@@ -32,7 +33,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <Navbar />
       </Suspense>
       {children}
-      {/* Chat Tim di sisi kanan dan popup pesanan urgent; membaca sesi, jadi di dalam Suspense. */}
+      {/* Chat Tim di sisi kanan dan popup pesanan urgent / baru lunas; membaca sesi, jadi di dalam Suspense. */}
       <Suspense fallback={null}>
         <TeamChat />
       </Suspense>
@@ -53,6 +54,7 @@ async function TeamChat() {
     <>
       <ChatDock me={{ id: user.id, name: user.name, role: user.role }} members={members} />
       <UrgentWatcher userId={user.id} link={link} />
+      <PaidWatcher userId={user.id} link={link} />
     </>
   )
 }

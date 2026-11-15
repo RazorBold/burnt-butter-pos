@@ -41,6 +41,8 @@ test.describe("Packaging", () => {
   test("selesai packing satu klik sesuai tipe pesanan, stok tetap; batal packing", async ({
     page,
   }, info) => {
+    // Alur panjang (filter, pengiriman, packing, batal) di database produksi.
+    test.setTimeout(90_000)
     code = `${Date.now()}`
     const orderNo = `QA${code}01`
     const date = farDate(code)
@@ -130,6 +132,77 @@ test.describe("Packaging", () => {
       status: "siap_packing",
       shipment_status: null,
     })
+  })
+
+  test("kartu ucapan dan detail tampil, cari dan filter Jenis PO/RS/MTO", async ({
+    page,
+  }, info) => {
+    code = `${Date.now()}`
+    const withCard = `QA${code}01`
+    const readyStock = `QA${code}02`
+    const date = farDate(code)
+    const { phone } = await seedQaOrders(code, 2, 0, {
+      deliveryDate: date,
+      plan: [
+        {
+          status: "siap_packing",
+          method: "instant",
+          kind: "po",
+          card: { to: "Kak QA", wishes: "Selamat ulang tahun QA", from: "Tim QA" },
+        },
+        { status: "siap_packing", method: "pick_up", kind: "ready_stock" },
+      ],
+    })
+
+    await login(page, admin.email!, `/packaging?tanggal=${date}`)
+    const waiting = page.getByRole("region", { name: /^Menunggu packing/ })
+    const first = waiting.getByRole("article", { name: withCard })
+    const second = waiting.getByRole("article", { name: readyStock })
+
+    // Kartu ucapan: badge di atas dan isi lengkap supaya tim packing menulisnya.
+    await expect(first.getByTestId("packing-card-badge")).toHaveText("Ada kartu ucapan")
+    const card = first.getByRole("region", { name: `Kartu ucapan ${withCard}` })
+    await expect(card).toContainText("Tulis kartu ucapan")
+    await expect(card).toContainText("To: Kak QA")
+    await expect(card).toContainText("Selamat ulang tahun QA")
+    await expect(card).toContainText("From: Tim QA")
+    await expect(first).toContainText("jangan lupa kartu ucapan")
+    await expect(first).toContainText(phone)
+    await expect(first).toContainText("PO")
+    await expect(second.getByTestId("packing-card-badge")).toHaveCount(0)
+    await expect(second).toContainText("Ready Stock")
+    await first.screenshot({ path: `test-results/packaging-kartu-${info.project.name}.png` })
+
+    // Filter Jenis.
+    const jenis = page.getByRole("group", { name: "Jenis" })
+    await jenis.getByRole("button", { name: "RS" }).click()
+    await expect(page).toHaveURL(/jenis=ready_stock/)
+    await expect(first).toHaveCount(0)
+    await expect(second).toBeVisible()
+    await jenis.getByRole("button", { name: "PO" }).click()
+    await expect(first).toBeVisible()
+    await expect(second).toHaveCount(0)
+    await jenis.getByRole("button", { name: "Semua" }).click()
+    await expect(second).toBeVisible()
+
+    // Cari: no. pesanan, lalu nama di kartu ucapan.
+    const search = page.getByRole("searchbox", { name: "Cari pesanan" })
+    await search.fill(readyStock)
+    await expect(page).toHaveURL(new RegExp(`q=${readyStock}`))
+    await expect(first).toHaveCount(0)
+    await expect(second).toBeVisible()
+    await search.fill("kak qa")
+    await expect(first).toBeVisible()
+    await expect(second).toHaveCount(0)
+    await search.fill("")
+    await expect(page).not.toHaveURL(/q=/)
+    await expect(second).toBeVisible()
+    await page.screenshot({
+      path: `test-results/packaging-detail-${info.project.name}.png`,
+      fullPage: true,
+    })
+    const width = await page.evaluate(() => document.documentElement.scrollWidth)
+    expect(width).toBeLessThanOrEqual(page.viewportSize()!.width)
   })
 
   test("Produksi bisa membuka Packaging; Kasir tidak", async ({ page, browser }, info) => {

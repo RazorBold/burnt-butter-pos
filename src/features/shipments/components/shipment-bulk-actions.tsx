@@ -6,6 +6,7 @@ import {
   ExternalLink,
   LoaderCircle,
   Link2,
+  PencilLine,
   Truck,
 } from "lucide-react"
 import Link from "next/link"
@@ -29,9 +30,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { updateOrderStatus } from "@/features/orders/actions"
 import type { OrderStatus } from "@/features/orders/filters"
-import { sentStatusFor, statusSkipReason } from "@/features/orders/status"
+import { correctionTargets, sentStatusFor, statusSkipReason } from "@/features/orders/status"
 import { markShipmentsSent } from "@/features/shipments/actions"
-import { CourierDialog, TrackingLinkDialog } from "@/features/shipments/components/shipment-actions"
+import {
+  CorrectionDialog,
+  CourierDialog,
+  StepIcon,
+  stepTone,
+  TrackingLinkDialog,
+} from "@/features/shipments/components/shipment-actions"
 import {
   canSetTrackingLink,
   type DeliverySlot,
@@ -73,6 +80,7 @@ type ShipmentActions = {
   advance: (row: ShipmentActionRow, target: OrderStatus) => void
   openCourier: (rows: ShipmentActionRow[]) => void
   openLink: (row: ShipmentActionRow) => void
+  openCorrection: (row: ShipmentActionRow) => void
 }
 
 const ActionsContext = createContext<ShipmentActions | null>(null)
@@ -125,6 +133,8 @@ function ShipmentActionsInner({
   const [courierOpen, setCourierOpen] = useState(false)
   const [linkRow, setLinkRow] = useState<ShipmentActionRow>()
   const [linkOpen, setLinkOpen] = useState(false)
+  const [correctRow, setCorrectRow] = useState<ShipmentActionRow>()
+  const [correctOpen, setCorrectOpen] = useState(false)
   const rowById = new Map(rows.map((row) => [row.id, row]))
 
   const actions: ShipmentActions = {
@@ -149,6 +159,10 @@ function ShipmentActionsInner({
       setLinkRow(row)
       setLinkOpen(true)
     },
+    openCorrection: (row) => {
+      setCorrectRow(row)
+      setCorrectOpen(true)
+    },
   }
   const single = courierRows.length === 1 ? courierRows[0] : undefined
 
@@ -164,6 +178,16 @@ function ShipmentActionsInner({
           initial={single && { courierId: single.courierId, slot: single.slot }}
           couriers={couriers.filter((courier) => courier.type === "internal")}
           onDone={clear}
+        />
+      )}
+      {correctRow && (
+        <CorrectionDialog
+          open={correctOpen}
+          onOpenChange={setCorrectOpen}
+          orderId={correctRow.id}
+          orderNo={correctRow.orderNo}
+          status={correctRow.orderStatus}
+          method={correctRow.method}
         />
       )}
       {linkRow && (
@@ -245,8 +269,9 @@ export function ShipmentRowAction({ id }: { id: string }) {
         disabled={pending}
         aria-label={`${next.label} ${row.orderNo}`}
         onClick={() => (isSend(row) ? send([row]) : advance(row, next.target))}
-        className={stepClass}
+        className={`${stepClass} ${stepTone(next.target)}`}
       >
+        <StepIcon target={next.target} />
         {next.label}
       </Button>
     )
@@ -295,11 +320,13 @@ export function ShipmentTrackingCell({ id }: { id: string }) {
 
 /** Menu ⋮ di ujung baris: langkah pengiriman berikutnya dan ubah kurir/jadwal. */
 export function ShipmentRowMenu({ id }: { id: string }) {
-  const { rowById, pending, send, advance, openCourier, openLink } = useShipmentActions()
+  const { rowById, pending, send, advance, openCourier, openLink, openCorrection } =
+    useShipmentActions()
   const row = rowById.get(id)
   if (!row) return null
   const next = nextActionOf(row)
   const canLink = canSetTrackingLink(row.method, row.orderStatus, row.liveTracking)
+  const canCorrect = correctionTargets(row.orderStatus, row.method).length > 0
   const step = next?.kind === "advance" ? next : null
 
   return (
@@ -322,14 +349,20 @@ export function ShipmentRowMenu({ id }: { id: string }) {
             Lihat pesanan
           </Link>
         </DropdownMenuItem>
-        {(step || canAssign(row) || canLink) && <DropdownMenuSeparator />}
+        {(step || canAssign(row) || canLink || canCorrect) && <DropdownMenuSeparator />}
         {step && (
           <DropdownMenuItem
             className="h-10"
             onSelect={() => (isSend(row) ? send([row]) : advance(row, step.target))}
           >
-            <Truck aria-hidden />
+            <StepIcon target={step.target} />
             {step.label}
+          </DropdownMenuItem>
+        )}
+        {canCorrect && (
+          <DropdownMenuItem className="h-10" onSelect={() => openCorrection(row)}>
+            <PencilLine aria-hidden />
+            Koreksi status
           </DropdownMenuItem>
         )}
         {canLink && (

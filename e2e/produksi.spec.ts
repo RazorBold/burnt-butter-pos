@@ -1,7 +1,13 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { HADIAH_SAMPLE, PERSONAL_SAMPLE } from "../src/lib/wa-parser/templates"
-import { markQaOrderPaid, readOrder, removeOrderByNo } from "./helpers/cleanup"
+import {
+  markQaOrderPaid,
+  readOrder,
+  removeOrderByNo,
+  removeQaOrders,
+  seedQaOrders,
+} from "./helpers/cleanup"
 import { expectAccessDenied } from "./helpers/access"
 import { loginAs } from "./helpers/login"
 
@@ -49,6 +55,8 @@ test.describe("Produksi", () => {
 
   test("rekap per menu dan papan dapur per tanggal kirim", async ({ page }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    // Input dua pesanan lewat form lalu alur dapur; lebih lama dari batas 30 detik.
+    test.setTimeout(90_000)
     const stamp = Date.now()
     const date = testDate()
     await login(page, admin.email!, "/pesanan")
@@ -114,6 +122,58 @@ test.describe("Produksi", () => {
     await page.getByRole("button", { name: `Masak lagi: ${personal}` }).click()
     await expect(proses.getByRole("article", { name: personal })).toBeVisible()
     expect((await readOrder(personal))?.status).toBe("diproses")
+  })
+
+  test("Pilih semua, Mulai/Selesai masak massal, dan filter Jenis", async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
+    const code = `${Date.now()}`
+    const [first, second, third] = ["01", "02", "03"].map((n) => `QA${code}${n}`)
+    const date = new Date(Date.now() + (900 + (Number(code) % 200)) * 86_400_000)
+      .toISOString()
+      .slice(0, 10)
+    await seedQaOrders(code, 3, 0, {
+      deliveryDate: date,
+      plan: [
+        { status: "baru", method: "instant", paid: true, kind: "po" },
+        { status: "baru", method: "instant", paid: true, kind: "ready_stock" },
+        { status: "diproses", method: "instant", paid: true, kind: "po" },
+      ],
+    })
+    try {
+      await login(page, admin.email!, `/produksi?tanggal=${date}`)
+      const proses = page.getByRole("region", { name: /^Sedang dimasak/ })
+      const selesai = page.getByRole("region", { name: /^Selesai masak/ })
+      const bar = page.getByRole("region", { name: "Aksi untuk pesanan terpilih" })
+
+      // Pilih semua: Mulai masak hanya untuk yang Belum mulai (2 dari 3).
+      await page.getByRole("checkbox", { name: "Pilih semua (3)" }).check()
+      await expect(bar).toContainText("3 pesanan dipilih")
+      await page.screenshot({ path: "test-results/produksi-pilih-semua.png", fullPage: true })
+      await bar.getByRole("button", { name: "Mulai masak (2)" }).click()
+      await expect(page.getByText("2 pesanan mulai dimasak.")).toBeVisible()
+      await expect(proses.getByRole("article")).toHaveCount(3)
+      await expect(bar).toHaveCount(0)
+      expect((await readOrder(first))?.status).toBe("diproses")
+      expect((await readOrder(second))?.status).toBe("diproses")
+
+      // Pilih satu kolom, lalu Selesai masak.
+      await proses.getByRole("checkbox", { name: "Sedang dimasak" }).check()
+      await bar.getByRole("button", { name: "Selesai masak" }).click()
+      await expect(page.getByText("3 pesanan selesai dimasak.")).toBeVisible()
+      await expect(selesai.getByRole("article")).toHaveCount(3)
+      expect((await readOrder(third))?.status).toBe("siap_packing")
+
+      // Filter Jenis: RS hanya pesanan Ready Stock; rekap ikut.
+      const jenis = page.getByRole("group", { name: "Jenis" })
+      await jenis.getByRole("button", { name: "RS" }).click()
+      await expect(page).toHaveURL(/jenis=ready_stock/)
+      await expect(page.getByRole("article", { name: second })).toBeVisible()
+      await expect(page.getByRole("article", { name: first })).toHaveCount(0)
+      await jenis.getByRole("button", { name: "MTO" }).click()
+      await expect(page.getByText(/Tidak ada pesanan Made to Order yang dikirim/)).toBeVisible()
+    } finally {
+      await removeQaOrders(code)
+    }
   })
 
   test("Produksi bisa menandai masak tapi tidak membuka Daftar Pesanan; Kasir tidak bisa Produksi", async ({

@@ -404,6 +404,34 @@ export async function updateProductionStatus(
   return changeOrderStatus(orderId, target, userId, PRODUCTION_STATUSES)
 }
 
+/**
+ * Mulai / Selesai masak massal dari Produksi (permintaan pemilik toko, 14 Nov 2026: Pilih
+ * Semua). Hanya langkah dapur; pesanan yang langkahnya tidak sah (mis. belum lunas) dilewati.
+ */
+export async function updateProductionStatuses(
+  orderIds: unknown,
+  target: string,
+): Promise<BulkResult> {
+  let userId: string
+  try {
+    userId = (await requireRole(CAN_PRODUCE)).id
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { ok: false, message: error.message }
+    throw error
+  }
+  const ids = orderIdsSchema.safeParse(orderIds)
+  const status = parseStatus(target)
+  if (!ids.success || (status !== "diproses" && status !== "siap_packing")) {
+    return { ok: false, message: "Pilihan pesanan tidak terbaca. Muat ulang halaman." }
+  }
+  const verb = status === "diproses" ? "mulai dimasak" : "selesai dimasak"
+  return summarizeBulk({
+    ...(await changeStatuses(ids.data, status, userId, { limitTo: PRODUCTION_STATUSES })),
+    one: (orderNo) => `${orderNo} ${verb}.`,
+    many: (count) => `${count} pesanan ${verb}.`,
+  })
+}
+
 export type ExportOrdersResult =
   { ok: true; csv: string; count: number } | { ok: false; message: string }
 

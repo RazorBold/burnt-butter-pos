@@ -60,7 +60,11 @@ export function RowSelectionProvider({ ids, children }: { ids: string[]; childre
   return <SelectionContext value={value}>{children}</SelectionContext>
 }
 
-function TableCheckbox({ className, ...props }: ComponentProps<typeof CheckboxPrimitive.Root>) {
+/** Checkbox pilih baris/kartu (dipakai tabel dan papan Produksi). */
+export function TableCheckbox({
+  className,
+  ...props
+}: ComponentProps<typeof CheckboxPrimitive.Root>) {
   return (
     <CheckboxPrimitive.Root
       suppressHydrationWarning

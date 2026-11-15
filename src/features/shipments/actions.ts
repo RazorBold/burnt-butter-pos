@@ -6,6 +6,7 @@ import { z } from "zod"
 
 import { getDb } from "@/db"
 import { couriers, orders, shipments, shippingOptions } from "@/db/schema"
+import { ORDER_STATUS_LABEL, ORDER_STATUSES } from "@/features/orders/filters"
 import { sentStatusFor } from "@/features/orders/status"
 import { changeStatuses } from "@/features/orders/status-change"
 import { CAN_MANAGE_SHIPMENT } from "@/lib/access"
@@ -118,6 +119,35 @@ export async function markShipmentsSent(orderIds: unknown): Promise<BulkResult> 
     one: (orderNo) => `${orderNo} ditandai dikirim.`,
     many: (count) => `${count} pesanan ditandai dikirim.`,
   })
+}
+
+const correctionSchema = z.object({ orderId: z.uuid(), target: z.enum(ORDER_STATUSES) })
+
+/**
+ * Koreksi status pengiriman (permintaan pemilik toko, 14 Nov 2026): pesanan yang sudah Dikirim
+ * atau Selesai boleh dipindah ke Siap Kirim / Dikirim / Selesai bila admin salah klik. Tercatat
+ * di riwayat status pesanan beserta pengubahnya.
+ */
+export async function correctShipmentStatus(input: unknown): Promise<BulkResult> {
+  const userId = await requireShipper()
+  if (typeof userId !== "string") return userId
+  const parsed = correctionSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Status tidak dikenal. Muat ulang halaman." }
+  const { orderId, target } = parsed.data
+  const { done, skipped } = await changeStatuses([orderId], target, userId, { correction: true })
+  if (done.length > 0) {
+    return {
+      ok: true,
+      message: `Status ${done[0]} dikoreksi jadi ${ORDER_STATUS_LABEL[target]}.`,
+    }
+  }
+  if (skipped.length > 0) {
+    return {
+      ok: false,
+      message: `Pesanan ${ORDER_STATUS_LABEL[skipped[0].from]} tidak bisa dikoreksi ke ${ORDER_STATUS_LABEL[target]}. Muat ulang halaman.`,
+    }
+  }
+  return { ok: false, message: "Pesanan tidak ditemukan. Muat ulang halaman." }
 }
 
 const trackingLinkSchema = z.object({ orderId: z.uuid(), url: z.string().max(500) })

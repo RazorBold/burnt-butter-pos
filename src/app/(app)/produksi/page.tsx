@@ -7,7 +7,13 @@ import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import { PAGE_CONTAINER, PageHeader } from "@/components/app/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DeliveryDatePicker } from "@/components/app/delivery-date-picker"
+import { ProductionFiltersBar } from "@/features/production/components/production-filters"
 import { ProductionOrderCard } from "@/features/production/components/production-order-card"
+import {
+  ProductionSelection,
+  SelectGroup,
+} from "@/features/production/components/production-selection"
+import { isSelectable, parseProductionKind } from "@/features/production/filters"
 import { listProductionOrders } from "@/features/production/queries"
 import { urgentFirst } from "@/features/orders/status"
 import {
@@ -18,6 +24,7 @@ import {
   stageOf,
   summarizeProduction,
 } from "@/features/production/summary"
+import { ORDER_KIND_LABEL } from "@/features/orders/constants"
 import { CAN_PRODUCE } from "@/lib/access"
 import { requirePageAccess } from "@/lib/auth"
 import { formatHariTanggal, toJakartaDateString } from "@/lib/format"
@@ -57,7 +64,8 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
       ? params.tanggal
       : today
 
-  const all = await listProductionOrders(date)
+  const kind = parseProductionKind(params)
+  const all = (await listProductionOrders(date)).filter((order) => !kind || order.kind === kind)
   // Keputusan pemilik toko (Nov 2026): yang belum Lunas belum masuk antrean masak. Yang sudah
   // terlanjur dimasak tetap tampil.
   const orders = all.filter((order) => order.paid || order.status !== "baru")
@@ -65,6 +73,9 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
   const menus = summarizeProduction(orders)
   const totals = productionTotals(orders)
   const dateLabel = date === today ? "hari ini" : formatHariTanggal(date)
+  const selectable = orders
+    .filter((order) => isSelectable(order.status))
+    .map((order) => ({ id: order.id, orderNo: order.orderNo, status: order.status }))
 
   return (
     <>
@@ -73,6 +84,8 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
         description={`Porsi yang harus dimasak untuk pesanan yang dikirim ${dateLabel}.`}
         actions={<DeliveryDatePicker date={date} today={today} />}
       />
+
+      <ProductionFiltersBar kind={kind} />
 
       <div className="kpi-grid mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
@@ -101,7 +114,9 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
         <p className="mt-6 rounded-2xl border border-dashed border-border px-6 py-12 text-center text-text-body">
           {unpaid > 0
             ? `Belum ada pesanan lunas yang dikirim ${dateLabel}.`
-            : `Belum ada pesanan yang dikirim ${dateLabel}.`}
+            : kind
+              ? `Tidak ada pesanan ${ORDER_KIND_LABEL[kind]} yang dikirim ${dateLabel}.`
+              : `Belum ada pesanan yang dikirim ${dateLabel}.`}
         </p>
       ) : (
         <>
@@ -118,46 +133,70 @@ async function Production({ searchParams }: { searchParams: SearchParams }) {
             </ul>
           </section>
 
-          <section aria-labelledby="board-title" className="mt-8">
-            <h2 id="board-title" className="text-lg font-bold text-brand-ink">
-              Pesanan
-            </h2>
-            <div className="mt-3 grid items-start gap-4 lg:grid-cols-3">
-              {STAGES.map((stage) => {
-                const inStage = urgentFirst(
-                  orders.filter((order) => stageOf(order.status) === stage),
-                )
-                return (
-                  <section
-                    key={stage}
-                    aria-labelledby={`stage-${stage}`}
-                    className="rounded-2xl border border-border bg-card p-4"
-                  >
-                    <h3
-                      id={`stage-${stage}`}
-                      className="flex items-center justify-between font-semibold text-text-strong"
+          <ProductionSelection orders={canEdit ? selectable : []}>
+            <section aria-labelledby="board-title" className="mt-8">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="board-title" className="text-lg font-bold text-brand-ink">
+                  Pesanan
+                </h2>
+                {canEdit && (
+                  <SelectGroup
+                    ids={selectable.map((order) => order.id)}
+                    label={`Pilih semua (${selectable.length})`}
+                  />
+                )}
+              </div>
+              <div className="mt-3 grid items-start gap-4 lg:grid-cols-3">
+                {STAGES.map((stage) => {
+                  const inStage = urgentFirst(
+                    orders.filter((order) => stageOf(order.status) === stage),
+                  )
+                  return (
+                    <section
+                      key={stage}
+                      aria-labelledby={`stage-${stage}`}
+                      className="rounded-2xl border border-border bg-card p-4"
                     >
-                      {STAGE_LABEL[stage]}
-                      <span className="rounded-md bg-nav-active px-2 py-0.5 text-sm text-brand-ink tabular-nums">
-                        {inStage.length}
-                      </span>
-                    </h3>
-                    {inStage.length === 0 ? (
-                      <p className="mt-3 text-sm text-text-body">Tidak ada pesanan.</p>
-                    ) : (
-                      <ul className="mt-3 space-y-3">
-                        {inStage.map((order) => (
-                          <li key={order.id}>
-                            <ProductionOrderCard order={order} canEdit={canEdit} />
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </section>
-                )
-              })}
-            </div>
-          </section>
+                      <h3
+                        id={`stage-${stage}`}
+                        className="flex items-center justify-between font-semibold text-text-strong"
+                      >
+                        <span className="flex items-center gap-2">
+                          {canEdit && stage !== "selesai" && (
+                            <SelectGroup
+                              ids={inStage.map((order) => order.id)}
+                              label={STAGE_LABEL[stage]}
+                              className="min-h-0 px-0 text-base font-semibold"
+                            />
+                          )}
+                          {(!canEdit || stage === "selesai" || inStage.length === 0) &&
+                            STAGE_LABEL[stage]}
+                        </span>
+                        <span className="rounded-md bg-nav-active px-2 py-0.5 text-sm text-brand-ink tabular-nums">
+                          {inStage.length}
+                        </span>
+                      </h3>
+                      {inStage.length === 0 ? (
+                        <p className="mt-3 text-sm text-text-body">Tidak ada pesanan.</p>
+                      ) : (
+                        <ul className="mt-3 space-y-3">
+                          {inStage.map((order) => (
+                            <li key={order.id}>
+                              <ProductionOrderCard
+                                order={order}
+                                canEdit={canEdit}
+                                selectable={canEdit && isSelectable(order.status)}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  )
+                })}
+              </div>
+            </section>
+          </ProductionSelection>
         </>
       )}
     </>

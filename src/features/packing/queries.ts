@@ -6,7 +6,7 @@ import { getDb } from "@/db"
 import { packagingCategories, packagings, stockMovements } from "@/db/schema"
 import type { OrderChannel } from "@/features/orders/constants"
 import type { OrderStatus } from "@/features/orders/filters"
-import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 import { netUsage, type PackagingUse } from "./needs"
 
@@ -25,16 +25,26 @@ export type PackingOrder = {
   orderNo: string
   status: OrderStatus
   type: OrderType
+  /** Jenis pesanan: PO / Ready Stock / Made to Order. */
+  kind: OrderKind
   /** Sumber pesanan: WhatsApp, Shopee, Tokopedia. */
   channel: OrderChannel
   customerName: string
   senderName: string | null
+  phone: string | null
+  address: string | null
+  deliveryDate: string
   shippingMethod: ShippingMethod
+  /** Nama kategori pengiriman (Master Data), mis. "Sameday"; null untuk data lama. */
+  shippingName: string | null
   request: string | null
   note: string | null
   urgentAt: Date | null
   urgentNote: string | null
-  hasCard: boolean
+  /** Kartu ucapan: wajib ditulis tim packing (permintaan pemilik toko, 14 Nov 2026). */
+  cardTo: string | null
+  cardWishes: string | null
+  cardFrom: string | null
   items: {
     menuName: string
     size: "large" | "regular" | "single"
@@ -78,7 +88,11 @@ export async function listPackingOrders(
     where: (order, { and, eq, ne }) =>
       and(eq(order.deliveryDate, deliveryDate), ne(order.status, "dibatalkan")),
     with: {
-      shipment: { columns: { method: true } },
+      customer: { columns: { phone: true } },
+      shipment: {
+        columns: { method: true, address: true },
+        with: { option: { columns: { name: true } } },
+      },
       items: {
         columns: { qty: true, note: true },
         with: {
@@ -115,16 +129,23 @@ export async function listPackingOrders(
     orderNo: row.orderNo,
     status: row.status,
     type: row.type,
+    kind: row.kind,
     channel: row.channel,
     customerName: row.customerName,
     senderName: row.senderName,
+    phone: row.customer?.phone ?? null,
+    address: row.shipment?.address ?? null,
+    deliveryDate: row.deliveryDate,
     shippingMethod: row.shipment?.method ?? "kurir_internal",
+    shippingName: row.shipment?.option?.name ?? null,
     request: row.request,
     note: row.note,
     urgentAt: row.urgentAt,
     urgentNote: row.urgentNote,
     packagingType: row.packagingType,
-    hasCard: Boolean(row.cardTo || row.cardWishes || row.cardFrom),
+    cardTo: row.cardTo,
+    cardWishes: row.cardWishes,
+    cardFrom: row.cardFrom,
     items: row.items.map((item) => ({
       menuName: item.variant.menu.name,
       size: item.variant.size,

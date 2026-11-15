@@ -33,7 +33,7 @@ test.describe("Master Data › Produk & Menu", () => {
 
     const table = page.getByRole("table")
     await expect(table.getByText("Potato Gratin Lasagna")).toBeVisible()
-    await expect(table.getByText("Rp 65.000 / Rp 50.000").first()).toBeVisible()
+    await expect(table.getByText("Rp 145.000 / Rp 75.000").first()).toBeVisible()
     await expect(page.getByRole("region", { name: "Kategori menu" })).toContainText("Pasta")
     await page.screenshot({
       path: `test-results/produk-menu-${info.project.name}.png`,

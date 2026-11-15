@@ -41,8 +41,8 @@ test.describe("Input Pesanan", () => {
     await expect(page.getByLabel("Jumlah Spaghetti Classico Bologna Brulee Large")).toHaveValue("2")
     await expect(page.getByLabel("Jumlah Not Your Mac and Cheese Regular")).toHaveValue("1")
     await expect(page.getByLabel("Jumlah Choco Bon Bon")).toHaveValue("2")
-    // 2×65.000 + 65.000 + 50.000 + 2×40.000
-    await expect(page.getByTestId("order-total")).toHaveText("Rp 325.000")
+    // Harga 14 Nov 2026: 2×145.000 + 160.000 + 80.000 + 2×75.000
+    await expect(page.getByTestId("order-total")).toHaveText("Rp 680.000")
     await expect(page.getByText("Data pesanan lengkap.")).toBeVisible()
     await expect(page.getByText(/Terbaca 5 dari 5 isian wajib dan 4 menu\./)).toBeVisible()
     await page.screenshot({
@@ -52,7 +52,7 @@ test.describe("Input Pesanan", () => {
 
     // Ubah jumlah lewat tombol: total ikut berubah.
     await page.getByRole("button", { name: "Tambah Choco Bon Bon" }).click()
-    await expect(page.getByTestId("order-total")).toHaveText("Rp 365.000")
+    await expect(page.getByTestId("order-total")).toHaveText("Rp 755.000")
   })
 
   test("Sameday di pesan WA langsung memilih kategori Sameday", async ({ page }, info) => {
@@ -90,7 +90,7 @@ test.describe("Input Pesanan", () => {
     await expect(page.getByLabel(/^From/)).toHaveValue("Rizky")
     await expect(page.getByRole("radio", { name: /^Kurir Internal/ })).toBeChecked()
     await expect(page.getByLabel("Jumlah Bundle of 3")).toHaveValue("1")
-    await expect(page.getByTestId("order-total")).toHaveText("Rp 285.000")
+    await expect(page.getByTestId("order-total")).toHaveText("Rp 365.000")
     await page.screenshot({ path: "test-results/input-pesanan-hadiah.png", fullPage: true })
   })
 
@@ -163,7 +163,7 @@ test.describe("Input Pesanan › Simpan", () => {
         .replace("Sabtu, 25 Oktober 2026", "besok"),
     )
     await expect(dialog.getByText(name)).toBeVisible()
-    await expect(dialog.getByText("Rp 325.000")).toBeVisible()
+    await expect(dialog.getByText("Rp 680.000")).toBeVisible()
 
     const order = await readOrder(orderNo)
     expect(order).toMatchObject({
@@ -171,7 +171,7 @@ test.describe("Input Pesanan › Simpan", () => {
       // Tanpa label "Jenis Pesanan" di pesan WA: bawaan PO.
       kind: "po",
       status: "baru",
-      total: 325000,
+      total: 680000,
       customer: name,
       sender_name: null,
       method: "instant",
@@ -202,7 +202,7 @@ test.describe("Input Pesanan › Simpan", () => {
       `/master-data/customer?q=${phone}`,
     )
     const row = page.getByRole("row", { name: new RegExp(name) })
-    await expect(row.getByRole("cell", { name: "Rp 325.000" })).toBeVisible()
+    await expect(row.getByRole("cell", { name: "Rp 680.000" })).toBeVisible()
     await expect(row.getByRole("cell", { name: "1", exact: true })).toBeVisible()
   })
 
@@ -230,7 +230,7 @@ ${HADIAH_SAMPLE}`
       card_wishes: "Happy birthday sayang!\nSemoga suka pastanya",
       method: "pick_up",
       shipment_status: null,
-      total: 285000,
+      total: 365000,
       items: 2,
     })
   })

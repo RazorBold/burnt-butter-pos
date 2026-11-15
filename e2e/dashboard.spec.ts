@@ -13,7 +13,7 @@ async function login(page: Page, email: string, target: string) {
 }
 
 // Data uji seedReportOrders (Feb-Mar 2021). Acuan 2 Mar, periode 7 hari = 24 Feb - 2 Mar:
-// 4 pesanan aktif (3 Normal, 1 Hampers), lunas 65.000 + 130.000 + 40.000 = 235.000,
+// 4 pesanan aktif (3 Normal, 1 Hampers), lunas 145.000 + 290.000 + 75.000 = 510.000 (harga 14 Nov 2026),
 // Kurir Internal 2, Instant 1, Pick Up 1. Dikirim 2 Mar: 1 Bolognese L + 1 Choco Bon Bon.
 const URL = "/dashboard?tanggal=2021-03-02&periode=7"
 
@@ -43,7 +43,7 @@ test.describe("Dashboard", () => {
     await expect(kpi("Total Pesanan")).toContainText("4")
     await expect(kpi("Pesanan Normal")).toContainText("3")
     await expect(kpi("Pesanan Hampers")).toContainText("1")
-    await expect(kpi("Total Pembayaran")).toContainText("Rp 235.000")
+    await expect(kpi("Total Pembayaran")).toContainText("Rp 510.000")
 
     const latest = page.getByRole("region", { name: "Daftar Pesanan Terbaru" }).getByRole("row")
     await expect(latest).toHaveCount(5) // header + 4
@@ -71,14 +71,14 @@ test.describe("Dashboard", () => {
       /Box Hampers|Loyang/,
     )
 
-    // Evaluasi & Masukan: 2 Mar (2 pesanan, lunas 40.000) vs 1 Mar (1 pesanan, lunas 130.000).
+    // Evaluasi & Masukan: 2 Mar (2 pesanan, lunas 75.000) vs 1 Mar (1 pesanan, lunas 290.000), harga 14 Nov 2026.
     const evaluation = page.getByRole("region", { name: "Evaluasi & Masukan" })
     const daily = evaluation.getByRole("listitem", { name: "Pertumbuhan Harian" })
     await expect(daily).toContainText("vs kemarin")
     await expect(daily).toContainText("Naik ↑ 100%")
-    await expect(daily).toContainText("Rp 40.000")
-    await expect(daily).toContainText("Turun ↓ 69%")
-    await expect(daily).toContainText("sebelumnya Rp 130.000")
+    await expect(daily).toContainText("Rp 75.000")
+    await expect(daily).toContainText("Turun ↓ 74%")
+    await expect(daily).toContainText("sebelumnya Rp 290.000")
     // 17-23 Feb kosong: tidak ada pembanding mingguan.
     await expect(evaluation.getByRole("listitem", { name: "Pertumbuhan Mingguan" })).toContainText(
       "belum ada pembanding",

@@ -1,4 +1,4 @@
-import { ArrowLeft, MessageCircle, PencilLine } from "lucide-react"
+import { ArrowLeft, MessageCircle, PencilLine, Printer } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
@@ -7,6 +7,7 @@ import { Suspense } from "react"
 
 import { KindBadge, OrderStatusBadge, TypeBadge } from "@/components/app/order-badges"
 import { PAGE_CONTAINER, PageHeaderSkeleton } from "@/components/app/page-header"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -76,6 +77,12 @@ async function OrderDetail({ params }: Pick<PageProps<"/pesanan/[orderNo]">, "pa
         <OrderStatusBadge status={order.status} />
         <KindBadge kind={order.kind} />
         <TypeBadge type={order.type} />
+        <Button asChild variant="outline" className="ml-auto h-10 rounded-lg bg-white px-3.5">
+          <Link href={`/pesanan/${order.orderNo}/cetak`} target="_blank" rel="noopener">
+            <Printer aria-hidden />
+            Print / PDF
+          </Link>
+        </Button>
       </div>
       <p className="mt-1.5 text-[15px] text-text-body">
         Dibuat {formatWaktuDibuat(order.createdAt)}

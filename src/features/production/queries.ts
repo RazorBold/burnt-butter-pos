@@ -2,7 +2,7 @@ import "server-only"
 
 import { getDb } from "@/db"
 import type { OrderStatus } from "@/features/orders/filters"
-import type { OrderType, ShippingMethod } from "@/lib/wa-parser"
+import type { OrderKind, OrderType, ShippingMethod } from "@/lib/wa-parser"
 
 import type { ProductionItem } from "./summary"
 
@@ -11,6 +11,8 @@ export type ProductionOrder = {
   orderNo: string
   status: OrderStatus
   type: OrderType
+  /** Jenis pesanan: PO / Ready Stock / Made to Order. */
+  kind: OrderKind
   customerName: string
   senderName: string | null
   shippingMethod: ShippingMethod
@@ -56,6 +58,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
     orderNo: row.orderNo,
     status: row.status,
     type: row.type,
+    kind: row.kind,
     customerName: row.customerName,
     senderName: row.senderName,
     shippingMethod: row.shipment?.method ?? "kurir_internal",

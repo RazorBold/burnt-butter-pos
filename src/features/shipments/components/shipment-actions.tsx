@@ -1,6 +1,13 @@
 "use client"
 
-import { CalendarClock, CircleAlert, LoaderCircle, Truck } from "lucide-react"
+import {
+  CalendarClock,
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  PencilLine,
+  Truck,
+} from "lucide-react"
 import { useId, useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -15,8 +22,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { updateOrderStatus } from "@/features/orders/actions"
-import type { OrderStatus } from "@/features/orders/filters"
-import { assignCourier, saveTrackingLink } from "@/features/shipments/actions"
+import { ORDER_STATUS_LABEL, type OrderStatus } from "@/features/orders/filters"
+import { correctionTargets } from "@/features/orders/status"
+import {
+  assignCourier,
+  correctShipmentStatus,
+  saveTrackingLink,
+} from "@/features/shipments/actions"
 import {
   type DeliverySlot,
   nextShipmentAction,
@@ -26,6 +38,21 @@ import {
 import type { CourierOption } from "@/features/shipments/queries"
 import { cn } from "@/lib/utils"
 import type { ShippingMethod } from "@/lib/wa-parser"
+
+/**
+ * Warna tombol langkah pengiriman (permintaan pemilik toko, 14 Nov 2026: Tandai Dikirim dan
+ * Tandai Selesai jangan tertukar). Dikirim = biru + truk, Selesai / Sudah Diambil = hijau +
+ * centang. Warna dari token status (teks putih, kontras > 4.5:1).
+ */
+export function stepTone(target: OrderStatus): string {
+  return target === "selesai"
+    ? "bg-status-selesai-fg text-white hover:bg-status-selesai-fg/90"
+    : "bg-status-baru-fg text-white hover:bg-status-baru-fg/90"
+}
+
+export function StepIcon({ target }: { target: OrderStatus }) {
+  return target === "selesai" ? <CircleCheck aria-hidden /> : <Truck aria-hidden />
+}
 
 /** Aksi bawah panel Detail Pengiriman (F-45): Tandai Dikirim/Selesai + Ubah Kurir / Jadwal. */
 export function ShipmentActions({
@@ -50,6 +77,8 @@ export function ShipmentActions({
   const action = nextShipmentAction({ method, orderStatus, hasCourier: Boolean(courierId) })
   const canAssign =
     method === "kurir_internal" && orderStatus !== "selesai" && orderStatus !== "dibatalkan"
+  const [correctOpen, setCorrectOpen] = useState(false)
+  const canCorrect = correctionTargets(orderStatus, method).length > 0
 
   function advance(target: OrderStatus) {
     startTransition(async () => {
@@ -59,7 +88,7 @@ export function ShipmentActions({
     })
   }
 
-  if (!action && !canAssign) return null
+  if (!action && !canAssign && !canCorrect) return null
 
   return (
     <div className="space-y-2">
@@ -74,10 +103,16 @@ export function ShipmentActions({
           <Button
             onClick={() => action.kind === "advance" && advance(action.target)}
             disabled={pending || action.kind === "blocked"}
-            className={cn("h-12 rounded-lg px-4", !canAssign && "sm:col-span-2")}
+            className={cn(
+              "h-12 rounded-lg px-4",
+              action.kind === "advance" && stepTone(action.target),
+              !canAssign && "sm:col-span-2",
+            )}
           >
             {pending ? (
               <LoaderCircle className="animate-spin" aria-hidden />
+            ) : action.kind === "advance" ? (
+              <StepIcon target={action.target} />
             ) : (
               <Truck aria-hidden />
             )}
@@ -103,8 +138,118 @@ export function ShipmentActions({
             />
           </>
         )}
+        {canCorrect && (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setCorrectOpen(true)}
+              className="h-12 rounded-lg bg-white px-4 sm:col-span-2"
+            >
+              <PencilLine aria-hidden />
+              Koreksi status
+            </Button>
+            <CorrectionDialog
+              open={correctOpen}
+              onOpenChange={setCorrectOpen}
+              orderId={orderId}
+              orderNo={orderNo}
+              status={orderStatus}
+              method={method}
+            />
+          </>
+        )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Dialog Koreksi status (permintaan pemilik toko, 14 Nov 2026): pesanan yang sudah Dikirim atau
+ * Selesai dipindah ke status pengiriman lain bila admin salah klik.
+ */
+export function CorrectionDialog({
+  open,
+  onOpenChange,
+  orderId,
+  orderNo,
+  status,
+  method,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  orderId: string
+  orderNo: string
+  status: OrderStatus
+  method: ShippingMethod
+}) {
+  const id = useId()
+  const targets = correctionTargets(status, method)
+  const [target, setTarget] = useState<OrderStatus | "">("")
+  const [pending, startTransition] = useTransition()
+
+  function submit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!target) return
+    startTransition(async () => {
+      const result = await correctShipmentStatus({ orderId, target })
+      if (result.ok) {
+        toast.success(result.message)
+        onOpenChange(false)
+        setTarget("")
+      } else toast.error(result.message)
+    })
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next)
+        if (!next) setTarget("")
+      }}
+    >
+      <DialogContent className="gap-0 rounded-2xl bg-card p-6 sm:max-w-[460px] sm:p-8">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-2xl font-bold text-brand-ink">
+            Koreksi status {orderNo}
+          </DialogTitle>
+          <DialogDescription className="text-text-body">
+            Status sekarang <strong>{ORDER_STATUS_LABEL[status]}</strong>. Pilih status yang benar
+            bila tadi salah klik. Koreksi tercatat di riwayat status pesanan.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="mt-5 space-y-4">
+          <fieldset className="space-y-2">
+            <legend className="sr-only">Status yang benar</legend>
+            {targets.map((option) => (
+              <label
+                key={option}
+                htmlFor={`${id}-${option}`}
+                className={cn(
+                  "flex h-12 cursor-pointer items-center gap-3 rounded-lg border bg-white px-4 text-sm font-medium text-text-strong has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                  target === option ? "border-brand ring-1 ring-brand" : "border-border",
+                )}
+              >
+                <input
+                  id={`${id}-${option}`}
+                  type="radio"
+                  name="target"
+                  value={option}
+                  checked={target === option}
+                  onChange={() => setTarget(option)}
+                  className="size-4 accent-brand"
+                />
+                {ORDER_STATUS_LABEL[option]}
+              </label>
+            ))}
+          </fieldset>
+          <Button type="submit" disabled={!target || pending} className="h-12 w-full rounded-lg">
+            {pending && <LoaderCircle className="animate-spin" aria-hidden />}
+            Simpan koreksi
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 

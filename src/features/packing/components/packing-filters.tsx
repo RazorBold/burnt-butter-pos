@@ -1,21 +1,28 @@
 "use client"
 
+import { Search } from "lucide-react"
+
+import { Input } from "@/components/ui/input"
+import { ORDER_KINDS } from "@/features/orders/constants"
 import {
+  PACKING_KIND_LABEL,
   PACKING_SOURCE_LABEL,
   PACKING_SOURCES,
   PACKING_TYPE_LABEL,
   PACKING_TYPES,
   type PackingFilters,
 } from "@/features/packing/filters"
-import { useUrlFilters } from "@/hooks/use-url-filters"
+import { useDebouncedQuery, useUrlFilters } from "@/hooks/use-url-filters"
 import { cn } from "@/lib/utils"
 
 /**
  * Filter papan Packaging: Tipe (Normal / Hampers; pesanan Normal & Hampers ikut keduanya) dan
- * Sumber (WhatsApp / Olshop = Shopee + Tokopedia, atau per marketplace). Disimpan di URL.
+ * Sumber (WhatsApp / Olshop = Shopee + Tokopedia, atau per marketplace), Jenis (PO / RS / MTO),
+ * dan kotak Cari (no. pesanan, penerima, pengirim, no. telp). Disimpan di URL.
  */
 export function PackingFiltersBar({ filters }: { filters: PackingFilters }) {
-  const { update, pending } = useUrlFilters()
+  const { current, update, pending } = useUrlFilters()
+  const [query, setQuery] = useDebouncedQuery(current, update)
 
   const group = <T extends string>(
     label: string,
@@ -61,6 +68,21 @@ export function PackingFiltersBar({ filters }: { filters: PackingFilters }) {
         pending && "opacity-80",
       )}
     >
+      <div className="relative w-full min-w-0 sm:w-72">
+        <Search
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-body"
+          aria-hidden
+        />
+        <Input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Cari no. pesanan, nama, no. telp…"
+          aria-label="Cari pesanan"
+          className="h-10 rounded-lg bg-white pl-9"
+        />
+      </div>
+      {group("Jenis", "jenis", filters.kind, ORDER_KINDS, PACKING_KIND_LABEL)}
       {group("Tipe", "tipe", filters.type, PACKING_TYPES, PACKING_TYPE_LABEL)}
       {group("Sumber", "sumber", filters.source, PACKING_SOURCES, PACKING_SOURCE_LABEL)}
     </div>

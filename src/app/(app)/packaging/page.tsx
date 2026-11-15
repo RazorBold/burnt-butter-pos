@@ -50,7 +50,7 @@ async function Packing({
       : today
 
   const filters = parsePackingFilters(params)
-  const filtered = Boolean(filters.type || filters.source)
+  const filtered = Boolean(filters.type || filters.source || filters.kind || filters.q)
   const packagings = await listPackingPackagings()
   const allOrders = await listPackingOrders(date, packagings)
   const orders = filterPackingOrders(allOrders, filters)
@@ -80,7 +80,7 @@ async function Packing({
       {orders.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-dashed border-border px-6 py-12 text-center text-text-body">
           {filtered && allOrders.length > 0
-            ? `Tidak ada pesanan yang cocok dengan filter (${allOrders.length} pesanan lain dikirim ${dateLabel}).`
+            ? `Tidak ada pesanan yang cocok dengan filter/pencarian (${allOrders.length} pesanan lain dikirim ${dateLabel}).`
             : `Belum ada pesanan yang dikirim ${dateLabel}.`}
         </p>
       ) : (

@@ -74,6 +74,21 @@ export function nextStatuses(status: OrderStatus, method: ShippingMethod): Order
 }
 
 /**
+ * Koreksi status pengiriman (permintaan pemilik toko, 14 Nov 2026): setelah Tandai Dikirim atau
+ * Tandai Selesai, admin boleh memilih status pengiriman lain bila salah klik. Hanya di antara
+ * status yang sudah di-packing (Siap Kirim, Dikirim, Selesai) supaya stok packaging tidak
+ * dipotong dua kali. Pick Up dan Ekspedisi tidak punya Dikirim.
+ */
+export function correctionTargets(status: OrderStatus, method: ShippingMethod): OrderStatus[] {
+  if (status !== "dikirim" && status !== "selesai") return []
+  const flow: OrderStatus[] =
+    method === "pick_up" || method === "ekspedisi"
+      ? ["siap_kirim", "selesai"]
+      : ["siap_kirim", "dikirim", "selesai"]
+  return flow.filter((target) => target !== status)
+}
+
+/**
  * Pilihan di dropdown Ubah Status (Pesanan): seperti nextStatuses, tanpa langkah packing.
  * Packing dilakukan di menu Packaging supaya pemakaian packaging-nya tercatat.
  */
@@ -109,6 +124,8 @@ export type StatusRules = {
   requireCourier?: boolean
   /** Langkah packing (Siap Packing → Siap Kirim) hanya dari menu Packaging. */
   packing?: boolean
+  /** Koreksi status pengiriman: tujuan dari correctionTargets, bukan alur maju/mundur biasa. */
+  correction?: boolean
 }
 
 /**
@@ -127,6 +144,11 @@ export function statusSkipReason(
   rules: StatusRules = {},
 ): string | null {
   if (target === "dikirim" && order.method === "pick_up") return "Pick Up, tidak dikirim"
+  if (rules.correction) {
+    return correctionTargets(order.status, order.method).includes(target)
+      ? null
+      : `status ${ORDER_STATUS_LABEL[order.status]}`
+  }
   const allowed =
     nextStatuses(order.status, order.method).includes(target) &&
     (!rules.limitTo || (rules.limitTo.includes(order.status) && rules.limitTo.includes(target)))

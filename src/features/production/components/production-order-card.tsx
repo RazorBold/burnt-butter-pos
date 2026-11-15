@@ -12,12 +12,13 @@ import {
 import { useTransition } from "react"
 import { toast } from "sonner"
 
-import { OrderStatusBadge, UrgentBadge } from "@/components/app/order-badges"
+import { KindBadge, OrderStatusBadge, UrgentBadge } from "@/components/app/order-badges"
 import { isUrgent } from "@/features/orders/status"
 import { Button } from "@/components/ui/button"
 import { updateProductionStatus } from "@/features/orders/actions"
 import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import type { OrderStatus } from "@/features/orders/filters"
+import { SelectOrder } from "@/features/production/components/production-selection"
 import type { ProductionOrder } from "@/features/production/queries"
 import { formatJam } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -28,9 +29,12 @@ const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
 export function ProductionOrderCard({
   order,
   canEdit,
+  selectable = false,
 }: {
   order: ProductionOrder
   canEdit: boolean
+  /** Ada checkbox untuk aksi massal (harus di dalam ProductionSelection). */
+  selectable?: boolean
 }) {
   const [pending, startTransition] = useTransition()
 
@@ -64,7 +68,8 @@ export function ProductionOrderCard({
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
+        {selectable && <SelectOrder id={order.id} orderNo={order.orderNo} />}
+        <div className="min-w-0 flex-1">
           <h4 id={`prod-${order.id}`} className="font-semibold text-text-strong tabular-nums">
             {order.orderNo}
           </h4>
@@ -75,6 +80,7 @@ export function ProductionOrderCard({
         </div>
         <div className="flex flex-wrap gap-1.5">
           {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
+          <KindBadge kind={order.kind} />
           {order.type !== "normal" && (
             <span className="inline-flex items-center gap-1 rounded-md bg-hadiah px-2 py-0.5 text-xs font-medium text-hadiah-fg">
               <Gift className="size-3.5" aria-hidden />

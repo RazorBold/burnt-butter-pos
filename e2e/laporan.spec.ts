@@ -29,11 +29,11 @@ test.describe("Laporan", () => {
     await expect(page.getByRole("heading", { name: "Laporan", level: 1 })).toBeVisible()
     // Label KPI pertama di halaman (Total Pembayaran juga muncul di kartu Metode Pembayaran).
     const kpi = (label: string) => page.getByText(label, { exact: true }).first().locator("..")
-    // 3 pesanan aktif (pembanding 1 → naik 200%), 4 porsi, Rp 170.000 lunas, 1 customer.
+    // 3 pesanan aktif (pembanding 1 → naik 200%), 4 porsi, Rp 365.000 lunas (harga 14 Nov 2026), 1 customer.
     await expect(kpi("Total Pesanan")).toContainText("3")
     await expect(kpi("Total Pesanan").locator("..")).toContainText("200%")
     await expect(kpi("Total Produk Terjual")).toContainText("4 porsi")
-    await expect(kpi("Total Pembayaran")).toContainText("Rp 170.000")
+    await expect(kpi("Total Pembayaran")).toContainText("Rp 365.000")
     await expect(kpi("Total Customer")).toContainText("1")
 
     const shipping = page.getByRole("region", { name: "Distribusi Pesanan per Metode Pengiriman" })
@@ -50,14 +50,14 @@ test.describe("Laporan", () => {
     await expect(top.nth(2)).toContainText("Choco Bon Bon")
 
     const pay = page.getByRole("region", { name: "Metode Pembayaran" })
-    await expect(pay.getByRole("img", { name: /^Bank 76%/ })).toBeVisible()
-    await expect(pay.getByRole("img", { name: /^E-Wallet 24%/ })).toBeVisible()
+    await expect(pay.getByRole("img", { name: /^Bank 79%/ })).toBeVisible()
+    await expect(pay.getByRole("img", { name: /^E-Wallet 21%/ })).toBeVisible()
 
     // Toggle Pesanan / Pendapatan di Rekap Penjualan per Hari.
     const daily = page.getByRole("region", { name: "Rekap Penjualan per Hari" })
     await daily.getByRole("radio", { name: "Pendapatan" }).click()
     await expect(daily.getByRole("table", { name: "Pendapatan per hari" })).toContainText(
-      "Rp 130.000",
+      "Rp 290.000",
     )
     await page.screenshot({ path: `test-results/laporan-${info.project.name}.png`, fullPage: true })
   })

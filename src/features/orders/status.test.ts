@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  correctionTargets,
   isCookingStart,
   isEditable,
   isMenuEditable,
@@ -212,5 +213,30 @@ describe("Urgent", () => {
       { id: "d", urgentAt: at, status: "selesai" as const },
     ]
     expect(urgentFirst(list).map((order) => order.id)).toEqual(["b", "a", "c", "d"])
+  })
+})
+
+describe("koreksi status pengiriman", () => {
+  it("setelah Dikirim / Selesai bisa pindah ke status pengiriman lain", () => {
+    expect(correctionTargets("selesai", "instant")).toEqual(["siap_kirim", "dikirim"])
+    expect(correctionTargets("dikirim", "kurir_internal")).toEqual(["siap_kirim", "selesai"])
+    expect(correctionTargets("selesai", "pick_up")).toEqual(["siap_kirim"])
+    expect(correctionTargets("selesai", "ekspedisi")).toEqual(["siap_kirim"])
+  })
+
+  it("belum dikirim atau dibatalkan: tidak ada koreksi", () => {
+    expect(correctionTargets("siap_kirim", "instant")).toEqual([])
+    expect(correctionTargets("diproses", "instant")).toEqual([])
+    expect(correctionTargets("dibatalkan", "instant")).toEqual([])
+  })
+
+  it("aturan correction: Selesai boleh mundur, tapi tidak ke sebelum packing", () => {
+    const done = { status: "selesai", method: "instant", hasCourier: false } as const
+    expect(statusSkipReason(done, "siap_kirim", { correction: true })).toBeNull()
+    expect(statusSkipReason(done, "dikirim", { correction: true })).toBeNull()
+    expect(statusSkipReason(done, "siap_packing", { correction: true })).toBe("status Selesai")
+    expect(statusSkipReason(done, "dibatalkan", { correction: true })).toBe("status Selesai")
+    // Tanpa aturan koreksi, Selesai tetap final.
+    expect(statusSkipReason(done, "dikirim")).toBe("status Selesai")
   })
 })

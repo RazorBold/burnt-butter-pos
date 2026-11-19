@@ -53,7 +53,7 @@ export async function listMenuCategories(): Promise<MenuCategoryRow[]> {
 }
 
 /**
- * Daftar menu untuk Master Data (tanpa arsip). Urutan: urutan kategori, lalu urutan dibuat.
+ * Daftar menu untuk Master Data (tanpa arsip). Urutan: urutan kategori, lalu urutan menu.
  */
 export async function listMenus({
   q,
@@ -78,7 +78,7 @@ export async function listMenus({
         columns: { id: true, size: true, price: true, loyangQty: true, loyangSize: true },
       },
     },
-    orderBy: (menu, { asc }) => [asc(menu.createdAt), asc(menu.name)],
+    orderBy: (menu, { asc }) => [asc(menu.sortOrder), asc(menu.createdAt), asc(menu.name)],
   })
 
   return rows

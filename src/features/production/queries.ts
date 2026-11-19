@@ -42,7 +42,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
             columns: { size: true },
             with: {
               menu: {
-                columns: { name: true, photoPath: true, createdAt: true },
+                columns: { name: true, photoPath: true, sortOrder: true },
                 with: { category: { columns: { sortOrder: true, sized: true } } },
               },
             },
@@ -76,7 +76,7 @@ export async function listProductionOrders(deliveryDate: string): Promise<Produc
       size: item.variant.size,
       qty: item.qty,
       photoPath: item.variant.menu.photoPath,
-      menuOrder: item.variant.menu.createdAt.getTime(),
+      menuOrder: item.variant.menu.sortOrder,
       note: item.note,
     })),
   }))

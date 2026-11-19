@@ -78,7 +78,7 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
   const existing = input.id
     ? (
         await db
-          .select({ slug: menus.slug, photoPath: menus.photoPath })
+          .select({ slug: menus.slug, photoPath: menus.photoPath, categoryId: menus.categoryId })
           .from(menus)
           .where(eq(menus.id, input.id))
           .limit(1)
@@ -135,11 +135,23 @@ export async function saveMenu(_prev: MenuFormState, formData: FormData): Promis
       photoPath,
       isActive: input.isActive,
     }
+    // Menu baru, atau menu yang pindah kategori, ditaruh paling akhir.
+    const last = async () => {
+      const [row] = await tx
+        .select({ max: sql<number>`coalesce(max(${menus.sortOrder}), 0)`.mapWith(Number) })
+        .from(menus)
+      return row.max + 1
+    }
+    const moved = input.id && existing?.categoryId !== input.categoryId
     const [menu] = input.id
-      ? await tx.update(menus).set(values).where(eq(menus.id, input.id)).returning({ id: menus.id })
+      ? await tx
+          .update(menus)
+          .set(moved ? { ...values, sortOrder: await last() } : values)
+          .where(eq(menus.id, input.id))
+          .returning({ id: menus.id })
       : await tx
           .insert(menus)
-          .values({ ...values, slug })
+          .values({ ...values, slug, sortOrder: await last() })
           .returning({ id: menus.id })
 
     for (const { size, price, loyangQty, loyangSize } of prices) {
@@ -347,4 +359,43 @@ export async function moveCategory(id: string, direction: "up" | "down"): Promis
   })
   revalidateMenus()
   return { ok: true, message: "Urutan kategori disimpan." }
+}
+
+/**
+ * Geser menu naik/turun satu posisi di dalam kategorinya (urutan A, B, C di template WA, form
+ * pesanan, dan Produksi).
+ */
+export async function moveMenu(id: string, direction: "up" | "down"): Promise<Result> {
+  const denied = await requireMenuManager()
+  if (denied) return denied
+  const moved = await getDb().transaction(async (tx) => {
+    const [menu] = await tx
+      .select({ categoryId: menus.categoryId })
+      .from(menus)
+      .where(eq(menus.id, id))
+      .limit(1)
+    if (!menu?.categoryId) return false
+    const siblings = await tx
+      .select({ id: menus.id, sortOrder: menus.sortOrder })
+      .from(menus)
+      .where(and(eq(menus.categoryId, menu.categoryId), eq(menus.isArchived, false)))
+      .orderBy(asc(menus.sortOrder), asc(menus.createdAt), asc(menus.name))
+      .for("update")
+    const index = siblings.findIndex((row) => row.id === id)
+    const target = direction === "up" ? index - 1 : index + 1
+    if (index === -1 || target < 0 || target >= siblings.length) return false
+    // Tukar posisi; urutan yang sama (data lama) dibuat berbeda dengan memakai posisi daftar.
+    const a = siblings[index]
+    const b = siblings[target]
+    const [first, second] =
+      a.sortOrder === b.sortOrder
+        ? [Math.min(index, target), Math.max(index, target)].map((i) => siblings[0].sortOrder + i)
+        : [b.sortOrder, a.sortOrder]
+    await tx.update(menus).set({ sortOrder: first }).where(eq(menus.id, a.id))
+    await tx.update(menus).set({ sortOrder: second }).where(eq(menus.id, b.id))
+    return true
+  })
+  if (!moved) return { ok: false, message: "Menu sudah di ujung atau berubah. Muat ulang." }
+  revalidateMenus()
+  return { ok: true, message: "Urutan menu disimpan." }
 }

@@ -586,3 +586,17 @@ export async function snapshotMessageTemplates(): Promise<() => Promise<void>> {
     }
   }
 }
+
+/** Buat kategori menu uji satu harga (nama diawali "QA Kategori "), paling akhir. */
+export async function createQaMenuCategory(name: string) {
+  if (!name.startsWith("QA Kategori ")) throw new Error("Nama kategori uji harus QA Kategori …")
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql`insert into menu_categories (name, sized, sort_order)
+      values (${name}, false, (select coalesce(max(sort_order), 0) + 1 from menu_categories))`
+  } finally {
+    await sql.end()
+  }
+}

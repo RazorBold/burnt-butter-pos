@@ -26,6 +26,7 @@ import { CategoryManager } from "@/features/menus/components/category-manager"
 import { DeleteMenuButton } from "@/features/menus/components/delete-menu-button"
 import { MenuFilters } from "@/features/menus/components/menu-filters"
 import { MenuFormDialog } from "@/features/menus/components/menu-form-dialog"
+import { MoveMenuButtons } from "@/features/menus/components/move-menu-buttons"
 import { listMenuCategories, listMenus, type MenuRow } from "@/features/menus/queries"
 import type { MenuCategoryRef } from "@/features/menus/schemas"
 import { CAN_MANAGE_MENU } from "@/lib/access"
@@ -92,7 +93,7 @@ async function MenuSection({
       {menus.length === 0 ? (
         <EmptyState filtered={filtered} />
       ) : (
-        <MenuTable menus={menus} categories={categories} canEdit={canEdit} />
+        <MenuTable menus={menus} categories={categories} canEdit={canEdit} sortable={!q} />
       )}
 
       {!canEdit && (
@@ -134,10 +135,13 @@ function MenuTable({
   menus,
   categories,
   canEdit,
+  sortable,
 }: {
   menus: MenuRow[]
   categories: MenuCategoryRef[]
   canEdit: boolean
+  /** Panah urutan disembunyikan saat mencari nama (daftar tidak lengkap). */
+  sortable: boolean
 }) {
   return (
     <div className="overflow-x-auto">
@@ -154,8 +158,13 @@ function MenuTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {menus.map((menu) => {
+          {menus.map((menu, index) => {
             const src = photoSrc(menu.photoPath)
+            // Daftar sudah urut per kategori: ujung kategori = tetangganya beda kategori.
+            const sameCategory = (other?: MenuRow) =>
+              other !== undefined && other.category?.id === menu.category?.id
+            const first = !sameCategory(menus[index - 1])
+            const last = !sameCategory(menus[index + 1])
             return (
               <TableRow key={menu.id} className={menu.isActive ? undefined : "text-text-body"}>
                 <TableCell className="pl-6">
@@ -183,6 +192,9 @@ function MenuTable({
                 {canEdit && (
                   <TableCell className="pr-6">
                     <div className="flex items-center justify-end gap-1">
+                      {sortable && menu.category && (
+                        <MoveMenuButtons id={menu.id} name={menu.name} first={first} last={last} />
+                      )}
                       <MenuFormDialog
                         menu={menu}
                         categories={categories}

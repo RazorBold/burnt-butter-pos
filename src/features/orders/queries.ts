@@ -79,7 +79,12 @@ export async function getOrderCatalog(): Promise<CatalogVariant[]> {
     .where(
       and(eq(menus.isActive, true), eq(menus.isArchived, false), eq(menuVariants.isActive, true)),
     )
-    .orderBy(asc(menuCategories.sortOrder), asc(menus.createdAt), asc(menus.name))
+    .orderBy(
+      asc(menuCategories.sortOrder),
+      asc(menus.sortOrder),
+      asc(menus.createdAt),
+      asc(menus.name),
+    )
 }
 
 export type OrderListRow = {
@@ -320,7 +325,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
             columns: { size: true },
             with: {
               menu: {
-                columns: { name: true, photoPath: true, createdAt: true },
+                columns: { name: true, photoPath: true, sortOrder: true },
                 with: { category: { columns: { sortOrder: true } } },
               },
             },
@@ -389,7 +394,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
           (a.variant.menu.category?.sortOrder ?? NO_CATEGORY) -
             (b.variant.menu.category?.sortOrder ?? NO_CATEGORY) ||
           SIZE_ORDER[a.variant.size] - SIZE_ORDER[b.variant.size] ||
-          a.variant.menu.createdAt.getTime() - b.variant.menu.createdAt.getTime() ||
+          a.variant.menu.sortOrder - b.variant.menu.sortOrder ||
           a.variant.menu.name.localeCompare(b.variant.menu.name),
       )
       .map((item) => ({
@@ -545,7 +550,7 @@ export async function getOrdersForExport(orderIds: string[]): Promise<OrderExpor
       .innerJoin(menuVariants, eq(menuVariants.id, orderItems.menuVariantId))
       .innerJoin(menus, eq(menus.id, menuVariants.menuId))
       .where(inArray(orderItems.orderId, orderIds))
-      .orderBy(asc(menus.createdAt), asc(menuVariants.size)),
+      .orderBy(asc(menus.sortOrder), asc(menus.createdAt), asc(menuVariants.size)),
   ])
   return rows.map(({ id, ...row }) => ({
     ...row,

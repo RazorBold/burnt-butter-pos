@@ -140,6 +140,11 @@ export const menus = pgTable("menus", {
    * datanya tetap untuk riwayat pesanan dan laporan.
    */
   isArchived: boolean("is_archived").notNull().default(false),
+  /**
+   * Urutan menu dalam kategorinya (diatur Owner, 19 Nov 2026): urutan A, B, C di template WA,
+   * form pesanan, dan Produksi. Menu baru = paling akhir.
+   */
+  sortOrder: integer("sort_order").notNull().default(0),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }).enableRLS()

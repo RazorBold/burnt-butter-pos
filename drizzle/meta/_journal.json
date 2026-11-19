@@ -183,6 +183,13 @@
       "when": 1795074477421,
       "tag": "0025_magical_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795075750110,
+      "tag": "0026_flimsy_guardian",
+      "breakpoints": true
     }
   ]
 }

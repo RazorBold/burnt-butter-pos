@@ -7,6 +7,7 @@ import { NewOrderWorkspace } from "@/features/orders/components/new-order-worksp
 import { ORDER_CHANNELS } from "@/features/orders/constants"
 import { getOrderCatalog } from "@/features/orders/queries"
 import { listActiveShippingOptions } from "@/features/shipping-options/queries"
+import { getRenderedTemplates } from "@/features/templates/queries"
 import { requirePageAccess } from "@/lib/auth"
 
 export const metadata: Metadata = { title: "Input Pesanan" }
@@ -32,9 +33,10 @@ export default function InputPesananPage({ searchParams }: PageProps<"/pesanan/b
 async function Workspace({ searchParams }: { searchParams: SearchParams }) {
   // Role yang boleh membuka /pesanan (Admin, Kasir) sama dengan CAN_INPUT_ORDER.
   await requirePageAccess("/pesanan")
-  const [catalog, shippingOptions] = await Promise.all([
+  const [catalog, shippingOptions, templates] = await Promise.all([
     getOrderCatalog(),
     listActiveShippingOptions(),
+    getRenderedTemplates(),
   ])
   const { sumber } = await searchParams
   const channel = ORDER_CHANNELS.find((value) => value === sumber) ?? "whatsapp"
@@ -42,6 +44,7 @@ async function Workspace({ searchParams }: { searchParams: SearchParams }) {
     <NewOrderWorkspace
       catalog={catalog}
       shippingOptions={shippingOptions}
+      templates={templates}
       initialChannel={channel}
     />
   )

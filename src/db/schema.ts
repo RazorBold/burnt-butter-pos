@@ -551,6 +551,22 @@ export const storeSettings = pgTable(
   (t) => [check("store_settings_single_row", sql`${t.id} = 1`)],
 ).enableRLS()
 
+/**
+ * Template pesan WA / Olshop yang diedit Owner (Pengaturan, 19 Nov 2026). Satu baris per template
+ * (fo1, fo2, fo3, olshop); belum ada baris = template bawaan. Penanda {MENU}, {PENGIRIMAN},
+ * {HARGA: …} diisi dari Master Data saat template disalin.
+ */
+export const messageTemplates = pgTable(
+  "message_templates",
+  {
+    key: text("key").primaryKey(),
+    body: text("body").notNull(),
+    updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check("message_templates_key", sql`${t.key} in ('fo1', 'fo2', 'fo3', 'olshop')`)],
+).enableRLS()
+
 // ── Relasi (untuk db.query) ─────────────────────────────────────────────────
 
 export const menuCategoriesRelations = relations(menuCategories, ({ many }) => ({

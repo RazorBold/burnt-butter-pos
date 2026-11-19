@@ -176,6 +176,13 @@
       "when": 1795024808136,
       "tag": "0024_worthless_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795074477421,
+      "tag": "0025_magical_sprite",
+      "breakpoints": true
     }
   ]
 }

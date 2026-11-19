@@ -542,3 +542,47 @@ export async function removePackagingCategoryByName(name: string) {
     await sql.end()
   }
 }
+
+/** Buat menu uji satu harga (nama diawali "QA Menu ") di kategori tertentu, langsung di DB. */
+export async function createQaMenu(name: string, categoryName: string, price: number) {
+  if (!name.startsWith("QA Menu ")) throw new Error("Nama menu uji harus QA Menu …")
+  const url = directDatabaseUrl()
+  if (!url) throw new Error("DIRECT_DATABASE_URL belum diisi")
+  const sql = postgres(url, { max: 1 })
+  try {
+    await sql.begin(async (tx) => {
+      const [menu] = await tx<{ id: string }[]>`
+        insert into menus (name, slug, category_id)
+        values (${name}, ${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")},
+          (select id from menu_categories where name = ${categoryName}))
+        returning id`
+      await tx`insert into menu_variants (menu_id, size, price, loyang_qty)
+        values (${menu.id}, 'single', ${price}, 0)`
+    })
+  } finally {
+    await sql.end()
+  }
+}
+
+/**
+ * Simpan template pesan (Pengaturan) sebelum test dan kembalikan persis sesudahnya, karena
+ * template dipakai staf asli.
+ */
+export async function snapshotMessageTemplates(): Promise<() => Promise<void>> {
+  const url = directDatabaseUrl()
+  if (!url) return async () => {}
+  const sql = postgres(url, { max: 1 })
+  const rows = await sql<Record<string, unknown>[]>`select * from message_templates`
+  await sql.end()
+  return async () => {
+    const restore = postgres(url, { max: 1 })
+    try {
+      await restore.begin(async (tx) => {
+        await tx`delete from message_templates`
+        for (const row of rows) await tx`insert into message_templates ${tx(row)}`
+      })
+    } finally {
+      await restore.end()
+    }
+  }
+}

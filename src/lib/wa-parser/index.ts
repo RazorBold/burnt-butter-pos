@@ -270,13 +270,15 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
       inShipping = false
       continue
     }
-    if (BOX_HEADER.test(key)) {
-      menuSize = null
+    // "Pilihan Menu" / "#BOX …": mulai daftar menu. Judul kategori apa pun sesudahnya (mis. kategori
+    // baru dari Owner, "Event Natal") dibaca sebagai bagian menu.
+    if (BOX_HEADER.test(key) || MENU_HEADER.test(key)) {
+      menuSize = "single"
       current = null
       inShipping = false
       continue
     }
-    if (MENU_HEADER.test(key) || SEPARATOR.test(key) || TEMPLATE_TAG.test(key)) {
+    if (SEPARATOR.test(key) || TEMPLATE_TAG.test(key)) {
       current = null
       inShipping = false
       continue

@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest"
 
-import { loyangNeed, stockNeeds } from "./stock-needs"
+import { boxKey, loyangNeed, stockNeeds } from "./stock-needs"
+
+describe("boxKey", () => {
+  it("huruf besar/kecil dan ejaan Regular/Reguler dianggap sama", () => {
+    expect(boxKey("Hampers LARGE")).toBe(boxKey("hampers large"))
+    expect(boxKey("Hampers Regular")).toBe(boxKey("Hampers REGULER"))
+    expect(boxKey("Hampers LARGE")).not.toBe(boxKey("Hampers REGULER"))
+  })
+})
 
 describe("stockNeeds", () => {
   it("loyang per porsi Large/Regular; dessert dan bundle tidak memakai loyang", () => {
@@ -18,7 +26,7 @@ describe("stockNeeds", () => {
     ).toEqual({ loyangLarge: 2, loyangRegular: 1, boxes: {} })
   })
 
-  it("box hanya untuk menu kategori Hampers, walau nama pasta mirip", () => {
+  it("box hanya untuk menu kategori Hampers: Hampers LARGE/REGULER sesuai ukuran", () => {
     expect(
       stockNeeds([
         { menuName: "Melt My Mac and Cheese", categoryName: "Pasta", size: "large", qty: 1 },
@@ -29,7 +37,7 @@ describe("stockNeeds", () => {
     ).toEqual({
       loyangLarge: 4,
       loyangRegular: 1,
-      boxes: { "Classic Red (Large)": 3, "Holy E Olio (Regular)": 1 },
+      boxes: { "Hampers LARGE": 3, "Hampers REGULER": 1 },
     })
   })
 })

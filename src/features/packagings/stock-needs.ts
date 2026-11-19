@@ -34,25 +34,45 @@ export function loyangNeed(item: NeedItem): { size: "large" | "regular"; qty: nu
 export type StockNeeds = {
   loyangLarge: number
   loyangRegular: number
-  /** Nama box packaging (mis. "Classic Red (Large)") → jumlah. */
+  /** Nama box packaging (mis. "Hampers LARGE") → jumlah. */
   boxes: Record<string, number>
 }
 
-/** Nama box packaging untuk menu hampers. Kosong bila menu tidak punya box yang cocok. */
-export function hampersBoxName(menuName: string, size: "large" | "regular"): string {
-  const lower = menuName.toLowerCase()
-  const sizeLabel = size === "large" ? "(Large)" : "(Regular)"
-  if (lower.includes("classico") || lower.includes("classic")) return `Classic Red ${sizeLabel}`
-  if (lower.includes("mac") && lower.includes("joy")) return `Mac & Joy ${sizeLabel}`
-  if (lower.includes("melted") || lower.includes("melt")) return `Melted Cheese ${sizeLabel}`
-  if (lower.includes("holy") || lower.includes("olio")) return `Holy E Olio ${sizeLabel}`
-  return ""
+/**
+ * Box hampers per ukuran (keputusan pemilik toko, 19 Nov 2026): semua menu kategori Hampers
+ * memakai box yang sama per ukuran, tidak lagi box per menu.
+ */
+export const HAMPERS_BOX_NAME = { large: "Hampers LARGE", regular: "Hampers REGULER" } as const
+
+/**
+ * Box per menu sebelum 19 Nov 2026 (sudah diarsipkan). Tetap dikenali supaya stok yang dulu
+ * terpotong dari box ini kembali bila pesanan lamanya dibatalkan.
+ */
+export const LEGACY_HAMPERS_BOX_NAMES = [
+  "Classic Red (Large)",
+  "Classic Red (Regular)",
+  "Mac & Joy (Large)",
+  "Mac & Joy (Regular)",
+  "Melted Cheese (Large)",
+  "Melted Cheese (Regular)",
+  "Holy E Olio (Large)",
+  "Holy E Olio (Regular)",
+]
+
+/** Kunci nama box: huruf kecil, "regular" disamakan dengan "reguler" (ejaan di Master Data). */
+export function boxKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ").replace("regular", "reguler")
+}
+
+/** Nama box packaging untuk satu porsi menu hampers ukuran ini. */
+export function hampersBoxName(size: "large" | "regular"): string {
+  return HAMPERS_BOX_NAME[size]
 }
 
 /**
  * Loyang: sesuai pengaturan loyang per porsi tiap menu (lihat `loyangNeed`). Box: hanya menu di
- * kategori Hampers, satu per porsi; menu pasta biasa bernama mirip (mis. "Spaghetti Classico")
- * tidak dihitung.
+ * kategori Hampers, satu Hampers LARGE/REGULER per porsi sesuai ukuran; menu pasta biasa tidak
+ * dihitung.
  */
 export function stockNeeds(items: NeedItem[]): StockNeeds {
   const needs: StockNeeds = { loyangLarge: 0, loyangRegular: 0, boxes: {} }
@@ -61,8 +81,8 @@ export function stockNeeds(items: NeedItem[]): StockNeeds {
     if (loyang?.size === "large") needs.loyangLarge += loyang.qty
     else if (loyang) needs.loyangRegular += loyang.qty
     if (item.size === "single" || item.qty <= 0 || !isHampersCategory(item.categoryName)) continue
-    const box = hampersBoxName(item.menuName, item.size)
-    if (box) needs.boxes[box] = (needs.boxes[box] ?? 0) + item.qty
+    const box = hampersBoxName(item.size)
+    needs.boxes[box] = (needs.boxes[box] ?? 0) + item.qty
   }
   return needs
 }

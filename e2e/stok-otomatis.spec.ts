@@ -6,13 +6,7 @@ import { loginAs } from "./helpers/login"
 
 const admin = { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD }
 
-const STOCK_ITEMS = [
-  "Loyang Large",
-  "Loyang Regular",
-  "Classic Red (Large)",
-  "Melted Cheese (Large)",
-  "Holy E Olio (Regular)",
-] as const
+const STOCK_ITEMS = ["Loyang Large", "Loyang Regular", "Hampers LARGE", "Hampers REGULER"] as const
 
 async function readStocks() {
   const entries = await Promise.all(
@@ -83,7 +77,7 @@ test.describe("Stok otomatis saat lunas (loyang & box hampers)", () => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
     test.setTimeout(90_000)
     const before = await readStocks()
-    // Nama-nama ini dulu salah dicocokkan ke box Classic Red, Melted Cheese, dan Holy E Olio.
+    // Menu pasta biasa tidak memakai box hampers.
     await saveAndPay(
       page,
       fillTemplate(FO1_TEMPLATE, `QA Customer ${Date.now()} Normal`, [
@@ -95,12 +89,13 @@ test.describe("Stok otomatis saat lunas (loyang & box hampers)", () => {
     const after = await readStocks()
     expect(after["Loyang Large"]).toBe(before["Loyang Large"] - 2)
     expect(after["Loyang Regular"]).toBe(before["Loyang Regular"] - 1)
-    expect(after["Classic Red (Large)"]).toBe(before["Classic Red (Large)"])
-    expect(after["Melted Cheese (Large)"]).toBe(before["Melted Cheese (Large)"])
-    expect(after["Holy E Olio (Regular)"]).toBe(before["Holy E Olio (Regular)"])
+    expect(after["Hampers LARGE"]).toBe(before["Hampers LARGE"])
+    expect(after["Hampers REGULER"]).toBe(before["Hampers REGULER"])
   })
 
-  test("Hampers: memotong loyang dan box sesuai menu", async ({ page }, info) => {
+  test("Hampers: memotong loyang dan box Hampers LARGE/REGULER sesuai ukuran", async ({
+    page,
+  }, info) => {
     test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
     test.setTimeout(90_000)
     const before = await readStocks()
@@ -114,8 +109,8 @@ test.describe("Stok otomatis saat lunas (loyang & box hampers)", () => {
     const after = await readStocks()
     expect(after["Loyang Large"]).toBe(before["Loyang Large"] - 2)
     expect(after["Loyang Regular"]).toBe(before["Loyang Regular"] - 1)
-    expect(after["Classic Red (Large)"]).toBe(before["Classic Red (Large)"] - 2)
-    expect(after["Holy E Olio (Regular)"]).toBe(before["Holy E Olio (Regular)"] - 1)
+    expect(after["Hampers LARGE"]).toBe(before["Hampers LARGE"] - 2)
+    expect(after["Hampers REGULER"]).toBe(before["Hampers REGULER"] - 1)
 
     // Pembayaran dibatalkan: stok kembali.
     await page.goto(`/pembayaran?q=${orderNo}`)
@@ -143,7 +138,8 @@ test.describe("Stok otomatis saat lunas (loyang & box hampers)", () => {
     const readAll = async () => ({
       loyangLarge: await unpaidOf("Loyang Large"),
       loyangRegular: await unpaidOf("Loyang Regular"),
-      boxLarge: await unpaidOf("Box Hampers Large"),
+      // Kategori stok "Hampers" berisi Hampers LARGE dan Hampers REGULER.
+      boxes: await unpaidOf("Hampers"),
     })
 
     await loginAs(page, admin.email!, admin.password!, "/dashboard")
@@ -167,7 +163,7 @@ test.describe("Stok otomatis saat lunas (loyang & box hampers)", () => {
     const after = await readAll()
     expect(after.loyangLarge).toBe(before.loyangLarge + 2)
     expect(after.loyangRegular).toBe(before.loyangRegular + 1)
-    expect(after.boxLarge).toBe(before.boxLarge + 2)
+    expect(after.boxes).toBe(before.boxes + 3)
     // Belum dibayar = stok asli belum terpotong.
     expect(await readStocks()).toEqual(stockBefore)
     await page

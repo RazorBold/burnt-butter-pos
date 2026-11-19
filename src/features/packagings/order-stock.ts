@@ -13,11 +13,24 @@ import {
 } from "@/db/schema"
 
 import { ensureLoyangItems } from "./loyang"
-import { hampersBoxName, loyangNeed } from "./stock-needs"
+import {
+  boxKey,
+  HAMPERS_BOX_NAME,
+  hampersBoxName,
+  LEGACY_HAMPERS_BOX_NAMES,
+  loyangNeed,
+} from "./stock-needs"
 import { isHampersCategory } from "@/features/orders/order-type"
 
 type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0]
 type OrderRef = { id: string; orderNo: string }
+
+/** Nama box hampers (huruf kecil) di DB; "Regular" dan "Reguler" sama-sama diterima. */
+const NEW_BOX_NAMES = Object.values(HAMPERS_BOX_NAME).flatMap((name) => {
+  const lower = name.toLowerCase()
+  return [lower, lower.replace("reguler", "regular")]
+})
+const LEGACY_BOX_NAMES = LEGACY_HAMPERS_BOX_NAMES.map((name) => name.toLowerCase())
 
 /**
  * Potong stok loyang (Large & Regular) dan box packaging hampers saat pesanan TERBAYAR (LUNAS).
@@ -46,26 +59,15 @@ export async function deductOrderStock(tx: Tx, paidOrders: OrderRef[], userId: s
     .leftJoin(menuCategories, eq(menuCategories.id, menus.categoryId))
     .where(inArray(orderItems.orderId, orderIds))
 
-  // Ambil semua box packaging edisi hampers yang ada di DB
+  // Box hampers per ukuran (Hampers LARGE / Hampers REGULER)
   const boxRows = await tx
     .select({ id: packagings.id, name: packagings.name })
     .from(packagings)
-    .where(
-      inArray(sql`lower(${packagings.name})`, [
-        "classic red (large)",
-        "classic red (regular)",
-        "mac & joy (large)",
-        "mac & joy (regular)",
-        "melted cheese (large)",
-        "melted cheese (regular)",
-        "holy e olio (large)",
-        "holy e olio (regular)",
-      ]),
-    )
+    .where(inArray(sql`lower(${packagings.name})`, NEW_BOX_NAMES))
 
   const boxMap = new Map<string, string>()
   for (const b of boxRows) {
-    boxMap.set(b.name.toLowerCase(), b.id)
+    boxMap.set(boxKey(b.name), b.id)
   }
 
   // Hitung kebutuhan per order: loyang Large/Regular, dan box hampers
@@ -85,18 +87,16 @@ export async function deductOrderStock(tx: Tx, paidOrders: OrderRef[], userId: s
       orderReq.set(target.id, cur)
     }
 
-    // 2. Box Hampers: hanya menu di kategori Hampers. Menu pasta biasa (mis. "Spaghetti Classico",
-    // "Melt My Mac", "Aglio E Olio") tidak boleh ikut memotong box walau namanya mirip.
+    // 2. Box Hampers: hanya menu di kategori Hampers, satu box per porsi sesuai ukuran. Menu
+    // pasta biasa tidak memakai box hampers.
     const isHampersMenu = isHampersCategory(item.categoryName)
     if (isHampersMenu && (item.size === "large" || item.size === "regular")) {
-      const boxName = hampersBoxName(item.menuName, item.size)
-      if (boxName) {
-        const boxId = boxMap.get(boxName.toLowerCase())
-        if (boxId) {
-          const cur = orderReq.get(boxId) ?? { name: boxName, qty: 0 }
-          cur.qty += item.qty
-          orderReq.set(boxId, cur)
-        }
+      const boxName = hampersBoxName(item.size)
+      const boxId = boxMap.get(boxKey(boxName))
+      if (boxId) {
+        const cur = orderReq.get(boxId) ?? { name: boxName, qty: 0 }
+        cur.qty += item.qty
+        orderReq.set(boxId, cur)
       }
     }
 
@@ -193,18 +193,7 @@ export async function returnOrderStock(
   const boxRows = await tx
     .select({ id: packagings.id })
     .from(packagings)
-    .where(
-      inArray(sql`lower(${packagings.name})`, [
-        "classic red (large)",
-        "classic red (regular)",
-        "mac & joy (large)",
-        "mac & joy (regular)",
-        "melted cheese (large)",
-        "melted cheese (regular)",
-        "holy e olio (large)",
-        "holy e olio (regular)",
-      ]),
-    )
+    .where(inArray(sql`lower(${packagings.name})`, [...NEW_BOX_NAMES, ...LEGACY_BOX_NAMES]))
 
   const allItemIds = [loyangMap.large.id, loyangMap.regular.id, ...boxRows.map((b) => b.id)]
 

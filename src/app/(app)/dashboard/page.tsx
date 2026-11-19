@@ -51,6 +51,7 @@ import { addDays, ORDER_STATUS_LABEL } from "@/features/orders/filters"
 import { listLatestOrders } from "@/features/orders/queries"
 import { isUrgent } from "@/features/orders/status"
 import { summarizeCategories } from "@/features/packagings/categories"
+import { boxKey } from "@/features/packagings/stock-needs"
 import { getUnpaidStockNeeds, listPackagings } from "@/features/packagings/queries"
 import { getLoyangSummary } from "@/features/packagings/loyang"
 import { listProductionOrders } from "@/features/production/queries"
@@ -144,11 +145,13 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   const totalOrders = kpis.orders.value
   const pct = (value: number) => (totalOrders ? Math.round((value / totalOrders) * 100) : 0)
   // Kebutuhan box dari pesanan belum bayar, dijumlahkan per kategori stok (Large/Regular).
-  const categoryOfBox = new Map(packagings.map((item) => [item.name, item.categoryId ?? "lain"]))
+  const categoryOfBox = new Map(
+    packagings.map((item) => [boxKey(item.name), item.categoryId ?? "lain"]),
+  )
   const unpaidBoxes = (boxes: Record<string, number>) => {
     const byCategory = new Map<string, number>()
     for (const [name, qty] of Object.entries(boxes)) {
-      const key = categoryOfBox.get(name)
+      const key = categoryOfBox.get(boxKey(name))
       if (key) byCategory.set(key, (byCategory.get(key) ?? 0) + qty)
     }
     return byCategory

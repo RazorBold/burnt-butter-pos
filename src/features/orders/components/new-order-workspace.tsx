@@ -36,7 +36,13 @@ import {
 import { createOrder } from "@/features/orders/actions"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { type CatalogVariant, matchParsedItems, orderTotal } from "@/features/orders/catalog"
+import {
+  applyBirthdayBox,
+  birthdayBoxVariant,
+  type CatalogVariant,
+  matchParsedItems,
+  orderTotal,
+} from "@/features/orders/catalog"
 import {
   isMarketplace,
   ORDER_CHANNEL_LABEL,
@@ -47,7 +53,12 @@ import {
   WA_DRAFT_EVENT,
   WA_DRAFT_KEY,
 } from "@/features/orders/constants"
-import { FlagNote, Field, ShippingMethodPicker } from "@/features/orders/components/order-fields"
+import {
+  BirthdayBoxField,
+  FlagNote,
+  Field,
+  ShippingMethodPicker,
+} from "@/features/orders/components/order-fields"
 import {
   matchOptionByText,
   type ShippingOptionChoice,
@@ -162,8 +173,14 @@ export function NewOrderWorkspace({
     (text: string, current: OrderChannel) => {
       const parsed = parseWaOrder(text, toJakartaDateString(new Date()))
       const { channel, guessed } = channelAfterParse(parsed, current)
-      const { quantities, unmatched } = matchParsedItems(parsed.items, catalog)
-      const draft = draftFromParsed(parsed, quantities)
+      const matchedItems = matchParsedItems(parsed.items, catalog)
+      const { unmatched } = matchedItems
+      // "Birthday Box: Yes" menambah 1 menu Additional Birthday Box (Rp 14.000).
+      const birthday = applyBirthdayBox(matchedItems.quantities, parsed.birthdayBox, catalog)
+      const draft = {
+        ...draftFromParsed(parsed, birthday.quantities),
+        birthdayBox: birthday.birthdayBox,
+      }
       // Nama kategori di pesan WA (mis. "Sameday", "Paxel") memilih kategori itu beserta alurnya.
       const matched = matchOptionByText(shippingOptions, parsed.shippingText)
       const next = {
@@ -223,7 +240,12 @@ export function NewOrderWorkspace({
   }
 
   function setQty(variantId: string, qty: number) {
-    setDraft((current) => ({ ...current, quantities: { ...current.quantities, [variantId]: qty } }))
+    setDraft((current) => ({
+      ...current,
+      quantities: { ...current.quantities, [variantId]: qty },
+      // Menu Additional Birthday Box diubah langsung: pilihan Birthday Box ikut.
+      ...(variantId === birthdayBoxVariant(catalog)?.id && { birthdayBox: qty > 0 }),
+    }))
     if (flagged.has("items")) {
       setFlagged((current) => {
         const next = new Set(current)
@@ -313,6 +335,7 @@ export function NewOrderWorkspace({
     channel: "Sumber",
     marketplaceOrderNo: "Nomor invoice",
     marketplaceTotal: "Total pembayaran",
+    birthdayBox: "Birthday Box",
     type: "Tipe",
     kind: "Jenis pesanan",
     name: "Nama penerima",
@@ -699,12 +722,21 @@ export function NewOrderWorkspace({
                   onChange={(event) => update("request", event.target.value)}
                   placeholder="Mis. saus dipisah, tanpa sendok"
                   rows={2}
-                  maxLength={300}
+                  maxLength={1000}
                 />
               </Field>
             </FormGroup>
 
             <FormGroup title="Menu">
+              <BirthdayBoxField
+                value={draft.birthdayBox}
+                onChange={(value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    ...applyBirthdayBox(current.quantities, value, catalog),
+                  }))
+                }
+              />
               <div id="field-items" className="scroll-mt-28">
                 {flagFor("items") && <FlagNote id="items-flag">{flagFor("items")}</FlagNote>}
                 <div className={cn(flagFor("items") && "mt-2")}>

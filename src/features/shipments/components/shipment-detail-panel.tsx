@@ -10,6 +10,7 @@ import {
 import Link from "next/link"
 import type { ReactNode } from "react"
 
+import { InvoiceNo } from "@/components/app/order-badges"
 import {
   ShipmentStatusBadge,
   ShippingMethodLabel,
@@ -116,6 +117,7 @@ export async function ShipmentDetailPanel({
           <InfoRow icon={UserRound}>
             {order.customer.name}
             {order.senderName && <span className="text-text-body"> (dari {order.senderName})</span>}
+            <InvoiceNo no={order.marketplaceOrderNo} className="mt-0.5" />
           </InfoRow>
           {order.customer.phone && (
             <InfoRow icon={Phone}>

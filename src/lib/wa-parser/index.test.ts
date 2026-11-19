@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { kindFrom, marketplaceFrom, parseDeliveryDate, parseWaOrder } from "./index"
+import { kindFrom, marketplaceFrom, parseDeliveryDate, parseWaOrder, yesNoFrom } from "./index"
 import {
   FO1_TEMPLATE,
+  FO3_TEMPLATE,
   HADIAH_SAMPLE,
   HADIAH_TEMPLATE,
+  OLSHOP_CARD_SAMPLE,
   OLSHOP_SAMPLE,
   OLSHOP_TEMPLATE,
   PERSONAL_SAMPLE,
@@ -100,7 +102,10 @@ describe("parseWaOrder: template kosong dan variasi", () => {
   })
 
   it("opsi kirim yang ditebalkan dianggap dipilih", () => {
-    const parsed = parseWaOrder(PERSONAL_TEMPLATE.replace(/- Instant\s*\n/, "- *Instant*\n"), TODAY)
+    const parsed = parseWaOrder(
+      PERSONAL_TEMPLATE.replace(/- Instant Reguler\s*\n/, "- *Instant Reguler*\n"),
+      TODAY,
+    )
     expect(parsed.shippingMethod).toBe("instant")
   })
 
@@ -154,9 +159,49 @@ describe("parseWaOrder: template Olshop", () => {
     expect(empty.marketplace).toBeNull()
     expect(empty.name).toBeNull()
     expect(empty.invoiceNo).toBeNull()
+    expect(empty.birthdayBox).toBeNull()
     expect(empty.deliveryDate).toBeNull()
     expect(empty.request).toBeNull()
     expect(empty.items).toEqual([])
+  })
+
+  it("contoh nyata: kartu ucapan per menu di notes disalin utuh, tidak jadi kolom kartu", () => {
+    const card = parseWaOrder(OLSHOP_CARD_SAMPLE, TODAY)
+    expect(card.marketplace).toBe("shopee")
+    expect(card.deliveryDate).toBe("2026-11-19")
+    expect(card.name).toBe("Henny")
+    expect(card.invoiceNo).toBe("261118MCC2SRP5")
+    expect(card.items).toEqual([
+      { name: "Not Your Mac and Cheese", size: "large", qty: 1 },
+      { name: "Spaghetti Classico Bologna Brulee", size: "regular", qty: 1 },
+    ])
+    expect(card.birthdayBox).toBeNull()
+    expect(card.cardTo).toBeNull()
+    expect(card.cardFrom).toBeNull()
+    expect(card.request).toBe(
+      [
+        "Classico Bologna Kecil",
+        "To : Rainier // From : ii Via // Wish : Happy Belated Birthday Rainier !! May all your wishes come true :)",
+        "",
+        "Not your Mac n Cheese Besar",
+        "To : Sis Henny // From : Evi & Via // Wish : HBD Sis, Semoga hidupmu makin cerah & drama makin tipis :)",
+      ].join("\n"),
+    )
+  })
+
+  it("Birthday Box: Yes/No dari template", () => {
+    const filled = (answer: string) =>
+      parseWaOrder(
+        OLSHOP_TEMPLATE.replace("Marketplace: Tokopedia/Shopee", "Marketplace: Tokopedia")
+          .replace("Birthday Box: Yes/No", `Birthday Box: ${answer}`)
+          .replace("Nama Penerima:", "Nama Penerima: Rina"),
+        TODAY,
+      )
+    expect(filled("Yes").birthdayBox).toBe(true)
+    expect(filled("No").birthdayBox).toBe(false)
+    expect(filled("").birthdayBox).toBeNull()
+    expect(filled("Yes").name).toBe("Rina")
+    expect(filled("Yes").marketplace).toBe("tokopedia")
   })
 
   it("template WA biasa bukan Olshop", () => {
@@ -444,8 +489,9 @@ E. Holy E Olio  : `
 })
 
 describe("parseWaOrder: template FO dengan dua label tanggal", () => {
+  // FO3 masih punya "Tanggal Pengiriman" dan "Tanggal kirim".
   const fill = (top: string, bottom: string) =>
-    FO1_TEMPLATE.replace("Tanggal Pengiriman:", `Tanggal Pengiriman: ${top}`).replace(
+    FO3_TEMPLATE.replace("Tanggal Pengiriman:", `Tanggal Pengiriman: ${top}`).replace(
       "Tanggal kirim:",
       `Tanggal kirim: ${bottom}`,
     )
@@ -471,7 +517,7 @@ describe("parseWaOrder: Sameday", () => {
     )
 
   it("template FO memuat pilihan Sameday", () => {
-    expect(FO1_TEMPLATE).toContain("- Sameday (dikirim di hari yang sama)")
+    expect(FO1_TEMPLATE).toMatch(/^- Sameday$/m)
   })
 
   it("Sameday terbaca sebagai alur Instant dengan teks aslinya", () => {
@@ -496,5 +542,45 @@ describe("parseWaOrder: Sameday", () => {
     const parsed = parseWaOrder(pick("- Instant"), TODAY)
     expect(parsed.shippingMethod).toBe("instant")
     expect(parsed.shippingText).toBe("Instant")
+  })
+})
+
+describe("yesNoFrom", () => {
+  it.each([
+    ["Yes", true],
+    ["ya", true],
+    ["No", false],
+    ["Tidak", false],
+    ["Yes/No", null],
+    ["", null],
+  ])("%s", (text, expected) => {
+    expect(yesNoFrom(text)).toBe(expected)
+  })
+})
+
+describe("parseWaOrder: Additional Birthday Box di template FO (19 Nov 2026)", () => {
+  const answer = (template: string, value: string) =>
+    template.replace(
+      "*Additional Birthday Box (Rp 14.000)*: Yes/No",
+      `*Additional Birthday Box (Rp 14.000)*: ${value}`,
+    )
+
+  it("FO1: di bawah Tipe Box", () => {
+    expect(parseWaOrder(answer(FO1_TEMPLATE, "Yes"), TODAY).birthdayBox).toBe(true)
+    expect(parseWaOrder(answer(FO1_TEMPLATE, "No"), TODAY).birthdayBox).toBe(false)
+    expect(parseWaOrder(FO1_TEMPLATE, TODAY).birthdayBox).toBeNull()
+  })
+
+  it("FO3: di dalam #BOX NORMAL, menu tetap terbaca", () => {
+    const text = answer(FO3_TEMPLATE, "Yes")
+      .replace("A. Spaghetti Classico Bologna Brulee:", "A. Spaghetti Classico Bologna Brulee: 1")
+      .replace(/A. Classico Red : ?/, "A. Classico Red : 1")
+    const parsed = parseWaOrder(text, TODAY)
+    expect(parsed.birthdayBox).toBe(true)
+    expect(parsed.type).toBe("normal_hampers")
+    expect(parsed.items).toEqual([
+      { name: "Spaghetti Classico Bologna Brulee", size: "large", qty: 1 },
+      { name: "Classico Red", size: "large", qty: 1 },
+    ])
   })
 })

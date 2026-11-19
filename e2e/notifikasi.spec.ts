@@ -18,6 +18,8 @@ function orderText(name: string) {
     .replace("Alamat Lengkap:", "Alamat Lengkap: Jl. QA No. 1, Bandung")
     .replace(/- Pick Up\s*\n/, "")
     .replace(/- Kurir Internal.*\n/, "")
+    .replace(/- Sameday.*\n/, "")
+    .replace(/- Instant Prioritas.*\n/, "")
     .replace("Choco Bon Bon :", "Choco Bon Bon : 1")
 }
 

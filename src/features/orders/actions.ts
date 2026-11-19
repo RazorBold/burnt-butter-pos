@@ -28,6 +28,7 @@ import { BULK_LIMIT, type BulkResult, summarizeBulk } from "@/lib/bulk"
 import { formatRupiah, toJakartaDateString } from "@/lib/format"
 import { normalizePhone } from "@/lib/phone"
 
+import { isBirthdayBoxMenu } from "./catalog"
 import { isMarketplace, ORDER_CHANNEL_LABEL, type OrderChannel } from "./constants"
 import { type DraftField, draftIssues, parseRupiahInput } from "./draft"
 import { orderTypeFromMenus } from "./order-type"
@@ -214,6 +215,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
             ? orderTypeFromMenus(variants.map((variant) => variant.categoryName))
             : draft.type,
           kind: draft.kind,
+          birthdayBox: draft.birthdayBox,
           deliveryDate: draft.deliveryDate,
           request: optional(draft.request),
           total,
@@ -531,6 +533,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
       phone: customers.phone,
       address: shipments.address,
       kind: orders.kind,
+      birthdayBox: orders.birthdayBox,
       type: orders.type,
       method: shipments.method,
       request: orders.request,
@@ -588,6 +591,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     address: current.address,
     deliveryDate: current.deliveryDate,
     kind: current.kind,
+    birthdayBox: current.birthdayBox,
     type: current.type,
     method: current.method,
     request: current.request,
@@ -604,6 +608,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
     address,
     deliveryDate: draft.deliveryDate,
     kind: draft.kind,
+    birthdayBox: draft.birthdayBox,
     type: marketplace ? current.type : draft.type,
     method,
     request: optional(draft.request),
@@ -630,6 +635,7 @@ export async function updateOrderDetails(input: unknown): Promise<UpdateOrderRes
         total,
         type: marketplace ? current.type : draft.type,
         kind: draft.kind,
+        birthdayBox: draft.birthdayBox,
         deliveryDate: draft.deliveryDate,
         request: optional(draft.request),
         senderName: optional(draft.senderName),
@@ -784,6 +790,14 @@ export async function updateOrderItems(input: unknown): Promise<UpdateOrderItems
         .innerJoin(menus, eq(menus.id, menuVariants.menuId))
         .leftJoin(menuCategories, eq(menuCategories.id, menus.categoryId))
         .where(inArray(menuVariants.id, variantIds))
+      // Menu Additional Birthday Box ditambah/dihapus: penanda Birthday Box ikut.
+      const birthdayIds = new Set(
+        names.filter((row) => isBirthdayBoxMenu(row.name)).map((row) => row.id),
+      )
+      if (birthdayIds.size > 0) {
+        const birthdayBox = rows.some((row) => birthdayIds.has(row.menuVariantId) && row.qty > 0)
+        await tx.update(orders).set({ birthdayBox }).where(eq(orders.id, orderId))
+      }
       if (isMarketplace(order.channel)) {
         const categoryOf = new Map(names.map((row) => [row.id, row.categoryName]))
         const type = orderTypeFromMenus(rows.map((row) => categoryOf.get(row.menuVariantId)))

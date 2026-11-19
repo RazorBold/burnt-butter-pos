@@ -224,6 +224,7 @@ export function OrderInfo({
           {ORDER_CHANNEL_LABEL[order.channel]}
           {order.marketplaceOrderNo && ` (${order.marketplaceOrderNo})`}
         </Row>
+        {order.birthdayBox && <Row label="Birthday Box">Ya</Row>}
         <Row label={hasGift ? "Nama Penerima" : "Nama Lengkap"}>{order.customer.name}</Row>
         <Row label="No. Telp">
           <span className="tabular-nums">{formatPhone(order.customer.phone)}</span>

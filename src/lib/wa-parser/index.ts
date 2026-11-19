@@ -52,6 +52,8 @@ export type ParsedOrder = {
   invoiceNo: string | null
   /** Dari label "Jenis Pesanan"; null bila kosong atau semua pilihan masih tertulis. */
   kind: OrderKind | null
+  /** Dari label "Birthday Box: Yes/No"; null bila kosong atau keduanya masih tertulis. */
+  birthdayBox: boolean | null
 }
 
 type Field =
@@ -68,6 +70,7 @@ type Field =
   | "invoice"
   | "kind"
   | "boxType"
+  | "birthdayBox"
 
 // Urutan penting: "Nama Pengirim" dicek sebelum pola nama umum.
 const FIELD_LABELS: [Field, RegExp][] = [
@@ -84,6 +87,7 @@ const FIELD_LABELS: [Field, RegExp][] = [
   ["invoice", /^(no\.?|nomor|nmr)\s*(invoice|inv|pesanan|order)\b/],
   ["kind", /^jenis(\s*(pesanan|order))?\b/],
   ["boxType", /^(tipe\s*box|tipe\s*pesanan|tipe)\b/],
+  ["birthdayBox", /^(additional\s*)?birthday\s*box\b/],
 ]
 
 /** Field yang nilainya boleh lebih dari satu baris. */
@@ -240,9 +244,19 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
   let inShipping = false
   let menuSize: ParsedSize | null = null
 
+  // Olshop: notes di bawah menu adalah bagian terakhir dan disalin apa adanya, termasuk baris
+  // kartu ucapan per menu ("To : … // From : … // Wish : …") yang tidak boleh dibaca sebagai label.
+  let olshopNotes = false
+
   for (const original of lines) {
     const line = clean(original)
     const key = line.toLowerCase()
+    if (olshopNotes) {
+      const list = (values.request ??= [])
+      // Baris kosong dipertahankan sebagai jeda paragraf (paling banyak satu).
+      if (line || (list.length > 0 && list.at(-1) !== "")) list.push(line)
+      continue
+    }
     if (!line) {
       // Baris kosong mengakhiri isian satu baris, tapi alamat/ucapan/request boleh berjeda.
       if (current && !MULTILINE.has(current)) current = null
@@ -268,6 +282,13 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
       continue
     }
 
+    // "Additional Birthday Box (Rp 14.000): Yes/No" bisa berada di tengah daftar menu (FO3).
+    if (labelOf(key) === "birthdayBox") {
+      values.birthdayBox = [valueAfterLabel(line)].filter(Boolean)
+      current = null
+      continue
+    }
+
     if (menuSize) {
       // Template Olshop: request ditulis di bawah menu.
       if (labelOf(key) === "request") {
@@ -275,6 +296,7 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
         current = "request"
         const value = valueAfterLabel(line)
         values.request = value ? [value] : []
+        olshopNotes = values.marketplace !== undefined || values.invoice !== undefined
         continue
       }
       const item = menuLine(line)
@@ -372,7 +394,16 @@ export function parseWaOrder(text: string, today: string): ParsedOrder {
     marketplace: marketplaceFrom(value("marketplace") ?? ""),
     invoiceNo: value("invoice"),
     kind: kindFrom(value("kind") ?? ""),
+    birthdayBox: yesNoFrom(value("birthdayBox") ?? ""),
   }
+}
+
+/** "Yes"/"Ya" → true, "No"/"Tidak" → false. Kosong atau "Yes/No" (belum dipilih) → null. */
+export function yesNoFrom(text: string): boolean | null {
+  const lower = text.toLowerCase()
+  const yes = /\b(yes|ya|iya|y|pakai|ada)\b/.test(lower)
+  const no = /\b(no|tidak|tdk|gak|nggak|n|tanpa)\b/.test(lower)
+  return yes === no ? null : yes
 }
 
 /**

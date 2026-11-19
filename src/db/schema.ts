@@ -189,6 +189,8 @@ export const orders = pgTable(
     type: orderType("type").notNull(),
     /** Jenis pesanan (PO / Ready Stock / Made to Order). Pesanan lama terisi PO. */
     kind: orderKind("kind").notNull().default("po"),
+    /** Birthday Box (template Olshop, 19 Nov 2026): dikemas dengan box ulang tahun. */
+    birthdayBox: boolean("birthday_box").notNull().default(false),
     status: orderStatus("status").notNull().default("baru"),
     /** Kapan ditandai urgent (pesanan dadakan); null = tidak urgent. */
     urgentAt: timestamp("urgent_at", { withTimezone: true }),

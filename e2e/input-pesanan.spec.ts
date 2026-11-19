@@ -36,7 +36,8 @@ test.describe("Input Pesanan", () => {
     await expect(page.getByLabel(/^Alamat lengkap/)).toHaveValue(
       "Jl. Melati No. 12, RT 03/RW 05\nKel. Sukajadi, Bandung",
     )
-    await expect(page.getByRole("radio", { name: /^Instant/ })).toBeChecked()
+    // Master Data bisa punya beberapa kategori Instant (Reguler/Prioritas): salah satunya terpilih.
+    await expect(page.getByRole("radio", { name: /^Instant/, checked: true })).toHaveCount(1)
     await expect(page.getByLabel(/^Request/)).toHaveValue("Sausnya dipisah ya kak")
     await expect(page.getByLabel("Jumlah Spaghetti Classico Bologna Brulee Large")).toHaveValue("2")
     await expect(page.getByLabel("Jumlah Not Your Mac and Cheese Regular")).toHaveValue("1")
@@ -69,7 +70,7 @@ test.describe("Input Pesanan", () => {
     await page.getByRole("button", { name: "Isi Otomatis" }).click()
     const methods = page.getByRole("radiogroup", { name: "Metode pengiriman" })
     await expect(methods.getByRole("radio", { name: /^Sameday/ })).toBeChecked()
-    await expect(methods.getByRole("radio", { name: /^Instant/ })).not.toBeChecked()
+    await expect(methods.getByRole("radio", { name: /^Instant/, checked: true })).toHaveCount(0)
     await methods.screenshot({ path: "test-results/input-sameday.png" })
   })
 

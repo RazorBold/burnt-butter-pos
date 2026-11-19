@@ -66,7 +66,9 @@ export function PaidWatcher({
       return
     }
     const fresh = unseenPaid(result.orders, lastSeen)
-    if (fresh.length > 0) setPending(fresh)
+    // Daftar diganti tiap polling: lunas baru bertambah ke popup yang masih terbuka, dan
+    // pesanan yang lunasnya dibatalkan/pesanannya dibatalkan ikut hilang dari popup.
+    setPending(fresh)
   }, [key, read, write])
 
   useEffect(() => {

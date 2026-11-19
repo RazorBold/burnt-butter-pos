@@ -77,7 +77,7 @@ export function PackingFiltersBar({ filters }: { filters: PackingFilters }) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari no. pesanan, nama, no. telp…"
+          placeholder="Cari no. pesanan, invoice, nama, no. telp…"
           aria-label="Cari pesanan"
           className="h-10 rounded-lg bg-white pl-9"
         />

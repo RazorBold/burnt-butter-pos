@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { filterPackingOrders, matchesQuery, parsePackingFilters } from "./filters"
+import { filterPackingOrders, matchesQuery, parsePackingFilters, requestHasCard } from "./filters"
 
 const base = { senderName: null, phone: null, cardTo: null, cardFrom: null }
 
@@ -118,5 +118,33 @@ describe("matchesQuery", () => {
     expect(matchesQuery(order, "62819 0591 3318")).toBe(true)
     expect(matchesQuery(order, "3318")).toBe(true)
     expect(matchesQuery(order, "99")).toBe(false)
+  })
+})
+
+describe("requestHasCard", () => {
+  it("kartu ucapan di notes Olshop", () => {
+    expect(requestHasCard("Classico\nTo : Rainier // From : Via // Wish : HBD")).toBe(true)
+    expect(requestHasCard("To: Budi\nUcapan: Selamat")).toBe(true)
+  })
+  it("notes biasa bukan kartu", () => {
+    expect(requestHasCard("Saus dipisah, kirim to kantor")).toBe(false)
+    expect(requestHasCard(null)).toBe(false)
+  })
+})
+
+describe("matchesQuery: nomor invoice olshop", () => {
+  const olshop = {
+    orderNo: "BB261119001",
+    marketplaceOrderNo: "261118MCC2SRP5",
+    customerName: "Henny",
+    senderName: null,
+    phone: null,
+    cardTo: null,
+    cardFrom: null,
+  }
+  it("cari dengan invoice (tanpa peduli huruf besar/kecil)", () => {
+    expect(matchesQuery(olshop, "261118mcc2")).toBe(true)
+    expect(matchesQuery(olshop, "SRP5")).toBe(true)
+    expect(matchesQuery(olshop, "XYZ999")).toBe(false)
   })
 })

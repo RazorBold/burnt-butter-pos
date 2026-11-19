@@ -3,6 +3,7 @@
 import { CircleAlert } from "lucide-react"
 import { cloneElement, type ReactElement, type ReactNode } from "react"
 
+import { SegmentedControl } from "@/components/app/segmented-control"
 import { Label } from "@/components/ui/label"
 import { SHIPPING_METHOD_LABEL, WA_SHIPPING_METHODS } from "@/features/orders/constants"
 import {
@@ -62,6 +63,32 @@ export function Field({
         </p>
       )}
       {flag && <FlagNote id={`${id}-flag`}>{flag}</FlagNote>}
+    </div>
+  )
+}
+
+const BIRTHDAY_BOX_OPTIONS = [
+  { value: "tidak", label: "Tidak" },
+  { value: "ya", label: "Ya" },
+] as const
+
+/** Birthday Box Ya/Tidak (template Olshop "Birthday Box: Yes/No"). */
+export function BirthdayBoxField({
+  value,
+  onChange,
+}: {
+  value: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm leading-none font-medium text-text-strong">Birthday Box</p>
+      <SegmentedControl
+        label="Birthday Box"
+        options={BIRTHDAY_BOX_OPTIONS}
+        value={value ? "ya" : "tidak"}
+        onChange={(next) => onChange(next === "ya")}
+      />
     </div>
   )
 }

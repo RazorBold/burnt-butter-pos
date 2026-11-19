@@ -1,57 +1,55 @@
-// Template pesan WA yang dikirim toko ke customer (dari pemilik toko, Oktober 2026), dan template
+// Template pesan WA yang dikirim toko ke customer (dari pemilik toko, Oktober 2026; FO1 & FO3
+// diperbarui 19 Nov 2026 dengan Additional Birthday Box), dan template
 // Olshop untuk pesanan Shopee/Tokopedia (November 2026).
 // Dipakai untuk test parser dan contoh di e2e.
 
 export const FO1_TEMPLATE = `#DetailFO1
 Tanggal Pengiriman:
 Jenis: PO/RS/MTO
-Tipe Box: NORMAL
 
-Untuk pemesanan boleh dilengkapi ya kak 🤗
+Tipe Box: NORMAL
+*Additional Birthday Box (Rp 14.000)*: Yes/No
 
 Nama Penerima:
-Nama Pengirim (Jika ada): 
-No.Telp: 
+Nama Pengirim (Di-isi jika ada):
+No.Telp:
 Alamat Lengkap:
-Tanggal kirim:
 
-Kartu Ucapan (Jika ada)
+Kartu Ucapan (Di-Isi jika ada)
 To:
 Wishes:
 From:
 
-Pilih Metode Pengiriman : 
+Pilih Metode Pengiriman :
 - Pick Up
-- Instant 
-- Sameday (dikirim di hari yang sama)
-- Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
+- Instant Reguler
+- Instant Prioritas
+- Sameday
 
-Request (Jika ada):
-
+Request (Di-isi jika ada):
 
 ——
 
+Pilihan Menu *(mohon meng-isi jumlah)*:
 
-Pilihan Menu (mohon meng-isi jumlah):
+*Size Large*
+A. Spaghetti Classico Bologna Brulee :
+B. Not Your Mac and Cheese  :
+C. Potato Gratin Lasagna :
+D. Melt My Mac and Cheese  :
+E. Spaghetti Aglio E Olio  :
 
-Size Large
-A. Spaghetti Classico Bologna Brulee : 
-B. Not Your Mac and Cheese  : 
-C. Potato Gratin Lasagna : 
-D. Melt My Mac and Cheese  : 
-E. Spaghetti Aglio E Olio  : 
+*Size Regular*
+A. Spaghetti Classico Bologna Brulee :
+B. Not Your Mac and Cheese  :
+C. Potato Gratin Lasagna :
+D. Melt My Mac and Cheese  :
+E. Spaghetti Aglio E Olio  :
 
-Size Regular
-A. Spaghetti Classico Bologna Brulee : 
-B. Not Your Mac and Cheese  : 
-C. Potato Gratin Lasagna : 
-D. Melt My Mac and Cheese  : 
-E. Spaghetti Aglio E Olio  : 
+*Dessert*
+Choco Bon Bon :
 
-Dessert
-Choco Bon Bon : 
-
-Special Bundle
+*Special Bundle*
 Bundle of 3 :`
 
 export const FO2_TEMPLATE = `#DetailFO2
@@ -102,11 +100,11 @@ Tanggal Pengiriman:
 Jenis: PO/RS/MTO
 Tipe Box: NORMAL & HAMPERS
 
-Untuk pemesanan boleh dilengkapi ya kak 🤗
+*Untuk pemesanan boleh dilengkapi ya kak 🤗*
 
 Nama Penerima:
-Nama Pengirim: 
-No.Telp: 
+Nama Pengirim:
+No.Telp:
 Alamat Lengkap:
 Tanggal kirim:
 
@@ -114,11 +112,10 @@ Kartu Ucapan (Template Christmas)
 To:
 From:
 
-Pilih Metode Pengiriman : 
+Pilih Metode Pengiriman :
 - Pick Up
-- Instant 
-- Sameday (dikirim di hari yang sama)
-- Kurir Internal Burnt Butter (Pengiriman jam 09.00-17.00, tidak dapat request jam, mengikuti rute kurir)
+- Instant
+- Sameday
 
 Request (Jika ada):
 
@@ -126,43 +123,45 @@ Request (Jika ada):
 ——
 
 
-Pilihan Menu (mohon meng-isi jumlah):
+Pilihan Menu *(mohon meng-isi jumlah)*:
 
-#BOX NORMAL
+*#BOX NORMAL*
 
-Size Large
+*Additional Birthday Box (Rp 14.000)*: Yes/No
+
+*Size Large*
 A. Spaghetti Classico Bologna Brulee:
 B. Not Your Mac and Cheese:
 C. Potato Gratin Lasagna:
 D. Melt My Mac and Cheese:
 E. Spaghetti Aglio E Olio:
 
-Size Regular
+*Size Regular*
 A. Spaghetti Classico Bologna Brulee:
 B. Not Your Mac and Cheese:
 C. Potato Gratin Lasagna:
 D. Melt My Mac and Cheese:
 E. Spaghetti Aglio E Olio:
 
-Dessert
+*Dessert*
 Choco Bon Bon:
 
-Special Bundle
+*Special Bundle*
 Bundle of 3:
 
-#BOX CHRISTMAS
+*#BOX CHRISTMAS*
 
-Size Large
-A. Classico Red : 
-B. Mac & Joy  :  
-C. Melted Cheese  : 
-E. Holy E Olio  : 
+*Size Large*
+A. Classico Red :
+B. Mac & Joy  :
+C. Melted Cheese  :
+E. Holy E Olio  :
 
-Size Regular
-A. Classico Red : 
-B. Mac & Joy  :  
-C. Melted Cheese  : 
-E. Holy E Olio  : `
+*Size Regular*
+A. Classico Red :
+B. Mac & Joy  :
+C. Melted Cheese  :
+E. Holy E Olio  :`
 
 export const NORMAL_TEMPLATE = FO1_TEMPLATE
 export const HAMPERS_TEMPLATE = FO2_TEMPLATE
@@ -262,18 +261,77 @@ Special Bundle
 Bundle of 3 : 1`
 
 /**
- * Template pesanan Olshop (Shopee/Tokopedia), dari pemilik toko (November 2026): hanya data
- * pesanan. Menu (biasa atau hampers) dipilih manual di form; tipe pesanan mengikuti menunya.
+ * Template pesanan Olshop (Shopee/Tokopedia), dari pemilik toko (18 Nov 2026, Birthday Box
+ * 19 Nov 2026): data pesanan, Birthday Box Yes/No, daftar menu dengan jumlah, lalu notes/request
+ * (boleh berisi kartu ucapan per menu). Menu yang tidak ada di daftar (mis. hampers) tetap bisa
+ * dipilih manual di form.
  */
 export const OLSHOP_TEMPLATE = `Marketplace: Tokopedia/Shopee
 Tanggal pengiriman:
 Nama Penerima:
-Nomor Invoice:`
+Nomor Invoice:
+Birthday Box: Yes/No
 
-/**
- * Contoh Olshop format lama (dengan daftar menu dan request). Parser tetap membacanya, jadi pesan
- * lama yang masih ditempel lengkap tidak rusak.
- */
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Spaghetti Classico Bologna Brulee :
+B. Not Your Mac and Cheese  :
+C. Potato Gratin Lasagna :
+D. Melt My Mac and Cheese  :
+E. Spaghetti Aglio E Olio  :
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee :
+B. Not Your Mac and Cheese  :
+C. Potato Gratin Lasagna :
+D. Melt My Mac and Cheese  :
+E. Spaghetti Aglio E Olio  :
+
+Dessert
+Choco Bon Bon :
+
+Special Bundle
+Bundle of 3 :
+
+Jika ada notes/request tambahan:`
+
+/** Contoh nyata template Olshop (Shopee, 18 Nov 2026): kartu ucapan per menu di notes. */
+export const OLSHOP_CARD_SAMPLE = `Marketplace: Shopee
+Tanggal pengiriman: 19 november 2026
+Nama Penerima: Henny
+Nomor Invoice: 261118MCC2SRP5
+
+Pilihan Menu (mohon meng-isi jumlah):
+
+Size Large
+A. Spaghetti Classico Bologna Brulee : 
+B. Not Your Mac and Cheese  : 1
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
+
+Size Regular
+A. Spaghetti Classico Bologna Brulee : 1
+B. Not Your Mac and Cheese  : 
+C. Potato Gratin Lasagna : 
+D. Melt My Mac and Cheese  : 
+E. Spaghetti Aglio E Olio  : 
+
+Dessert
+Choco Bon Bon : 
+
+Special Bundle
+Bundle of 3 : 
+
+Jika ada notes/request tambahan: 
+Classico Bologna Kecil
+To : Rainier // From : ii Via // Wish : Happy Belated Birthday Rainier !! May all your wishes come true :) 
+
+Not your Mac n Cheese Besar
+To : Sis Henny // From : Evi & Via // Wish : HBD Sis, Semoga hidupmu makin cerah & drama makin tipis :)`
+
+/** Contoh Olshop dengan menu dan request satu paragraf. */
 export const OLSHOP_SAMPLE = `Marketplace: Shopee
 Tanggal pengiriman: 27/10/2026
 Nama Penerima: Nadia Rahma

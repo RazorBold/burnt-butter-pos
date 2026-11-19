@@ -29,11 +29,12 @@ describe("format tanggal WIB", () => {
   const diniHari = new Date("2026-10-20T18:30:00Z")
 
   it("menampilkan tanggal dan jam dalam Bahasa Indonesia", () => {
-    expect(formatTanggal(pagi)).toBe("21 Oktober 2026")
+    // Seragam DD/MM/YYYY (permintaan pemilik toko, 19 Nov 2026).
+    expect(formatTanggal(pagi)).toBe("21/10/2026")
     expect(formatTanggalPendek(pagi)).toBe("21/10/2026")
-    expect(formatHariTanggal(pagi)).toBe("Rabu, 21 Oktober 2026")
+    expect(formatHariTanggal(pagi)).toBe("Rabu, 21/10/2026")
     expect(formatJam(pagi)).toBe("09:12")
-    expect(formatWaktuDibuat(pagi)).toBe("21 Okt 2026, 09:12")
+    expect(formatWaktuDibuat(pagi)).toBe("21/10/2026, 09:12")
   })
 
   it("menghitung hari menurut WIB, bukan UTC", () => {

@@ -21,6 +21,7 @@ export type DetailSnapshot = {
   address: string | null
   deliveryDate: string
   kind: OrderKind
+  birthdayBox: boolean
   type: OrderType
   method: ShippingMethod
   request: string | null
@@ -51,6 +52,11 @@ export function describeDetailChanges(before: DetailSnapshot, after: DetailSnaps
   }
   if (diff("kind")) {
     changes.push(`Jenis: ${ORDER_KIND_LABEL[before.kind]} → ${ORDER_KIND_LABEL[after.kind]}`)
+  }
+  if (diff("birthdayBox")) {
+    changes.push(
+      `Birthday Box: ${before.birthdayBox ? "Ya" : "Tidak"} → ${after.birthdayBox ? "Ya" : "Tidak"}`,
+    )
   }
   if (diff("type")) {
     changes.push(`Tipe: ${ORDER_TYPE_LABEL[before.type]} → ${ORDER_TYPE_LABEL[after.type]}`)

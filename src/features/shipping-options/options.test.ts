@@ -119,8 +119,8 @@ describe("template WA dari kategori", () => {
 
   it("blok Pilih Metode Pengiriman diganti, sisanya tetap", () => {
     const filled = withShippingChoices(FO1_TEMPLATE, templateShippingLines(options))
-    expect(filled).toContain(
-      "Pilih Metode Pengiriman : \n- Pick Up (Ambil sendiri di toko)\n- Paxel\n\nRequest",
+    expect(filled).toMatch(
+      /Pilih Metode Pengiriman :\s*\n- Pick Up \(Ambil sendiri di toko\)\n- Paxel\n\nRequest/,
     )
     expect(filled).not.toContain("- Instant")
     expect(filled.replace(/Pilih Metode[\s\S]*?\n\n/, "")).toBe(

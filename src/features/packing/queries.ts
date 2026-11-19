@@ -27,6 +27,10 @@ export type PackingOrder = {
   type: OrderType
   /** Jenis pesanan: PO / Ready Stock / Made to Order. */
   kind: OrderKind
+  /** Dikemas dengan Birthday Box (template Olshop). */
+  birthdayBox: boolean
+  /** No. invoice Shopee/Tokopedia; selalu tampil di kartu Packaging. */
+  marketplaceOrderNo: string | null
   /** Sumber pesanan: WhatsApp, Shopee, Tokopedia. */
   channel: OrderChannel
   customerName: string
@@ -130,7 +134,9 @@ export async function listPackingOrders(
     status: row.status,
     type: row.type,
     kind: row.kind,
+    birthdayBox: row.birthdayBox,
     channel: row.channel,
+    marketplaceOrderNo: row.marketplaceOrderNo,
     customerName: row.customerName,
     senderName: row.senderName,
     phone: row.customer?.phone ?? null,

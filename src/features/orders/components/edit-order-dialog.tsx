@@ -45,6 +45,7 @@ function draftOf(order: OrderDetail): EditDraft {
     marketplaceTotal: formatRupiah(order.total).replace("Rp ", ""),
     type: order.type,
     kind: order.kind,
+    birthdayBox: order.birthdayBox,
     name: order.customer.name,
     phone: order.customer.phone ? formatPhone(order.customer.phone) : "",
     address: order.shipment.address ?? "",
@@ -287,7 +288,7 @@ export function EditOrderDialog({
               value={draft.request}
               onChange={(event) => update("request", event.target.value)}
               rows={2}
-              maxLength={300}
+              maxLength={1000}
             />
           </Field>
 

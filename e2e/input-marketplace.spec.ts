@@ -93,7 +93,10 @@ test.describe("Input Pesanan marketplace", () => {
     const no = `QA-SHP-${stamp}`
     const name = `QA Customer ${stamp}`
     const date = farDate()
-    const text = olshopText({ marketplace: "Shopee", no, name, date })
+    const text = olshopText({ marketplace: "Shopee", no, name, date }).replace(
+      "Birthday Box: Yes/No",
+      "Birthday Box: Yes",
+    )
 
     await loginAs(page, admin.email!, admin.password!, "/pesanan/baru?sumber=shopee")
     // Olshop tidak meminta kurir atau resi.
@@ -104,6 +107,9 @@ test.describe("Input Pesanan marketplace", () => {
     await expect(page.getByText(/^Terbaca 3 dari 3 isian wajib\./)).toBeVisible()
     await pickMenus(page, { "Choco Bon Bon": 1 })
     await expect(page.getByLabel("Nomor invoice")).toHaveValue(no)
+    await expect(
+      page.getByRole("radiogroup", { name: "Birthday Box" }).getByRole("radio", { name: "Ya" }),
+    ).toHaveAttribute("aria-checked", "true")
     // Total kosong = harga menu; diisi = total marketplace (voucher/diskon).
     await expect(page.getByLabel("Total pembayaran")).toHaveValue("")
     await page.getByLabel("Total pembayaran").fill("210000")
@@ -122,7 +128,8 @@ test.describe("Input Pesanan marketplace", () => {
       expedition: null,
       tracking_no: null,
       raw_wa_text: text,
-      items: 1,
+      // Choco Bon Bon + Additional Birthday Box (Birthday Box: Yes).
+      items: 2,
       payments: 1,
       shipment_status: null,
     })
@@ -140,6 +147,8 @@ test.describe("Input Pesanan marketplace", () => {
     await page.goto(`/pesanan?q=${no}&sumber=shopee`)
     const row = page.getByRole("row", { name: new RegExp(orderNo) })
     await expect(row.getByText("Shopee")).toBeVisible()
+    // Nomor invoice selalu terlihat (dipakai admin untuk mencocokkan paket).
+    await expect(row.getByTestId("invoice-no")).toHaveText(`Invoice ${no}`)
 
     // Dapur memasak seperti biasa.
     await page.goto(`/produksi?tanggal=${date}`)
@@ -151,6 +160,16 @@ test.describe("Input Pesanan marketplace", () => {
 
     // Packing Normal dulu di menu Packaging (stok tidak dicatat), baru bisa dikirim.
     await page.goto(`/packaging?tanggal=${date}`)
+    await expect(
+      page.getByRole("article", { name: orderNo }).getByTestId("packing-birthday-box"),
+    ).toBeVisible()
+    await expect(page.getByRole("article", { name: orderNo }).getByTestId("invoice-no")).toHaveText(
+      `Invoice ${no}`,
+    )
+    // Cari dengan nomor invoice di Packaging.
+    await page.getByRole("searchbox", { name: "Cari pesanan" }).fill(no)
+    await expect(page).toHaveURL(new RegExp(`q=${no}`))
+    await expect(page.getByRole("article", { name: orderNo })).toBeVisible()
     await page.getByRole("button", { name: `Selesai packing: ${orderNo}` }).click()
     await expect(
       page
@@ -164,12 +183,20 @@ test.describe("Input Pesanan marketplace", () => {
     await expect(panel.getByRole("button", { name: "Tandai Dikirim" })).toBeEnabled()
     await expect(panel.getByRole("button", { name: /Resi/ })).toHaveCount(0)
     await expect(panel.getByRole("button", { name: /Kurir/ })).toHaveCount(0)
+    await expect(panel.getByTestId("invoice-no")).toHaveText(`Invoice ${no}`)
     const shipmentRow = page.getByRole("row", { name: new RegExp(orderNo) })
+    await expect(shipmentRow.getByTestId("invoice-no")).toHaveText(`Invoice ${no}`)
     await expect(shipmentRow.getByRole("button", { name: /link lacak/i })).toHaveCount(0)
     await shipmentRow.getByRole("button", { name: `Aksi untuk ${orderNo}` }).click()
     await expect(page.getByRole("menuitem", { name: /link lacak|resi/i })).toHaveCount(0)
     await page.keyboard.press("Escape")
     await page.screenshot({ path: "test-results/pengiriman-ekspedisi-desktop.png", fullPage: true })
+
+    // Cari dengan nomor invoice di Pengiriman.
+    await page.getByRole("searchbox", { name: "Cari pengiriman" }).fill(no)
+    await expect(page).toHaveURL(new RegExp(`q=${no}`))
+    await expect(page.getByRole("row", { name: new RegExp(orderNo) })).toBeVisible()
+    await expect(page.getByRole("row")).toHaveCount(2)
 
     // Sudah dikirim = selesai untuk olshop.
     await panel.getByRole("button", { name: "Tandai Dikirim" }).click()

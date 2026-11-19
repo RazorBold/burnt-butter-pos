@@ -108,3 +108,30 @@ export function orderTotal(catalog: CatalogVariant[], quantities: Record<string,
   }
   return { items, total }
 }
+
+/** Nama menu add-on Birthday Box, mis. "Additional Birthday Box". */
+export function isBirthdayBoxMenu(name: string): boolean {
+  return normalize(name).includes("birthdaybox")
+}
+
+/** Menu add-on "Additional Birthday Box" (diatur Owner di Master Menu), bila ada. */
+export function birthdayBoxVariant(catalog: CatalogVariant[]): CatalogVariant | undefined {
+  return catalog.find((variant) => isBirthdayBoxMenu(variant.menuName))
+}
+
+/**
+ * Samakan pilihan Birthday Box dengan menu add-on-nya: Ya = minimal 1 Additional Birthday Box,
+ * Tidak = 0, null (belum dipilih) = jumlah menu apa adanya. Hasil `birthdayBox` = ada menu itu.
+ * Tanpa menu add-on di katalog, pilihan disimpan sebagai penanda saja.
+ */
+export function applyBirthdayBox(
+  quantities: Record<string, number>,
+  choice: boolean | null,
+  catalog: CatalogVariant[],
+): { quantities: Record<string, number>; birthdayBox: boolean } {
+  const variant = birthdayBoxVariant(catalog)
+  if (!variant) return { quantities, birthdayBox: choice ?? false }
+  const current = quantities[variant.id] ?? 0
+  const qty = choice === null ? current : choice ? Math.max(1, current) : 0
+  return { quantities: { ...quantities, [variant.id]: qty }, birthdayBox: qty > 0 }
+}

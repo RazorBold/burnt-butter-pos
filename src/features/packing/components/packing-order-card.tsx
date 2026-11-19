@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Cake,
   Gift,
   LoaderCircle,
   Mail,
@@ -18,6 +19,7 @@ import { toast } from "sonner"
 
 import {
   ChannelBadge,
+  InvoiceNo,
   KindBadge,
   OrderStatusBadge,
   UrgentBadge,
@@ -28,6 +30,7 @@ import { SHIPPING_METHOD_LABEL } from "@/features/orders/constants"
 import { packOrder, unpackOrder } from "@/features/packing/actions"
 import type { PackagingUse } from "@/features/packing/needs"
 import type { PackingOrder, PackingPackaging } from "@/features/packing/queries"
+import { requestHasCard } from "@/features/packing/filters"
 import { cn } from "@/lib/utils"
 
 const SIZE_LABEL = { large: "Large", regular: "Regular", single: null } as const
@@ -51,7 +54,10 @@ export function PackingOrderCard({
   const [pending, startTransition] = useTransition()
   const waiting = order.status === "siap_packing"
   const packingType = order.type === "normal" ? "normal" : "hampers"
-  const hasCard = Boolean(order.cardTo || order.cardWishes || order.cardFrom)
+  const cardFields = Boolean(order.cardTo || order.cardWishes || order.cardFrom)
+  // Olshop: kartu ucapan ditulis di notes; notes itu lalu tampil di kotak kartu ucapan.
+  const cardInRequest = !cardFields && requestHasCard(order.request)
+  const hasCard = cardFields || cardInRequest
 
   function pack() {
     startTransition(async () => {
@@ -86,9 +92,19 @@ export function PackingOrderCard({
             {order.customerName}
             {order.senderName && ` (dari ${order.senderName})`}
           </p>
+          <InvoiceNo no={order.marketplaceOrderNo} className="mt-0.5" />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {isUrgent(order) && <UrgentBadge note={order.urgentNote} />}
+          {order.birthdayBox && (
+            <span
+              data-testid="packing-birthday-box"
+              className="inline-flex items-center gap-1 rounded-md bg-hadiah px-2 py-0.5 text-xs font-semibold text-hadiah-fg"
+            >
+              <Cake className="size-3.5" aria-hidden />
+              Birthday Box
+            </span>
+          )}
           {hasCard && (
             <span
               data-testid="packing-card-badge"
@@ -190,6 +206,7 @@ export function PackingOrderCard({
                 <span className="font-semibold text-hadiah-fg">From:</span> {order.cardFrom}
               </p>
             )}
+            {cardInRequest && <p>{order.request}</p>}
           </div>
         </section>
       )}
@@ -205,10 +222,10 @@ export function PackingOrderCard({
         </div>
       )}
 
-      {order.request && (
+      {order.request && !cardInRequest && (
         <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-status-diproses/60 px-2.5 py-2 text-[13px] text-status-diproses-fg">
           <MessageSquareText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          <span className="break-words">{order.request}</span>
+          <span className="break-words whitespace-pre-line">{order.request}</span>
         </p>
       )}
       {order.note && (
@@ -238,6 +255,9 @@ export function PackingOrderCard({
               </Button>
               <span className="text-[12px] text-text-body">
                 Packing {PACKAGING_TYPE_LABEL[packingType]} (sesuai tipe pesanan)
+                {order.birthdayBox && (
+                  <span className="font-semibold text-hadiah-fg"> · pakai Birthday Box</span>
+                )}
                 {hasCard && (
                   <span className="font-semibold text-hadiah-fg"> · jangan lupa kartu ucapan</span>
                 )}

@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest"
 import { parseWaOrder } from "@/lib/wa-parser"
 import { PERSONAL_SAMPLE } from "@/lib/wa-parser/templates"
 
-import { type CatalogVariant, groupCatalog, matchParsedItems, orderTotal } from "./catalog"
+import {
+  applyBirthdayBox,
+  type CatalogVariant,
+  groupCatalog,
+  matchParsedItems,
+  orderTotal,
+} from "./catalog"
 import { draftFromParsed, draftIssues, EMPTY_DRAFT } from "./draft"
 
 const PASTA = { categoryId: "pasta", categoryName: "Pasta", categorySort: 0, sized: true }
@@ -161,5 +167,41 @@ describe("draftIssues", () => {
     )
     expect(issues.address).toBeUndefined()
     expect(issues.deliveryDate).toBe("Tanggal kirim sudah lewat.")
+  })
+})
+
+describe("applyBirthdayBox", () => {
+  const addon: CatalogVariant = {
+    id: "bday",
+    menuName: "Additional Birthday Box",
+    categoryId: "addon",
+    categoryName: "Additional Birthday Box",
+    categorySort: 3,
+    sized: false,
+    size: "single",
+    price: 14000,
+    photoPath: null,
+  }
+  const withAddon = [...CATALOG, addon]
+
+  it("Ya menambah 1 Additional Birthday Box, Tidak menghapusnya", () => {
+    expect(applyBirthdayBox({ "bolo-l": 1 }, true, withAddon)).toEqual({
+      quantities: { "bolo-l": 1, bday: 1 },
+      birthdayBox: true,
+    })
+    expect(applyBirthdayBox({ bday: 2 }, true, withAddon).quantities.bday).toBe(2)
+    expect(applyBirthdayBox({ bday: 2 }, false, withAddon)).toEqual({
+      quantities: { bday: 0 },
+      birthdayBox: false,
+    })
+  })
+
+  it("belum dipilih: mengikuti jumlah menunya", () => {
+    expect(applyBirthdayBox({ bday: 1 }, null, withAddon).birthdayBox).toBe(true)
+    expect(applyBirthdayBox({}, null, withAddon).birthdayBox).toBe(false)
+  })
+
+  it("tanpa menu add-on di katalog: penanda saja", () => {
+    expect(applyBirthdayBox({}, true, CATALOG)).toEqual({ quantities: {}, birthdayBox: true })
   })
 })

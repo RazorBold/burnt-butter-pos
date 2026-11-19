@@ -7,6 +7,7 @@ import { ChatDock } from "@/features/chat/components/chat-dock"
 import { listActivity } from "@/features/activity/queries"
 import { listChatMembers } from "@/features/chat/queries"
 import { countNewOrders } from "@/features/orders/queries"
+import { PackedWatcher } from "@/features/packed-alert/components/packed-watcher"
 import { PaidWatcher } from "@/features/paid-alert/components/paid-watcher"
 import { UrgentWatcher } from "@/features/urgent/components/urgent-watcher"
 import { listStockAlerts } from "@/features/stock-alerts/queries"
@@ -14,6 +15,7 @@ import {
   CAN_EDIT_STOCK,
   CAN_INPUT_ORDER,
   canAccessPath,
+  PACKED_ALERT_ROLES,
   SECTION_ACCESS,
   type Section,
 } from "@/lib/access"
@@ -55,6 +57,7 @@ async function TeamChat() {
       <ChatDock me={{ id: user.id, name: user.name, role: user.role }} members={members} />
       <UrgentWatcher userId={user.id} link={link} />
       <PaidWatcher userId={user.id} link={link} />
+      {PACKED_ALERT_ROLES.includes(user.role) && <PackedWatcher userId={user.id} />}
     </>
   )
 }

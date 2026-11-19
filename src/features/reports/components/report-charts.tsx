@@ -28,8 +28,8 @@ import { formatRupiah } from "@/lib/format"
 
 const SURFACE = "#fbf7f3"
 
-const shortDay = (day: string) => format(parseISO(day), "d MMM", { locale: localeId })
-const longDay = (day: string) => format(parseISO(day), "EEEE, d MMMM yyyy", { locale: localeId })
+const shortDay = (day: string) => format(parseISO(day), "dd/MM")
+const longDay = (day: string) => format(parseISO(day), "EEEE, dd/MM/yyyy", { locale: localeId })
 
 type PerDay = {
   day: string

@@ -14,6 +14,8 @@ export type OrderDraft = {
   type: OrderType
   /** Jenis pesanan; bawaan PO. */
   kind: OrderKind
+  /** Dikemas dengan Birthday Box (template Olshop). */
+  birthdayBox: boolean
   name: string
   phone: string
   address: string
@@ -38,6 +40,7 @@ export const EMPTY_DRAFT: OrderDraft = {
   marketplaceTotal: "",
   type: "normal",
   kind: "po",
+  birthdayBox: false,
   name: "",
   phone: "",
   address: "",
@@ -61,6 +64,7 @@ export function draftFromParsed(
     marketplaceOrderNo: parsed.invoiceNo ?? "",
     type: parsed.type,
     kind: parsed.kind ?? "po",
+    birthdayBox: parsed.birthdayBox ?? false,
     name: parsed.name ?? "",
     // Nomor yang tidak valid tetap ditampilkan apa adanya supaya kasir bisa membetulkan.
     phone: parsed.phone ?? parsed.phoneRaw ?? "",

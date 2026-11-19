@@ -243,6 +243,7 @@ export type OrderDetail = {
   cardFrom: string | null
   channel: OrderChannel
   marketplaceOrderNo: string | null
+  birthdayBox: boolean
   note: string | null
   urgentAt: Date | null
   urgentNote: string | null
@@ -355,6 +356,7 @@ export async function getOrderDetail(orderNo: string): Promise<OrderDetail | nul
     cardFrom: order.cardFrom,
     channel: order.channel,
     marketplaceOrderNo: order.marketplaceOrderNo,
+    birthdayBox: order.birthdayBox,
     note: order.note,
     urgentAt: order.urgentAt,
     urgentNote: order.urgentNote,

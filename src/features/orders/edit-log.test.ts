@@ -13,6 +13,7 @@ const base: DetailSnapshot = {
   address: "Jl. Melati 1",
   deliveryDate: "2026-11-10",
   kind: "po",
+  birthdayBox: false,
   type: "normal",
   method: "instant",
   request: null,
@@ -27,6 +28,12 @@ const base: DetailSnapshot = {
 describe("describeDetailChanges", () => {
   it("tanpa perubahan: kosong", () => {
     expect(describeDetailChanges(base, { ...base })).toEqual([])
+  })
+
+  it("Birthday Box dicatat", () => {
+    expect(describeDetailChanges(base, { ...base, birthdayBox: true })).toEqual([
+      "Birthday Box: Tidak → Ya",
+    ])
   })
 
   it("mencatat isian yang berubah", () => {

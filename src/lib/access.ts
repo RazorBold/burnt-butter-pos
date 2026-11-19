@@ -63,6 +63,12 @@ export const CAN_EDIT_CUSTOMER: readonly Role[] = ["owner"]
 /** Role yang boleh menandai pesanan selesai packing (memotong stok packaging). */
 export const CAN_PACK: readonly Role[] = ["admin", "produksi", "owner"]
 
+/**
+ * Role yang menerima popup + bunyi saat pesanan selesai packing (Siap Kirim), supaya langsung
+ * diproses ke pengiriman tanpa cek manual (permintaan pemilik toko, 19 Nov 2026).
+ */
+export const PACKED_ALERT_ROLES: readonly Role[] = ["admin"]
+
 /** Role yang boleh mengatur Produk & Menu dan kategorinya (keputusan pemilik toko, Nov 2026). */
 export const CAN_MANAGE_MENU: readonly Role[] = ["owner"]
 

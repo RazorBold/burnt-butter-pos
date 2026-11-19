@@ -118,7 +118,7 @@ export function ProductionOrderCard({
       {order.request && (
         <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-status-diproses/60 px-2.5 py-2 text-[13px] text-status-diproses-fg">
           <MessageSquareText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          <span className="break-words">{order.request}</span>
+          <span className="break-words whitespace-pre-line">{order.request}</span>
         </p>
       )}
 

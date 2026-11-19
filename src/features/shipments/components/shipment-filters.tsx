@@ -1,7 +1,10 @@
 "use client"
 
+import { Search } from "lucide-react"
+
 import { DeliveryDatePicker } from "@/components/app/delivery-date-picker"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -18,7 +21,7 @@ import {
   type ShipmentTab,
 } from "@/features/shipments/logic"
 import type { CourierOption } from "@/features/shipments/queries"
-import { useUrlFilters } from "@/hooks/use-url-filters"
+import { useDebouncedQuery, useUrlFilters } from "@/hooks/use-url-filters"
 import { cn } from "@/lib/utils"
 
 const ALL = "semua"
@@ -38,7 +41,10 @@ export function ShipmentFilters({
   couriers: CourierOption[]
 }) {
   const { current, update, pending } = useUrlFilters()
-  const hasFilters = ["tanggal", "tab", "metode", "kurir", "status"].some((key) => current.has(key))
+  const [query, setQuery] = useDebouncedQuery(current, update)
+  const hasFilters = ["tanggal", "tab", "metode", "kurir", "status", "q"].some((key) =>
+    current.has(key),
+  )
 
   const select = (key: string, label: string, options: [string, string][]) => (
     <Select
@@ -88,6 +94,20 @@ export function ShipmentFilters({
         })}
       </div>
       <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+        <div className="relative sm:col-span-2 lg:w-[280px]">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-body"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Cari no. pesanan, invoice, nama…"
+            aria-label="Cari pengiriman"
+            className="h-10 rounded-lg bg-white pl-9"
+          />
+        </div>
         <div className="sm:col-span-2 lg:col-span-1">
           <DeliveryDatePicker date={date} today={today} />
         </div>
@@ -111,7 +131,7 @@ export function ShipmentFilters({
           variant="outline"
           disabled={!hasFilters}
           onClick={() =>
-            update({ tanggal: null, tab: null, metode: null, kurir: null, status: null })
+            update({ tanggal: null, tab: null, metode: null, kurir: null, status: null, q: null })
           }
           className="h-10 rounded-lg bg-white px-5 lg:ml-auto"
         >

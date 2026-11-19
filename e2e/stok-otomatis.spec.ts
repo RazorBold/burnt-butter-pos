@@ -35,6 +35,8 @@ function fillTemplate(template: string, name: string, picks: [string, string, nu
     .replace("Alamat Lengkap:", "Alamat Lengkap: Jl. QA No. 1, Bandung")
     .replace("- Pick Up\n", "")
     .replace(/- Kurir Internal.*\n/, "")
+    .replace(/- Sameday.*\n/, "")
+    .replace(/- Instant Prioritas.*\n/, "")
   for (const [section, menu, qty] of picks) {
     const start = text.indexOf(section)
     const line = text.indexOf(menu, start)

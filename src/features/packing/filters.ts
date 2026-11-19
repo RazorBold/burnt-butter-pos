@@ -71,6 +71,8 @@ export function matchesSource(
 /** Data yang bisa dicari di papan Packaging. */
 export type PackingSearchable = {
   orderNo: string
+  /** No. invoice Shopee/Tokopedia. */
+  marketplaceOrderNo?: string | null
   customerName: string
   senderName: string | null
   phone: string | null
@@ -79,13 +81,20 @@ export type PackingSearchable = {
 }
 
 /**
- * Cari no. pesanan, nama penerima, pengirim, nama di kartu ucapan, atau no. telp. No. telp
+ * Cari no. pesanan, no. invoice olshop, nama penerima, pengirim, nama di kartu ucapan, atau no. telp. No. telp
  * dicocokkan per digit (minimal 3), jadi "0812-345" dan "62812345" tetap ketemu.
  */
 export function matchesQuery(order: PackingSearchable, query: string | undefined): boolean {
   const wanted = query?.trim().toLowerCase()
   if (!wanted) return true
-  const texts = [order.orderNo, order.customerName, order.senderName, order.cardTo, order.cardFrom]
+  const texts = [
+    order.orderNo,
+    order.marketplaceOrderNo,
+    order.customerName,
+    order.senderName,
+    order.cardTo,
+    order.cardFrom,
+  ]
   if (texts.some((text) => text?.toLowerCase().includes(wanted))) return true
   const digits = wanted.replace(/\D/g, "")
   if (digits.length < 3 || !order.phone) return false
@@ -105,4 +114,13 @@ export function filterPackingOrders<
       (!filters.kind || order.kind === filters.kind) &&
       matchesQuery(order, filters.q),
   )
+}
+
+/**
+ * Notes berisi kartu ucapan (template Olshop: "To : … // From : … // Wish : …" per menu), supaya
+ * Packaging tetap menandai "Ada kartu ucapan" walau kartu tidak diisi di kolom kartu.
+ */
+export function requestHasCard(request: string | null | undefined): boolean {
+  if (!request) return false
+  return /\bto\s*:/i.test(request) && /\b(from|wish(es)?|ucapan)\s*:/i.test(request)
 }

@@ -155,7 +155,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   }
   const unpaidBoxAll = unpaidBoxes(unpaid.all.boxes)
   const unpaidBoxOnDate = unpaidBoxes(unpaid.onDate.boxes)
-  const anchorShort = formatTanggalPendek(anchor).slice(0, 5)
+  const anchorShort = formatTanggalPendek(anchor)
   // Ringkasan stok box hampers per kategori agar ringkas di dashboard.
   const hampersCategories = summarizeCategories(
     packagings.filter((item) => !item.name.toLowerCase().includes("loyang")),
@@ -276,7 +276,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
                           <td className="px-2 py-3 whitespace-nowrap tabular-nums">
                             {period === "hari"
                               ? formatJam(order.createdAt)
-                              : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
+                              : `${formatTanggalPendek(order.createdAt)} ${formatJam(order.createdAt)}`}
                           </td>
                           <td className="px-2 py-3 text-text-strong">{order.customerName}</td>
                           <td className="px-2 py-3">

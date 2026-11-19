@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
-import { OrderNoteLine } from "@/components/app/order-badges"
+import { InvoiceNo, OrderNoteLine } from "@/components/app/order-badges"
 import { PAGE_CONTAINER } from "@/components/app/page-header"
 import { SelectAllHead } from "@/components/app/row-selection"
 import {
@@ -260,6 +260,7 @@ async function ShipmentList({ searchParams }: { searchParams: SearchParams }) {
                               dari {row.senderName}
                             </span>
                           )}
+                          <InvoiceNo no={row.marketplaceOrderNo} />
                           <OrderNoteLine note={row.note} />
                         </TableCell>
                         <TableCell>

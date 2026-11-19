@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "birthday_box" boolean DEFAULT false NOT NULL;

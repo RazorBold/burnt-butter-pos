@@ -25,7 +25,7 @@ export function PeriodPicker({
       <label className="relative flex h-11 min-w-[240px] items-center gap-2.5 rounded-xl border border-border bg-white px-3.5 text-[15px] text-text-strong focus-within:ring-3 focus-within:ring-ring/50">
         <CalendarDays className="size-5 shrink-0 text-brand-ink" aria-hidden />
         <span aria-hidden>
-          {format(parseISO(anchor), "EEEE, d MMMM yyyy", { locale: localeId })}
+          {format(parseISO(anchor), "EEEE, dd/MM/yyyy", { locale: localeId })}
         </span>
         {/* Input tanggal asli menutupi seluruh kotak supaya pemilih bawaan browser terbuka. */}
         <input

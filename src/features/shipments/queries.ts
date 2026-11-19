@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, count, eq, inArray, isNull, ne, or, type SQL, sql } from "drizzle-orm"
+import { and, asc, count, eq, ilike, inArray, isNull, ne, or, type SQL, sql } from "drizzle-orm"
 
 import { getDb } from "@/db"
 import { couriers, orders, shipments, shippingOptions } from "@/db/schema"
@@ -15,6 +15,8 @@ export const SHIPMENT_PAGE_SIZE = 10
 export type ShipmentRow = {
   orderId: string
   orderNo: string
+  /** No. invoice Shopee/Tokopedia. */
+  marketplaceOrderNo: string | null
   customerName: string
   senderName: string | null
   type: OrderType
@@ -62,6 +64,19 @@ function baseWhere(filters: ShipmentFilters) {
     ne(orders.status, "dibatalkan"),
     filters.method ? eq(shipments.method, filters.method) : undefined,
     filters.courierId ? eq(shipments.courierId, filters.courierId) : undefined,
+    searchCondition(filters.q),
+  )
+}
+
+/** Cari no. pesanan, no. invoice olshop, nama penerima, atau nama pengirim. */
+function searchCondition(q: string | undefined) {
+  if (!q) return undefined
+  const pattern = `%${q.replace(/[\\%_]/g, (char) => `\\${char}`)}%`
+  return or(
+    ilike(orders.orderNo, pattern),
+    ilike(orders.marketplaceOrderNo, pattern),
+    ilike(orders.customerName, pattern),
+    ilike(orders.senderName, pattern),
   )
 }
 
@@ -93,6 +108,7 @@ export async function listShipments(filters: ShipmentFilters) {
     .select({
       orderId: orders.id,
       orderNo: orders.orderNo,
+      marketplaceOrderNo: orders.marketplaceOrderNo,
       customerName: orders.customerName,
       senderName: orders.senderName,
       type: orders.type,

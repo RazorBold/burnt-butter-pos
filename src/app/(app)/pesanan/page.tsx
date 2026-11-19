@@ -6,6 +6,7 @@ import { Suspense } from "react"
 import { KpiCard, KpiCardSkeleton } from "@/components/app/kpi-card"
 import {
   ChannelBadge,
+  InvoiceNo,
   OrderNoteLine,
   OrderStatusBadge,
   KindBadge,
@@ -242,7 +243,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         <TableCell className="tabular-nums">
                           {singleDay
                             ? formatJam(order.createdAt)
-                            : `${formatTanggalPendek(order.createdAt).slice(0, 5)} ${formatJam(order.createdAt)}`}
+                            : `${formatTanggalPendek(order.createdAt)} ${formatJam(order.createdAt)}`}
                         </TableCell>
                         <TableCell>
                           <span className="block font-medium text-text-strong">
@@ -257,6 +258,7 @@ async function OrderList({ searchParams }: { searchParams: SearchParams }) {
                         </TableCell>
                         <TableCell>
                           <ChannelBadge channel={order.channel} />
+                          <InvoiceNo no={order.marketplaceOrderNo} className="mt-1" />
                         </TableCell>
                         <TableCell>
                           <KindBadge kind={order.kind} />

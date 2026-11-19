@@ -109,6 +109,7 @@ async function PrintOrder({ params }: Pick<PageProps<"/pesanan/[orderNo]/cetak">
           <Fact label="Sumber">
             {ORDER_CHANNEL_LABEL[order.channel]}
             {order.marketplaceOrderNo && ` · ${order.marketplaceOrderNo}`}
+            {order.birthdayBox && " · Birthday Box"}
           </Fact>
         </dl>
 

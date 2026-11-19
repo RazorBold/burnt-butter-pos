@@ -105,6 +105,8 @@ export type ShipmentFilters = {
   method?: ShippingMethod
   courierId?: string
   state?: ShipmentState
+  /** Pencarian no. pesanan / invoice / nama (?q=). */
+  q?: string
   page: number
 }
 
@@ -114,7 +116,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const METHODS = ["kurir_internal", "instant", "pick_up", "ekspedisi"] as const
 
-/** Filter dari URL (?tanggal=&tab=&metode=&kurir=&status=&hal=). Tanpa tanggal = hari ini. */
+/** Filter dari URL (?tanggal=&tab=&metode=&kurir=&status=&q=&hal=). Tanpa tanggal = hari ini. */
 export function parseShipmentFilters(params: Params, today: string): ShipmentFilters {
   const one = (key: string) => {
     const value = params[key]
@@ -129,6 +131,7 @@ export function parseShipmentFilters(params: Params, today: string): ShipmentFil
     method: METHODS.find((method) => method === one("metode")),
     courierId: courier && UUID.test(courier) ? courier : undefined,
     state: SHIPMENT_STATES.find((state) => state === one("status")),
+    q: one("q")?.trim().slice(0, 60) || undefined,
     page: Number.isInteger(page) && page > 0 ? page : 1,
   }
 }

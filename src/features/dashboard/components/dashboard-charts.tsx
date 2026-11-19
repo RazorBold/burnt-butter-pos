@@ -105,7 +105,7 @@ export function PaymentLineChart({ data }: { data: { day: string; value: number 
   const config = {
     value: { label: "Pembayaran", color: REPORT_COLORS.personal },
   } satisfies ChartConfig
-  const shortDay = (day: string) => format(parseISO(day), "d MMM", { locale: localeId })
+  const shortDay = (day: string) => format(parseISO(day), "dd/MM")
   return (
     <>
       <ChartContainer config={config} className="aspect-auto h-[130px] w-full overflow-hidden">
@@ -129,7 +129,7 @@ export function PaymentLineChart({ data }: { data: { day: string; value: number 
             content={
               <ChartTooltipContent
                 labelFormatter={(_, payload) =>
-                  format(parseISO(payload[0]?.payload.day), "EEEE, d MMMM", { locale: localeId })
+                  format(parseISO(payload[0]?.payload.day), "EEEE, dd/MM/yyyy", { locale: localeId })
                 }
                 formatter={(value) => (
                   <span className="font-medium tabular-nums">{formatRupiah(Number(value))}</span>

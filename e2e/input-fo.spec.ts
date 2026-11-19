@@ -17,7 +17,7 @@ function randomPhone() {
  */
 function fill(
   template: string,
-  values: { name: string; kind: string; sender?: string },
+  values: { name: string; kind: string; sender?: string; birthdayBox?: boolean },
   picks: [string[], string, number][],
 ) {
   let text = template
@@ -29,6 +29,11 @@ function fill(
     .replace(/- Pick Up\s*\n/, "")
     .replace(/- Kurir Internal.*\n/, "")
     .replace(/- Sameday.*\n/, "")
+    .replace(/- Instant Prioritas.*\n/, "")
+    .replace(
+      /(Additional Birthday Box \(Rp 14\.000\)\*?: )Yes\/No/,
+      `$1${values.birthdayBox ? "Yes" : "No"}`,
+    )
   if (values.sender) text = text.replace(/Nama Pengirim: ?/, `Nama Pengirim: ${values.sender}`)
   for (const [markers, menu, qty] of picks) {
     let at = 0
@@ -49,12 +54,14 @@ const CASES = [
     kindLabel: "Made to Order",
     type: "normal",
     typeLabel: "Normal",
+    // Birthday Box: Yes = +1 Additional Birthday Box (Rp 14.000).
+    birthdayBox: true,
     picks: [
       [["Size Large"], "Spaghetti Classico Bologna Brulee", 1],
       [["Size Regular"], "Not Your Mac and Cheese", 2],
     ] as [string[], string, number][],
-    total: "Rp 305.000",
-    items: 2,
+    total: "Rp 319.000",
+    items: 3,
   },
   {
     title: "FO2 Hampers · PO",
@@ -104,7 +111,11 @@ test.describe("Input Pesanan dari template FO1/FO2/FO3", () => {
       test.skip(info.project.name !== "desktop", "alur tulis cukup sekali, di desktop")
       test.setTimeout(60_000)
       const name = `QA Customer ${Date.now()} ${c.title.slice(0, 3)}`
-      const text = fill(c.template, { name, kind: c.kind, sender: c.sender }, c.picks)
+      const text = fill(
+        c.template,
+        { name, kind: c.kind, sender: c.sender, birthdayBox: c.birthdayBox },
+        c.picks,
+      )
 
       await loginAs(page, admin.email!, admin.password!, "/pesanan/baru")
       await page.getByRole("textbox", { name: "Pesan WhatsApp" }).fill(text)
@@ -120,7 +131,12 @@ test.describe("Input Pesanan dari template FO1/FO2/FO3", () => {
       )
       await expect(page.getByLabel("Nama penerima")).toHaveValue(name)
       if (c.sender) await expect(page.getByLabel("Nama pengirim")).toHaveValue(c.sender)
-      await expect(page.getByRole("radio", { name: /^Instant/ })).toBeChecked()
+      await expect(page.getByRole("radio", { name: /^Instant/ }).first()).toBeChecked()
+      await expect(
+        page.getByRole("radiogroup", { name: "Birthday Box" }).getByRole("radio", {
+          name: c.birthdayBox ? "Ya" : "Tidak",
+        }),
+      ).toHaveAttribute("aria-checked", "true")
       await expect(page.getByTestId("order-total")).toHaveText(c.total)
       await expect(page.getByText("Data pesanan lengkap.")).toBeVisible()
 

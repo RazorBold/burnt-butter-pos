@@ -178,3 +178,23 @@ export function UrgentBadge({ className, note }: { className?: string; note?: st
     </span>
   )
 }
+
+/**
+ * Nomor invoice Shopee/Tokopedia. Selalu terlihat di Pesanan, Packaging, dan Pengiriman karena
+ * admin mencocokkan paket olshop dengan nomor ini (permintaan pemilik toko, 19 Nov 2026).
+ */
+export function InvoiceNo({ no, className }: { no: string | null; className?: string }) {
+  if (!no) return null
+  return (
+    <span
+      data-testid="invoice-no"
+      className={cn(
+        "block text-[13px] font-semibold break-all text-text-strong tabular-nums",
+        className,
+      )}
+    >
+      <span className="font-normal text-text-body">Invoice </span>
+      {no}
+    </span>
+  )
+}
